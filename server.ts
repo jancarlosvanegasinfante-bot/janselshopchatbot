@@ -566,13 +566,10 @@ ESTADO ACTUAL DEL EMBUDO: Utiliza los campos intencion, probabilidad_compra, urg
 
     let result: any = null;
     const modelsCascade = [
-      { name: "gemini-3.1-flash-lite", label: "Primera línea de atención, de alta velocidad y máxima eficiencia económica" },
-      { name: "gemini-flash-lite-latest", label: "Primer respaldo de la línea rápida" },
-      { name: "gemini-2.5-flash-lite", label: "Respaldo absoluto de categoría ligera" },
-      { name: "gemini-2.5-flash-image", label: "Variante especializada con soporte nativo de imágenes" },
-      { name: "gemini-3.1-flash-image", label: "Segunda variante ligera con soporte de imágenes" },
-      { name: "gemini-2.5-flash", label: "Respaldo estándar de alto rendimiento" },
-      { name: "gemini-3-flash-preview", label: "Última línea de rescate y seguridad" }
+      { name: "gemini-3.1-flash-lite", label: "Primera línea de eficiencia" },
+      { name: "gemini-flash-latest", label: "Respaldo Flash estable" },
+      { name: "gemini-3.1-flash-image", label: "Respaldo multimodal avanzado" },
+      { name: "gemini-3.1-pro-preview", label: "Última línea de razonamiento profundo" }
     ];
 
     const contents = [
@@ -595,33 +592,49 @@ ESTADO ACTUAL DEL EMBUDO: Utiliza los campos intencion, probabilidad_compra, urg
     };
 
     let lastError: any = null;
-    const timeoutMs = 7000; // 7 seconds (within the 6-8 seconds range)
+    const timeoutMs = 6000; // 6 segundos según solicitud del usuario
+    const maxRetriesPerModel = 2; // Total de 3 intentos por cada modelo
 
     for (let i = 0; i < modelsCascade.length; i++) {
       const modelObj = modelsCascade[i];
-      try {
-        console.log(`[Server AI] Intentando modelo [${i + 1}/${modelsCascade.length}]: ${modelObj.name} (${modelObj.label}) para ${fromPhone} con timeout de ${timeoutMs}ms...`);
-        result = await withTimeout(ai.models.generateContent({
-          model: modelObj.name,
-          contents: contents,
-          config: {
-            systemInstruction: getSystemInstruction(storeConfig),
-            responseMimeType: "application/json",
-            responseSchema: JAN_RESPONSE_SCHEMA
-          }
-        }), timeoutMs);
+      let success = false;
 
-        if (result && result.text) {
-          console.log(`[Server AI] Éxito con el modelo ${modelObj.name}`);
-          break;
+      for (let attempt = 1; attempt <= (maxRetriesPerModel + 1); attempt++) {
+        try {
+          console.log(`[Server AI] Intentando modelo [${i + 1}/${modelsCascade.length}], intento [${attempt}/3]: ${modelObj.name} para ${fromPhone} con timeout de ${timeoutMs}ms...`);
+          
+          result = await withTimeout(ai.models.generateContent({
+            model: modelObj.name,
+            contents: contents,
+            config: {
+              systemInstruction: getSystemInstruction(storeConfig),
+              responseMimeType: "application/json",
+              responseSchema: JAN_RESPONSE_SCHEMA
+            }
+          }), timeoutMs);
+
+          if (result && result.text) {
+            console.log(`[Server AI] Éxito con el modelo ${modelObj.name} en el intento ${attempt}`);
+            success = true;
+            break;
+          }
+        } catch (err: any) {
+          lastError = err;
+          const errMsg = err instanceof Error ? err.message : String(err);
+          console.warn(`[Server AI] Falló modelo ${modelObj.name} (Intento ${attempt}): ${errMsg}`);
+          
+          // Si es el último intento del modelo, no mostramos el aviso de reintento
+          if (attempt <= maxRetriesPerModel) {
+            console.warn(`[Server AI] Reintentando el mismo modelo en 500ms...`);
+            await new Promise(r => setTimeout(r, 500)); // Pequeña pausa antes de reintentar
+          }
         }
-      } catch (err: any) {
-        lastError = err;
-        const errMsg = err instanceof Error ? err.message : String(err);
-        console.warn(`[Server AI] Falló modelo ${modelObj.name}: ${errMsg}`);
-        if (i < modelsCascade.length - 1) {
-          console.warn(`[Server AI] Pasando al siguiente modelo en la cascada...`);
-        }
+      }
+
+      if (success) break;
+
+      if (i < modelsCascade.length - 1) {
+        console.warn(`[Server AI] Pasando al siguiente modelo en la cascada tras agotar intentos de ${modelObj.name}...`);
       }
     }
 
