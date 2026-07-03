@@ -22,6 +22,8 @@ import {
   MapPin,
   RefreshCw,
   Plus,
+  Send,
+  Share2,
   LogOut,
   AlertTriangle,
   History,
@@ -139,6 +141,7 @@ type Activity = {
   recipient?: string;
   senderType?: string;
   botNumber?: string;
+  platform?: string;
 };
 
 // Safe date formatter
@@ -752,7 +755,7 @@ function JanAdmin() {
                       setActiveTab('reports');
                     }}
                   />}
-                 {activeTab === 'orders' && <OrdersTab key="orders" orders={filteredOrders} onUpdateStatus={updateOrderStatus} />}
+                 {activeTab === 'orders' && <OrdersTab key="orders" orders={filteredOrders} onUpdateStatus={updateOrderStatus} userStore={userStore} />}
                  {activeTab === 'inventory' && <InventoryTab key="inv" products={products} onUpdateStock={updateStock} onReset={resetDatabase} isResetting={isResetting} userStore={userStore} />}
                  {activeTab === 'config' && (
                    <ConfigTab 
@@ -1678,7 +1681,30 @@ function ReportsTab({
   );
 }
 
-function OrdersTab({ orders, onUpdateStatus }: { orders: Order[], onUpdateStatus: (id: string, s: Order['status']) => void, key?: string }) {
+function OrdersTab({ orders, onUpdateStatus, userStore }: { orders: Order[], onUpdateStatus: (id: string, s: Order['status']) => void, userStore?: any, key?: string }) {
+  const [syncingOrderId, setSyncingOrderId] = useState<string | null>(null);
+
+  const handlePushToPlatform = async (orderId: string, platform: 'shopify' | 'dropi') => {
+    setSyncingOrderId(orderId + '_' + platform);
+    try {
+      const res = await fetch(`/api/integration/${platform}/push-order`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, storeId: userStore?.id || 'default' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message);
+      } else {
+        toast.error("Error: " + data.error);
+      }
+    } catch (e: any) {
+      toast.error("Error de red: " + e.message);
+    } finally {
+      setSyncingOrderId(null);
+    }
+  };
+
   const downloadCSV = () => {
     if (orders.length === 0) return;
     
@@ -1734,6 +1760,7 @@ function OrdersTab({ orders, onUpdateStatus }: { orders: Order[], onUpdateStatus
                  <th className="p-4 uppercase tracking-tighter text-[10px]">Producto</th>
                  <th className="p-4 uppercase tracking-tighter text-[10px]">Total</th>
                  <th className="p-4 uppercase tracking-tighter text-[10px]">Dirección</th>
+                 <th className="p-4 uppercase tracking-tighter text-[10px]">Integraciones</th>
                  <th className="p-4 uppercase tracking-tighter text-[10px]">Estado</th>
                </tr>
              </thead>
@@ -1768,6 +1795,74 @@ function OrdersTab({ orders, onUpdateStatus }: { orders: Order[], onUpdateStatus
                             Datos extra: {(o as any).notes}
                           </span>
                         )}
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex flex-col gap-1.5 min-w-[130px] max-w-[180px]">
+                        {/* SHOPIFY STATUS */}
+                        <div className="flex items-center justify-between gap-1.5 bg-black/40 border border-neutral-800 p-1 rounded-lg">
+                          <span className="text-[8px] font-mono text-neutral-500 uppercase tracking-wider pl-1">Shopify</span>
+                          {(o as any).shopifyStatus === 'enviado' ? (
+                            <span className="text-[8px] text-green-400 font-bold bg-green-500/10 px-1.5 py-0.5 rounded cursor-help font-mono border border-green-500/20" title={`Shopify ID: ${(o as any).shopifyOrderId}`}>
+                              ✓ OK
+                            </span>
+                          ) : (o as any).shopifyStatus === 'error' ? (
+                            <button 
+                              onClick={() => handlePushToPlatform(o.id, 'shopify')}
+                              disabled={syncingOrderId === `${o.id}_shopify`}
+                              className="text-[8px] text-red-400 font-bold bg-red-500/10 hover:bg-red-500/20 px-1.5 py-0.5 rounded flex items-center gap-1 transition-all border border-red-500/20"
+                              title={(o as any).shopifyError || "Reintentar envío"}
+                            >
+                              <span>ERROR</span>
+                              <RefreshCw size={8} className={syncingOrderId === `${o.id}_shopify` ? "animate-spin" : ""} />
+                            </button>
+                          ) : (
+                            <button 
+                              onClick={() => handlePushToPlatform(o.id, 'shopify')}
+                              disabled={syncingOrderId === `${o.id}_shopify`}
+                              className="text-[8px] text-neutral-400 hover:text-white font-bold bg-neutral-800 hover:bg-neutral-700 px-1.5 py-0.5 rounded flex items-center gap-1 transition-all"
+                            >
+                              <span>ENVIAR</span>
+                              <Send size={8} className={syncingOrderId === `${o.id}_shopify` ? "animate-spin" : ""} />
+                            </button>
+                          )}
+                        </div>
+
+                        {/* DROPI STATUS */}
+                        <div className="flex items-center justify-between gap-1.5 bg-black/40 border border-neutral-800 p-1 rounded-lg">
+                          <span className="text-[8px] font-mono text-neutral-500 uppercase tracking-wider pl-1">Dropi</span>
+                          {(o as any).dropiStatus === 'enviado' ? (
+                            <div className="flex flex-col items-end">
+                              <span className="text-[8px] text-blue-400 font-bold bg-blue-500/10 px-1.5 py-0.5 rounded cursor-help font-mono border border-blue-500/20" title={`Transportadora: ${(o as any).dropiCarrier || 'N/A'}`}>
+                                ✓ OK
+                              </span>
+                              {(o as any).dropiTrackingNumber && (
+                                <span className="text-[7px] text-neutral-500 font-mono mt-0.5 leading-none select-all font-bold">
+                                  {(o as any).dropiTrackingNumber}
+                                </span>
+                              )}
+                            </div>
+                          ) : (o as any).dropiStatus === 'error' ? (
+                            <button 
+                              onClick={() => handlePushToPlatform(o.id, 'dropi')}
+                              disabled={syncingOrderId === `${o.id}_dropi`}
+                              className="text-[8px] text-red-400 font-bold bg-red-500/10 hover:bg-red-500/20 px-1.5 py-0.5 rounded flex items-center gap-1 transition-all border border-red-500/20"
+                              title={(o as any).dropiError || "Reintentar envío"}
+                            >
+                              <span>ERROR</span>
+                              <RefreshCw size={8} className={syncingOrderId === `${o.id}_dropi` ? "animate-spin" : ""} />
+                            </button>
+                          ) : (
+                            <button 
+                              onClick={() => handlePushToPlatform(o.id, 'dropi')}
+                              disabled={syncingOrderId === `${o.id}_dropi`}
+                              className="text-[8px] text-neutral-400 hover:text-white font-bold bg-neutral-800 hover:bg-neutral-700 px-1.5 py-0.5 rounded flex items-center gap-1 transition-all"
+                            >
+                              <span>ENVIAR</span>
+                              <Send size={8} className={syncingOrderId === `${o.id}_dropi` ? "animate-spin" : ""} />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td className="p-4">
@@ -2533,10 +2628,48 @@ function ConfigTab({ user, userStore, userStores, setUserStore, setUserStores, w
     btnQuick3Label: userStore?.btnQuick3Label || "Prioridad",
     btnQuick3Message: userStore?.btnQuick3Message || "¡Buenas! El repartidor ya está cargando el camión VIP. Si transfiere ahorita, su pedido sale de primero. ¿Hacemos el negocio ya para que le llegue mañana?",
     msgNewOrderTemplate: userStore?.msgNewOrderTemplate || "🔥 *NUEVO PEDIDO RECIBIDO* 🔥\n\n👤 Cliente: {nombre}\n📞 Tel: {telefono}\n📍 Ciudad: {ciudad}\n🏠 Dir: {direccion}\n📦 Producto: {producto}\n💰 Total: {total}",
-    notificationPhone: userStore?.notificationPhone || ""
+    notificationPhone: userStore?.notificationPhone || "",
+    shopifyDomain: userStore?.shopifyDomain || "",
+    shopifyAccessToken: userStore?.shopifyAccessToken || "",
+    shopifyAutoSync: userStore?.shopifyAutoSync || false,
+    dropiApiKey: userStore?.dropiApiKey || "",
+    dropiAutoSync: userStore?.dropiAutoSync || false,
+    dropiPreferredCarrier: userStore?.dropiPreferredCarrier || "Servientrega"
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [isSyncingFromShopify, setIsSyncingFromShopify] = useState(false);
+  const [isSyncingToShopify, setIsSyncingToShopify] = useState(false);
   const [officialBotNumber, setOfficialBotNumber] = useState("");
+
+  const handleShopifySync = async (direction: 'from_shopify' | 'to_shopify') => {
+    if (!userStore?.id) return;
+    if (direction === 'from_shopify') {
+      setIsSyncingFromShopify(true);
+    } else {
+      setIsSyncingToShopify(true);
+    }
+    try {
+      const res = await fetch("/api/integration/shopify/sync-products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ storeId: userStore.id, direction })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message);
+      } else {
+        toast.error("Error: " + data.error);
+      }
+    } catch (e: any) {
+      toast.error("Error de red: " + e.message);
+    } finally {
+      if (direction === 'from_shopify') {
+        setIsSyncingFromShopify(false);
+      } else {
+        setIsSyncingToShopify(false);
+      }
+    }
+  };
 
   useEffect(() => {
     fetch("/api/public/config")
@@ -2570,7 +2703,13 @@ function ConfigTab({ user, userStore, userStores, setUserStore, setUserStores, w
       btnQuick3Label: userStore?.btnQuick3Label || "Prioridad",
       btnQuick3Message: userStore?.btnQuick3Message || "¡Buenas! El repartidor ya está cargando el camión VIP. Si transfiere ahorita, su pedido sale de primero. ¿Hacemos el negocio ya para que le llegue mañana?",
       msgNewOrderTemplate: userStore?.msgNewOrderTemplate || "🔥 *NUEVO PEDIDO RECIBIDO* 🔥\n\n👤 Cliente: {nombre}\n📞 Tel: {telefono}\n📍 Ciudad: {ciudad}\n🏠 Dir: {direccion}\n📦 Producto: {producto}\n💰 Total: {total}",
-      notificationPhone: userStore?.notificationPhone || ""
+      notificationPhone: userStore?.notificationPhone || "",
+      shopifyDomain: userStore?.shopifyDomain || "",
+      shopifyAccessToken: userStore?.shopifyAccessToken || "",
+      shopifyAutoSync: userStore?.shopifyAutoSync || false,
+      dropiApiKey: userStore?.dropiApiKey || "",
+      dropiAutoSync: userStore?.dropiAutoSync || false,
+      dropiPreferredCarrier: userStore?.dropiPreferredCarrier || "Servientrega"
     });
   }, [userStore]);
 
@@ -2718,6 +2857,125 @@ function ConfigTab({ user, userStore, userStores, setUserStore, setUserStores, w
               </div>
             </div>
           </div>
+
+          {/* SECCIÓN DE INTEGRACIONES DE TERCEROS (SHOPIFY & DROPI) */}
+          <div className="border-t border-neutral-800 pt-8 mt-6 space-y-6">
+            <div className="flex items-center gap-2 text-dark-accent">
+               <Share2 size={16} />
+               <h4 className="text-[10px] font-black uppercase tracking-widest">Sincronización & Integraciones (Shopify & Dropi)</h4>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+               {/* SHOPIFY INTEGRATION CARD */}
+               <div className="bg-neutral-900/50 border border-neutral-800 p-6 rounded-2xl space-y-4">
+                  <div className="flex items-center gap-2">
+                     <ShoppingBag size={14} className="text-green-400" />
+                     <h5 className="text-[10px] uppercase font-black tracking-widest text-white">Tienda Shopify (Catálogo & Pedidos)</h5>
+                  </div>
+                  <p className="text-[9px] text-neutral-400">Automatiza la creación de pedidos de pago contra entrega en Shopify y sincroniza tu catálogo bidireccionalmente.</p>
+                  
+                  <div className="space-y-3">
+                     <div className="space-y-1">
+                        <label className="text-[9px] text-neutral-500 uppercase font-black">Dominio de Shopify</label>
+                        <input 
+                           value={storeData.shopifyDomain} 
+                           onChange={e => setStoreData({...storeData, shopifyDomain: e.target.value})} 
+                           placeholder="tu-tienda.myshopify.com" 
+                           className="w-full bg-black border border-neutral-800 rounded-xl p-3 text-xs text-white" 
+                        />
+                     </div>
+                     <div className="space-y-1">
+                        <label className="text-[9px] text-neutral-500 uppercase font-black">Admin Access Token (shpat_...)</label>
+                        <input 
+                           type="password"
+                           value={storeData.shopifyAccessToken} 
+                           onChange={e => setStoreData({...storeData, shopifyAccessToken: e.target.value})} 
+                           placeholder="shpat_xxxxxxxxxxxxxxxxxxxxxxxxxxxx" 
+                           className="w-full bg-black border border-neutral-800 rounded-xl p-3 text-xs text-white font-mono" 
+                        />
+                     </div>
+                     <div className="flex items-center gap-2 pt-2">
+                        <input 
+                           type="checkbox" 
+                           id="shopifyAutoSync" 
+                           checked={storeData.shopifyAutoSync} 
+                           onChange={e => setStoreData({...storeData, shopifyAutoSync: e.target.checked})} 
+                           className="rounded border-neutral-800 bg-black text-dark-accent focus:ring-0" 
+                        />
+                        <label htmlFor="shopifyAutoSync" className="text-[10px] text-neutral-300 font-bold select-none cursor-pointer">
+                           Enviar pedidos automáticamente a Shopify (Contra Entrega)
+                        </label>
+                     </div>
+
+                     <div className="grid grid-cols-2 gap-3 pt-3">
+                        <button 
+                           onClick={() => handleShopifySync('from_shopify')} 
+                           disabled={isSyncingFromShopify || !storeData.shopifyDomain || !storeData.shopifyAccessToken}
+                           className="bg-neutral-800 hover:bg-neutral-700 text-white p-2.5 rounded-xl text-[9px] font-black uppercase transition-all disabled:opacity-30"
+                        >
+                           {isSyncingFromShopify ? "Sincronizando..." : "Importar desde Shopify"}
+                        </button>
+                        <button 
+                           onClick={() => handleShopifySync('to_shopify')} 
+                           disabled={isSyncingToShopify || !storeData.shopifyDomain || !storeData.shopifyAccessToken}
+                           className="bg-neutral-800 hover:bg-neutral-700 text-white p-2.5 rounded-xl text-[9px] font-black uppercase transition-all disabled:opacity-30"
+                        >
+                           {isSyncingToShopify ? "Exportar a Shopify" : "Exportar a Shopify"}
+                        </button>
+                     </div>
+                  </div>
+               </div>
+
+               {/* DROPI INTEGRATION CARD */}
+               <div className="bg-neutral-900/50 border border-neutral-800 p-6 rounded-2xl space-y-4">
+                  <div className="flex items-center gap-2">
+                     <Truck size={14} className="text-blue-400" />
+                     <h5 className="text-[10px] uppercase font-black tracking-widest text-white">Dropshipping Dropi (Proveedores & Guías)</h5>
+                  </div>
+                  <p className="text-[9px] text-neutral-400">Envía los pedidos directamente a la transportadora seleccionada en Dropi y genera la guía de despacho de inmediato.</p>
+
+                  <div className="space-y-3">
+                     <div className="space-y-1">
+                        <label className="text-[9px] text-neutral-500 uppercase font-black">API Token de Dropi</label>
+                        <input 
+                           type="password"
+                           value={storeData.dropiApiKey} 
+                           onChange={e => setStoreData({...storeData, dropiApiKey: e.target.value})} 
+                           placeholder="API Key de tu cuenta Dropi (o escribe 'TEST')" 
+                           className="w-full bg-black border border-neutral-800 rounded-xl p-3 text-xs text-white font-mono" 
+                        />
+                     </div>
+                     <div className="space-y-1">
+                        <label className="text-[9px] text-neutral-500 uppercase font-black">Transportadora Preferida</label>
+                        <select 
+                           value={storeData.dropiPreferredCarrier} 
+                           onChange={e => setStoreData({...storeData, dropiPreferredCarrier: e.target.value})} 
+                           className="w-full bg-black border border-neutral-800 rounded-xl p-3 text-xs text-white outline-none focus:border-dark-accent"
+                        >
+                           <option value="Servientrega">Servientrega</option>
+                           <option value="Interrapidisimo">Interrapidísimo</option>
+                           <option value="Envía">Envía Colvanes</option>
+                           <option value="Coordinadora">Coordinadora</option>
+                           <option value="Domina">Domina Entrega</option>
+                        </select>
+                     </div>
+                     <div className="flex items-center gap-2 pt-2">
+                        <input 
+                           type="checkbox" 
+                           id="dropiAutoSync" 
+                           checked={storeData.dropiAutoSync} 
+                           onChange={e => setStoreData({...storeData, dropiAutoSync: e.target.checked})} 
+                           className="rounded border-neutral-800 bg-black text-dark-accent focus:ring-0" 
+                        />
+                        <label htmlFor="dropiAutoSync" className="text-[10px] text-neutral-300 font-bold select-none cursor-pointer">
+                           Enviar pedidos automáticamente a Dropi
+                        </label>
+                     </div>
+                  </div>
+               </div>
+            </div>
+          </div>
+
           <button onClick={handleSaveStore} disabled={isSaving} className="w-full bg-dark-accent text-black font-black uppercase text-[10px] tracking-widest py-3 rounded-xl disabled:opacity-50">
             {isSaving ? "GUARDANDO..." : "GUARDAR CONFIGURACIÓN"}
           </button>
