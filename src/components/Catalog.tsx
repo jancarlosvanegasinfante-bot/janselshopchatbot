@@ -1,7 +1,6 @@
 import * as React from "react";
 import { useState, useEffect } from "react";
-import { db } from "../firebase";
-import { collection, onSnapshot, query, orderBy, getDocs } from "firebase/firestore";
+import { db, collection, onSnapshot, query, orderBy, getDocs } from "../supabase";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   ShoppingBag, 
@@ -17,6 +16,10 @@ import {
   Video
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { ACTIVE_PROMOTIONS } from "../lib/promotions";
+import type { PromotionCombo } from "../lib/promotions";
+import catalogData from "../catalog.json";
+import { getProxiedImageUrl } from "../lib/utils";
 
 interface Product {
   id: string;
@@ -64,7 +67,11 @@ export default function Catalog() {
         id: doc.id,
         ...doc.data()
       })) as Product[];
-      setProducts(prods);
+      setProducts(prods.length > 0 ? prods : (catalogData.products as Product[]));
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching products from Firestore, falling back to local JSON:", error);
+      setProducts(catalogData.products as Product[]);
       setLoading(false);
     });
     return () => unsubscribe();
@@ -154,6 +161,121 @@ export default function Catalog() {
           ))}
         </div>
 
+        {/* Combos Especiales Section */}
+        {selectedCategory === "Todos" && (
+          <div className="mb-20">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 mb-2">
+                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                  <span className="text-[9px] font-black uppercase tracking-wider text-red-400">Promociones de Locura 🔥</span>
+                </div>
+                <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tight leading-none italic">
+                  Combos <span className="text-dark-accent">Cross-Selling</span> Especiales
+                </h2>
+                <p className="text-neutral-400 text-xs mt-2 max-w-xl">
+                  Lleva productos complementarios de un mismo proveedor con descuentos masivos de hasta el 20%. ¡Envío GRATIS y pago contraentrega! 📦🚀
+                </p>
+              </div>
+              <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest bg-white/5 border border-white/10 px-3 py-1.5 rounded-full">
+                {ACTIVE_PROMOTIONS.length} COMBOS ACTIVOS ⚡
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {ACTIVE_PROMOTIONS.map((combo) => {
+                return (
+                  <div 
+                    key={combo.id}
+                    className="relative group bg-neutral-900/60 rounded-[2.5rem] border border-red-500/10 hover:border-dark-accent/40 transition-all p-6 flex flex-col justify-between overflow-hidden shadow-2xl animate-fade-in"
+                  >
+                    {/* Glow effect on hover */}
+                    <div className="absolute top-0 right-0 -mr-16 -mt-16 w-32 h-32 bg-dark-accent/10 rounded-full blur-2xl group-hover:bg-dark-accent/20 transition-all" />
+
+                    <div>
+                      {/* Badge and Discount tag */}
+                      <div className="flex items-center justify-between gap-2 mb-4">
+                        <span className="text-[9px] font-black uppercase bg-dark-accent/20 text-dark-accent px-3 py-1 rounded-full border border-dark-accent/20">
+                          {combo.badge}
+                        </span>
+                        <span className="text-[10px] font-black uppercase bg-red-600 text-white px-2.5 py-1 rounded-lg animate-pulse">
+                          AHORRA {combo.discountPercentage}% 💰
+                        </span>
+                      </div>
+
+                      {/* Images overlap block */}
+                      <div className="flex items-center justify-center gap-2 mb-6 bg-black/30 p-4 rounded-3xl border border-white/5 h-36">
+                        {combo.productIds.map((pId, idx) => {
+                          const prod = products.find(p => p.id === pId);
+                          return (
+                            <div key={pId} className="relative w-24 h-24 rounded-2xl overflow-hidden border border-white/10 bg-neutral-800 flex-shrink-0 group-hover:scale-105 transition-transform duration-500">
+                              {prod?.imageUrl ? (
+                                <img 
+                                  src={getProxiedImageUrl(prod.imageUrl)} 
+                                  alt={prod.name}
+                                  className="w-full h-full object-cover"
+                                  referrerPolicy="no-referrer"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <ShoppingBag size={20} className="text-white/20" />
+                                </div>
+                              )}
+                              {/* Product tag/badge */}
+                              <div className="absolute bottom-1 right-1 bg-black/80 px-1.5 py-0.5 rounded text-[8px] font-extrabold text-neutral-300">
+                                #{idx + 1}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <h3 className="text-lg font-black uppercase tracking-tight mb-1 text-white group-hover:text-dark-accent transition-colors leading-tight">
+                        {combo.name}
+                      </h3>
+                      <p className="text-dark-green text-[10px] font-black uppercase tracking-widest mb-3 italic">
+                        {combo.tagline}
+                      </p>
+                      <p className="text-neutral-400 text-xs leading-relaxed line-clamp-3 mb-6 font-medium">
+                        {combo.description}
+                      </p>
+                    </div>
+
+                    <div className="pt-4 border-t border-white/5 flex flex-col gap-4">
+                      <div className="flex items-end justify-between">
+                        <div>
+                          <span className="text-[10px] text-neutral-500 line-through font-bold block decoration-red-500">
+                            {formatPrice(combo.originalPrice)}
+                          </span>
+                          <span className="text-2xl font-black text-white tracking-tighter block">
+                            {formatPrice(combo.promoPrice)}
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[9px] font-black text-dark-green bg-dark-green/10 px-2.5 py-1 rounded-full uppercase block">
+                            Envío Gratis 🚛💨
+                          </span>
+                        </div>
+                      </div>
+
+                      <a 
+                        href={`https://wa.me/${currentWhatsApp}?text=${encodeURIComponent(
+                          `¡Hola Jan! 👋 Vengo del catálogo. Me interesó la súper promo de combo: *${combo.name}* (*${combo.tagline}*) por solo *${formatPrice(combo.promoPrice)}* (ahorro del ${combo.discountPercentage}%). ¿Tienes disponibilidad para envío inmediato?`
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-2 bg-dark-green text-black font-black text-[10px] uppercase tracking-widest py-3.5 rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-dark-green/10"
+                      >
+                        Pedir Combo en WhatsApp <Phone size={14} />
+                      </a>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Product Grid */}
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -177,7 +299,7 @@ export default function Catalog() {
                   <div className="aspect-square relative overflow-hidden bg-black/40">
                     {product.imageUrl ? (
                       <img 
-                        src={product.imageUrl} 
+                        src={getProxiedImageUrl(product.imageUrl)} 
                         alt={product.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                         loading="lazy"

@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { collection, query, where, getDocs, getDoc, doc } from "firebase/firestore";
-import { db } from "../firebase";
+import { collection, query, where, getDocs, getDoc, doc, db } from "../supabase";
 import { ShoppingBag, Star, Shield, Search, ChevronRight, MessageCircle } from "lucide-react";
 import { motion } from "motion/react";
-import { cn } from "../lib/utils";
+import { cn, getProxiedImageUrl } from "../lib/utils";
+import catalogData from "../catalog.json";
 
 export default function Storefront() {
   const { slug } = useParams();
@@ -33,11 +33,15 @@ export default function Storefront() {
 
           const qProd = query(collection(db, "products"), where("storeId", "==", storeData.id));
           const prodSnap = await getDocs(qProd);
-          const prods = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+          let prods = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+          if (prods.length === 0) {
+            prods = catalogData.products;
+          }
           setProducts(prods);
         }
       } catch (err) {
         console.error(err);
+        setProducts(catalogData.products);
       } finally {
         setLoading(false);
       }
@@ -137,8 +141,9 @@ export default function Storefront() {
                 <div className="aspect-[4/3] bg-neutral-100 overflow-hidden relative">
                   {p.imageUrl ? (
                     <img 
-                      src={p.imageUrl} 
+                      src={getProxiedImageUrl(p.imageUrl)} 
                       alt={p.name} 
+                      referrerPolicy="no-referrer"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (

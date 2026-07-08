@@ -8,25 +8,7 @@ import { readFileSync, existsSync } from "fs";
 import { GoogleGenAI } from "@google/genai";
 import "dotenv/config";
 
-import { initializeApp } from "firebase/app";
-import {
-  getFirestore,
-  initializeFirestore, 
-  doc, 
-  getDoc, 
-  collection,
-  addDoc,
-  setDoc,
-  getDocs,
-  query,
-  where,
-  limit,
-  orderBy,
-  writeBatch,
-  serverTimestamp,
-  updateDoc,
-  setLogLevel
-} from "firebase/firestore";
+import { createClient } from "@supabase/supabase-js";
 import sgMail from '@sendgrid/mail';
 import { 
   getSystemInstruction, 
@@ -35,9 +17,315 @@ import {
   checkInventoryTool, 
   updateCustomerProfileTool
 } from "./src/lib/janAgent.js";
+import { writeFileSync } from "fs";
 
-// 1. Initialize Firebase (Client SDK on server for cross-project compatibility)
+// 1. Initialize Supabase / Local JSON File Storage
 const cwd = process.cwd();
+
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+
+const supabaseKey = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
+export const supabaseServer = (SUPABASE_URL && supabaseKey)
+  ? createClient(SUPABASE_URL, supabaseKey)
+  : null;
+
+console.log(`[Supabase Server] Mode: ${supabaseServer ? "Cloud Connected" : "Local Emulated (Auto-Fallback)"}`);
+
+// Local JSON File Database Path
+const LOCAL_DB_PATH = path.join(cwd, "local_db.json");
+let localDbCache: Record<string, Record<string, any>> = {};
+
+// Load local database cache
+function loadLocalDb() {
+  try {
+    if (existsSync(LOCAL_DB_PATH)) {
+      localDbCache = JSON.parse(readFileSync(LOCAL_DB_PATH, "utf8"));
+    } else {
+      localDbCache = {};
+    }
+  } catch (err) {
+    console.error("[Local DB] Error loading database:", err);
+    localDbCache = {};
+  }
+}
+
+// Save local database cache
+function saveLocalDb() {
+  try {
+    writeFileSync(LOCAL_DB_PATH, JSON.stringify(localDbCache, null, 2), "utf8");
+  } catch (err) {
+    console.error("[Local DB] Error saving database:", err);
+  }
+}
+
+// Initial load on boot
+loadLocalDb();
+
+// -------------------------------------------------------------
+// 🗃️ FIRESTORE-COMPATIBLE API ADAPTER FOR BACKEND
+// -------------------------------------------------------------
+
+export const db = { type: "supabase-proxy" };
+
+export function doc(dbObj: any, collectionName: string, id: string) {
+  return { type: "doc", collection: collectionName, id };
+}
+
+export function collection(dbObj: any, collectionName: string) {
+  return { type: "collection", name: collectionName };
+}
+
+export function where(field: string, op: string, value: any) {
+  return { type: "where", field, op, value };
+}
+
+export function orderBy(field: string, direction: string = "asc") {
+  return { type: "orderBy", field, op: direction, value: null };
+}
+
+export function limit(value: number) {
+  return { type: "limit", field: "", op: "", value };
+}
+
+export function query(collectionRef: any, ...constraints: any[]) {
+  return {
+    type: "query",
+    collection: collectionRef.name,
+    constraints
+  };
+}
+
+export function serverTimestamp() {
+  return new Date().toISOString();
+}
+
+// Low-level helper: read doc
+export async function dbGetDoc(collectionName: string, id: string): Promise<{ exists: boolean; data: any }> {
+  if (supabaseServer) {
+    try {
+      const { data, error } = await supabaseServer
+        .from(collectionName)
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+      
+      if (!error && data) {
+        return { exists: true, data: data.data || data };
+      }
+    } catch (err: any) {
+      console.warn(`[Supabase DB Server] Read failed for table ${collectionName}: ${err.message}. Using local.`);
+    }
+  }
+
+  const col = localDbCache[collectionName] || {};
+  const docData = col[id];
+  if (docData) {
+    return { exists: true, data: docData };
+  }
+  return { exists: false, data: null };
+}
+
+// Low-level helper: write doc
+export async function dbSetDoc(collectionName: string, id: string, data: any, merge: boolean = true): Promise<void> {
+  if (!localDbCache[collectionName]) {
+    localDbCache[collectionName] = {};
+  }
+
+  if (merge) {
+    localDbCache[collectionName][id] = {
+      ...(localDbCache[collectionName][id] || {}),
+      ...data,
+      updatedAt: new Date().toISOString()
+    };
+  } else {
+    localDbCache[collectionName][id] = {
+      ...data,
+      id,
+      updatedAt: new Date().toISOString()
+    };
+  }
+  saveLocalDb();
+
+  if (supabaseServer) {
+    try {
+      const docPayload = localDbCache[collectionName][id];
+      const { error } = await supabaseServer
+        .from(collectionName)
+        .upsert({
+          id,
+          data: docPayload,
+          updatedAt: new Date().toISOString()
+        });
+      
+      if (error) {
+        // Fallback: try upserting flat properties directly
+        await supabaseServer
+          .from(collectionName)
+          .upsert({ id, ...docPayload });
+      }
+    } catch (err: any) {
+      console.warn(`[Supabase DB Server] Upsert failed for table ${collectionName}: ${err.message}`);
+    }
+  }
+}
+
+// Low-level helper: delete doc
+export async function dbDeleteDoc(collectionName: string, id: string): Promise<void> {
+  if (localDbCache[collectionName]) {
+    delete localDbCache[collectionName][id];
+    saveLocalDb();
+  }
+
+  if (supabaseServer) {
+    try {
+      await supabaseServer
+        .from(collectionName)
+        .delete()
+        .eq("id", id);
+    } catch (err: any) {
+      console.warn(`[Supabase DB Server] Delete failed for table ${collectionName}: ${err.message}`);
+    }
+  }
+}
+
+// Low-level helper: read collection
+export async function dbGetDocs(collectionName: string, constraints: any[] = []): Promise<any[]> {
+  let list: any[] = [];
+
+  const col = localDbCache[collectionName] || {};
+  list = Object.entries(col).map(([id, data]) => ({ id, data }));
+
+  if (supabaseServer) {
+    try {
+      const { data, error } = await supabaseServer.from(collectionName).select("*");
+      if (!error && data && data.length > 0) {
+        list = data.map((item: any) => ({
+          id: item.id,
+          data: item.data || item
+        }));
+      }
+    } catch (err: any) {
+      console.warn(`[Supabase DB Server] Query failed for table ${collectionName}: ${err.message}. Using local.`);
+    }
+  }
+
+  // Filter in-memory (matches Firestore logic perfectly)
+  for (const c of constraints) {
+    if (c.type === "where") {
+      const { field, op, value } = c;
+      list = list.filter(item => {
+        const val = item.data?.[field];
+        if (op === "==") return val === value;
+        if (op === "!=") return val !== value;
+        if (op === ">") return val > value;
+        if (op === "<") return val < value;
+        if (op === ">=") return val >= value;
+        if (op === "<=") return val <= value;
+        if (op === "array-contains") return Array.isArray(val) && val.includes(value);
+        return true;
+      });
+    }
+  }
+
+  // Order in-memory
+  for (const c of constraints) {
+    if (c.type === "orderBy") {
+      const { field, op: direction } = c;
+      list.sort((a, b) => {
+        const valA = a.data?.[field];
+        const valB = b.data?.[field];
+        if (valA === undefined) return 1;
+        if (valB === undefined) return -1;
+        if (valA < valB) return direction === "desc" ? 1 : -1;
+        if (valA > valB) return direction === "desc" ? -1 : 1;
+        return 0;
+      });
+    }
+  }
+
+  // Limit in-memory
+  for (const c of constraints) {
+    if (c.type === "limit") {
+      list = list.slice(0, c.value);
+    }
+  }
+
+  return list;
+}
+
+// Firestore compatible functions for server.ts
+export async function getDoc(docRef: any) {
+  const result = await dbGetDoc(docRef.collection, docRef.id);
+  return {
+    id: docRef.id,
+    exists: () => result.exists,
+    data: () => result.data,
+    ref: docRef
+  };
+}
+
+export async function getDocs(queryObj: any) {
+  const isQuery = queryObj.type === "query";
+  const collectionName = isQuery ? queryObj.collection : queryObj.name;
+  const constraints = isQuery ? queryObj.constraints : [];
+
+  const docsData = await dbGetDocs(collectionName, constraints);
+  const docs = docsData.map(item => ({
+    id: item.id,
+    exists: () => true,
+    data: () => item.data,
+    ref: { type: "doc", collection: collectionName, id: item.id }
+  }));
+
+  return {
+    docs,
+    empty: docs.length === 0,
+    size: docs.length,
+    forEach: (callback: (doc: any) => void) => docs.forEach(callback)
+  };
+}
+
+export async function setDoc(docRef: any, data: any, options?: { merge?: boolean }) {
+  await dbSetDoc(docRef.collection, docRef.id, data, options?.merge !== false);
+}
+
+export async function addDoc(collectionRef: any, data: any) {
+  const id = Math.random().toString(36).substring(2, 15);
+  await dbSetDoc(collectionRef.name, id, data, false);
+  return {
+    id,
+    ref: { type: "doc", collection: collectionRef.name, id }
+  };
+}
+
+export async function updateDoc(docRef: any, data: any) {
+  const collName = docRef.collection || docRef.ref?.collection;
+  const docId = docRef.id || docRef.ref?.id;
+  await dbSetDoc(collName, docId, data, true);
+}
+
+// Batch write helper
+export function writeBatch(dbObj?: any) {
+  const ops: Array<() => Promise<void>> = [];
+  return {
+    set: (docRef: any, data: any, options?: any) => {
+      ops.push(() => setDoc(docRef, data, options));
+    },
+    update: (docRef: any, data: any) => {
+      ops.push(() => updateDoc(docRef, data));
+    },
+    delete: (docRef: any) => {
+      ops.push(() => dbDeleteDoc(docRef.collection, docRef.id));
+    },
+    commit: async () => {
+      for (const op of ops) {
+        await op();
+      }
+    }
+  };
+}
 
 // Robust Environment Variable Detection (Railway & Google Cloud compat)
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID || process.env.SID_DE_CUENTA_TWILIO;
@@ -47,15 +335,6 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.API_KEY || proc
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 const SENDGRID_FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL;
 const FB_PAGE_ACCESS_TOKEN = process.env.FB_PAGE_ACCESS_TOKEN;
-
-const firebaseConfigPath = path.join(cwd, "firebase-applet-config.json");
-const firebaseConfig = JSON.parse(readFileSync(firebaseConfigPath, "utf-8"));
-
-console.log(`[Firebase] Initializing with project: ${firebaseConfig.projectId}, database: ${firebaseConfig.firestoreDatabaseId}`);
-
-const firebaseApp = initializeApp(firebaseConfig);
-const db = initializeFirestore(firebaseApp, { experimentalForceLongPolling: true }, firebaseConfig.firestoreDatabaseId);
-setLogLevel('silent');
 
 // ==============================================
 // 🚦 GLOBAL QUOTA BREAKER (ANTI-SPAM / QUOTA LOOP)
@@ -68,7 +347,7 @@ function checkGlobalQuota(): boolean {
   if (globalQuotaExceeded) {
     if (Date.now() - quotaExceededTime > QUOTA_COOLDOWN_MS) {
       globalQuotaExceeded = false;
-      console.log("[QUOTA BREAKER] Cooldown finished. Resuming Firestore writes.");
+      console.log("[QUOTA BREAKER] Cooldown finished. Resuming writes.");
       return false;
     }
     return true; // Still locked
@@ -77,16 +356,9 @@ function checkGlobalQuota(): boolean {
 }
 
 function handleFirestoreError(e: any): never {
-  const errMsg = e?.message || String(e);
-  if (errMsg.includes("Quota") || errMsg.includes("RESOURCE_EXHAUSTED") || errMsg.includes("Quota limit exceeded")) {
-    if (!globalQuotaExceeded) {
-      console.error("🚨 [QUOTA BREAKER] FIRESTORE QUOTA EXCEEDED! Locking all writes for 1 hour to prevent loops.");
-      globalQuotaExceeded = true;
-      quotaExceededTime = Date.now();
-    }
-  }
   throw e;
 }
+
 
 if (SENDGRID_API_KEY) {
   sgMail.setApiKey(SENDGRID_API_KEY);
@@ -527,12 +799,26 @@ async function processInferenceOnServer(activityId: string, data: any) {
     const history = await getCrmContext(data.from, assignedStoreId);
     
     // Get products specific to this store, or fallback to default
-    const qProd = query(collection(db, "products"), where("storeId", "==", assignedStoreId));
-    let prodSnap = await getDocs(qProd);
-    if (prodSnap.empty && assignedStoreId === "default") {
-        prodSnap = await getDocs(collection(db, "products"));
+    let products: any[] = [];
+    try {
+      const qProd = query(collection(db, "products"), where("storeId", "==", assignedStoreId));
+      let prodSnap = await getDocs(qProd);
+      if (prodSnap.empty && assignedStoreId === "default") {
+          prodSnap = await getDocs(collection(db, "products"));
+      }
+      products = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (e) {
+      console.error("Firebase quota or read error, using local JSON:", e);
     }
-    const products = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    if (products.length === 0) {
+      try {
+        const catalogData = JSON.parse(readFileSync(path.join(cwd, "src/catalog.json"), "utf8"));
+        products = catalogData.products;
+      } catch (errFallback) {
+        console.error("Error reading local catalog fallback:", errFallback);
+      }
+    }
 
     // Prepare multimedial parts if any
     const mediaParts: any[] = [];
@@ -565,12 +851,36 @@ IMPORTANTE: Sé extremadamente breve y directo. Evita explicaciones largas. El c
 ESTADO ACTUAL DEL EMBUDO: Utiliza los campos intencion, probabilidad_compra, urgencia, objeciones, nivel_interes y siguiente_mejor_accion, basado en si ha dado direccion, etc.`;
 
     let result: any = null;
-    const modelsCascade = [
-      { name: "gemini-3.1-flash-lite", label: "Primera línea de eficiencia" },
-      { name: "gemini-flash-latest", label: "Respaldo Flash estable" },
-      { name: "gemini-3.1-flash-image", label: "Respaldo multimodal avanzado" },
-      { name: "gemini-3.1-pro-preview", label: "Última línea de razonamiento profundo" }
+    const modelsCascade: Array<{ name: string; label: string; provider?: string }> = [
+      { name: "gemini-3.1-flash-lite", label: "Primera línea de eficiencia", provider: "gemini" },
+      { name: "gemini-flash-lite-latest", label: "Segundo respaldo de la línea rápida", provider: "gemini" },
+      { name: "gemini-flash-latest", label: "Respaldo Flash estable", provider: "gemini" },
+      { name: "gemini-3.1-flash-image", label: "Respaldo multimodal avanzado", provider: "gemini" },
+      { name: "gemini-3.1-pro-preview", label: "Última línea de razonamiento profundo", provider: "gemini" }
     ];
+
+    // Append the 18 NVIDIA models from the user's prompt (NVIDIA catalog free endpoints)
+    const nvidiaModels = [
+      { name: "meta/llama-3.3-70b-instruct", provider: "nvidia", label: "NVIDIA Llama 3.3 70B" },
+      { name: "deepseek-ai/deepseek-v4-pro", provider: "nvidia", label: "NVIDIA DeepSeek V4 Pro" },
+      { name: "deepseek-ai/deepseek-v4-flash", provider: "nvidia", label: "NVIDIA DeepSeek V4 Flash" },
+      { name: "qwen/qwen3.5-122b-a10b", provider: "nvidia", label: "NVIDIA Qwen 3.5 122B" },
+      { name: "qwen/qwen3.5-397b-a17b", provider: "nvidia", label: "NVIDIA Qwen 3.5 400B" },
+      { name: "mistralai/mistral-large-3-675b-instruct-2512", provider: "nvidia", label: "NVIDIA Mistral Large 3" },
+      { name: "mistralai/mistral-medium-3.5-128b", provider: "nvidia", label: "NVIDIA Mistral Medium 3.5" },
+      { name: "microsoft/phi-4-mini-instruct", provider: "nvidia", label: "NVIDIA Phi 4 Mini" },
+      { name: "nvidia/llama-3.3-nemotron-super-49b-v1.5", provider: "nvidia", label: "NVIDIA Nemotron Super" },
+      { name: "nvidia/llama-3.1-nemotron-nano-8b-v1", provider: "nvidia", label: "NVIDIA Nemotron Nano" },
+      { name: "google/gemma-2-2b-it", provider: "nvidia", label: "NVIDIA Gemma 2 2B" },
+      { name: "google/gemma-4-31b-it", provider: "nvidia", label: "NVIDIA Gemma 4 31B" },
+      { name: "meta/llama-3.1-70b-instruct", provider: "nvidia", label: "NVIDIA Llama 3.1 70B" },
+      { name: "meta/llama-3.1-8b-instruct", provider: "nvidia", label: "NVIDIA Llama 3.1 8B" },
+      { name: "meta/llama-3.2-3b-instruct", provider: "nvidia", label: "NVIDIA Llama 3.2 3B" },
+      { name: "meta/llama-3.2-1b-instruct", provider: "nvidia", label: "NVIDIA Llama 3.2 1B" },
+      { name: "upstage/solar-10.7b-instruct", provider: "nvidia", label: "NVIDIA Solar 10.7B" },
+      { name: "mistralai/mixtral-8x7b-instruct-v0.1", provider: "nvidia", label: "NVIDIA Mixtral 8x7B" }
+    ];
+    modelsCascade.push(...nvidiaModels);
 
     const contents = [
       { 
@@ -592,39 +902,87 @@ ESTADO ACTUAL DEL EMBUDO: Utiliza los campos intencion, probabilidad_compra, urg
     };
 
     let lastError: any = null;
-    const timeoutMs = 6000; // 6 segundos según solicitud del usuario
-    const maxRetriesPerModel = 2; // Total de 3 intentos por cada modelo
+    const timeoutMs = 6000; // 5-6 segundos por cada intento de modelo según solicitud
 
     for (let i = 0; i < modelsCascade.length; i++) {
       const modelObj = modelsCascade[i];
       let success = false;
+      
+      // NVIDIA models: 2 attempts (maxAttempts = 2). Other models: 3 attempts.
+      const maxAttempts = modelObj.provider === "nvidia" ? 2 : 3;
 
-      for (let attempt = 1; attempt <= (maxRetriesPerModel + 1); attempt++) {
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         try {
-          console.log(`[Server AI] Intentando modelo [${i + 1}/${modelsCascade.length}], intento [${attempt}/3]: ${modelObj.name} para ${fromPhone} con timeout de ${timeoutMs}ms...`);
+          console.log(`[Server AI] Intentando modelo [${i + 1}/${modelsCascade.length}], intento [${attempt}/${maxAttempts}]: ${modelObj.name} para ${fromPhone} con timeout de ${timeoutMs}ms...`);
           
-          result = await withTimeout(ai.models.generateContent({
-            model: modelObj.name,
-            contents: contents,
-            config: {
-              systemInstruction: getSystemInstruction(storeConfig),
-              responseMimeType: "application/json",
-              responseSchema: JAN_RESPONSE_SCHEMA
+          if (modelObj.provider === "nvidia") {
+            const currentNvidiaKey = process.env.NVIDIA_API_KEY || storeConfig.nvidiaApiKey;
+            if (!currentNvidiaKey) {
+              throw new Error("NVIDIA_API_KEY no está configurada en las variables de entorno.");
             }
-          }), timeoutMs);
+            
+            // Build system & user message prompt for OpenAI-compatible NVIDIA NIM endpoint
+            const systemInst = getSystemInstruction(storeConfig);
+            const response = await axios.post(
+              "https://integrate.api.nvidia.com/v1/chat/completions",
+              {
+                model: modelObj.name,
+                messages: [
+                  { role: "system", content: systemInst },
+                  { role: "user", content: promptText }
+                ],
+                temperature: 0.2,
+                max_tokens: 1024,
+                top_p: 0.7
+              },
+              {
+                headers: {
+                  "Authorization": `Bearer ${currentNvidiaKey}`,
+                  "Content-Type": "application/json"
+                },
+                timeout: timeoutMs
+              }
+            );
 
-          if (result && result.text) {
-            console.log(`[Server AI] Éxito con el modelo ${modelObj.name} en el intento ${attempt}`);
-            success = true;
-            break;
+            let text = response.data?.choices?.[0]?.message?.content || "";
+            // Clean up any potential markdown code blocks wrapped in ```json ... ```
+            if (text.includes("```json")) {
+              text = text.split("```json")[1].split("```")[0].trim();
+            } else if (text.includes("```")) {
+              text = text.split("```")[1].split("```")[0].trim();
+            }
+
+            if (text) {
+              result = { text };
+              console.log(`[Server AI] [NVIDIA] Éxito con el modelo ${modelObj.name} en el intento ${attempt}`);
+              success = true;
+              break;
+            } else {
+              throw new Error("La respuesta de NVIDIA no devolvió contenido de texto válido.");
+            }
+          } else {
+            result = await withTimeout(ai.models.generateContent({
+              model: modelObj.name,
+              contents: contents,
+              config: {
+                systemInstruction: getSystemInstruction(storeConfig),
+                responseMimeType: "application/json",
+                responseSchema: JAN_RESPONSE_SCHEMA
+              }
+            }), timeoutMs);
+
+            if (result && result.text) {
+              console.log(`[Server AI] Éxito con el modelo ${modelObj.name} en el intento ${attempt}`);
+              success = true;
+              break;
+            }
           }
         } catch (err: any) {
           lastError = err;
           const errMsg = err instanceof Error ? err.message : String(err);
-          console.warn(`[Server AI] Falló modelo ${modelObj.name} (Intento ${attempt}): ${errMsg}`);
+          console.warn(`[Server AI] Falló modelo ${modelObj.name} (Intento ${attempt}/${maxAttempts}): ${errMsg}`);
           
-          // Si es el último intento del modelo, no mostramos el aviso de reintento
-          if (attempt <= maxRetriesPerModel) {
+          if (attempt < maxAttempts) {
             console.warn(`[Server AI] Reintentando el mismo modelo en 500ms...`);
             await new Promise(r => setTimeout(r, 500)); // Pequeña pausa antes de reintentar
           }
@@ -1182,18 +1540,71 @@ async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
 
-  // Test Firestore connection on boot
+  // Test Database connectivity on boot
   try {
-    console.log("[Firebase] Testing backend connectivity (Client)...");
+    console.log("[Database] Testing backend connectivity...");
     await getDoc(doc(db, 'test', 'connection'));
-    console.log("[Firebase] Backend connection successful.");
+    console.log("[Database] Backend connection successful.");
   } catch (err: any) {
-    console.warn("[Firebase] Warning: Backend could not reach Firestore during test.");
-    console.warn("[Firebase] Details:", err.message);
+    console.warn("[Database] Details:", err.message);
   }
 
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json({ limit: '10mb' }));
+
+  // -------------------------------------------------------------
+  // 🗄️ SUPABASE / LOCAL DB REST API FOR CLIENT-FRONTEND PROXY
+  // -------------------------------------------------------------
+  
+  app.get("/api/db/getDoc", async (req, res) => {
+    const { collection: colName, id } = req.query;
+    try {
+      const result = await dbGetDoc(String(colName), String(id));
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/db/getDocs", async (req, res) => {
+    const { collection: colName, constraints } = req.body;
+    try {
+      const docs = await dbGetDocs(colName, constraints || []);
+      res.json({ docs });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/db/setDoc", async (req, res) => {
+    const { collection: colName, id, data, merge } = req.body;
+    try {
+      await dbSetDoc(colName, id, data, merge !== false);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/db/updateDoc", async (req, res) => {
+    const { collection: colName, id, data } = req.body;
+    try {
+      await dbSetDoc(colName, id, data, true);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/db/deleteDoc", async (req, res) => {
+    const { collection: colName, id } = req.body;
+    try {
+      await dbDeleteDoc(colName, id);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
 
   app.post("/api/storage/upload", (req, res) => {
     res.json({ url: "https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&q=80&w=400" });
@@ -1208,6 +1619,32 @@ async function startServer() {
       gemini_key_detected: !!process.env.GEMINI_API_KEY,
       app_url: currentAppUrl || process.env.APP_URL || "Not set"
     });
+  });
+
+  // IMAGE PROXY: Bypasses anti-hotlinking protection (403/405 blocks) on MercadoLibre/Dropi CDNs
+  app.get("/api/image-proxy", async (req, res) => {
+    const imageUrl = req.query.url as string;
+    if (!imageUrl) {
+      return res.status(400).send("Missing url parameter");
+    }
+    try {
+      const response = await axios.get(imageUrl, {
+        responseType: "arraybuffer",
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
+        },
+        timeout: 10000 // 10s timeout
+      });
+      const contentType = response.headers["content-type"] || "image/jpeg";
+      res.setHeader("Content-Type", contentType);
+      res.setHeader("Cache-Control", "public, max-age=31536000"); // Cache for 1 year
+      return res.send(response.data);
+    } catch (error: any) {
+      console.error(`[Image Proxy Error] Failed to proxy image: ${imageUrl}. Error: ${error.message}`);
+      // Fallback: redirect browser to the original image URL
+      return res.redirect(imageUrl);
+    }
   });
 
   // Global Middleware
@@ -2169,12 +2606,59 @@ Mantenlo respetuoso. Si es mujer, usa un trato amable sin ser informal de más.
 Máximo 18 palabras.
 NO RESPONDAS EN JSON, RESPONDE SOLO EL TEXTO DEL MENSAJE.`;
 
-          const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-          const result = await ai.models.generateContent({
-            model: "gemini-3.5-flash",
-            contents: prompt
-          });
-          const nudgeMsg = result.text.trim();
+          let nudgeMsg = "";
+          let nudgeSuccess = false;
+
+          // Try Gemini first
+          try {
+            const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+            const result = await ai.models.generateContent({
+              model: "gemini-3.5-flash",
+              contents: prompt
+            });
+            nudgeMsg = (result.text || "").trim();
+            if (nudgeMsg) {
+              nudgeSuccess = true;
+            }
+          } catch (geminiErr: any) {
+            console.warn(`[Follow-up] Gemini falló para el nudge. Intentando fallback con NVIDIA Llama 3.3... Error: ${geminiErr.message}`);
+            
+            const currentNvidiaKey = process.env.NVIDIA_API_KEY || storeConfig.nvidiaApiKey;
+            if (currentNvidiaKey) {
+              try {
+                const response = await axios.post(
+                  "https://integrate.api.nvidia.com/v1/chat/completions",
+                  {
+                    model: "meta/llama-3.3-70b-instruct",
+                    messages: [
+                      { role: "system", content: "Eres un asistente de seguimiento amable. Máximo 18 palabras. Escribe en español." },
+                      { role: "user", content: prompt }
+                    ],
+                    temperature: 0.5,
+                    max_tokens: 150
+                  },
+                  {
+                    headers: {
+                      "Authorization": `Bearer ${currentNvidiaKey}`,
+                      "Content-Type": "application/json"
+                    },
+                    timeout: 6000
+                  }
+                );
+                nudgeMsg = (response.data?.choices?.[0]?.message?.content || "").trim();
+                if (nudgeMsg) {
+                  nudgeSuccess = true;
+                  console.log(`[Follow-up] Fallback exitoso con NVIDIA Llama 3.3 para el nudge.`);
+                }
+              } catch (nvidiaErr: any) {
+                console.error(`[Follow-up] Fallback con NVIDIA también falló para el nudge. Error: ${nvidiaErr.message}`);
+              }
+            }
+          }
+
+          if (!nudgeSuccess || !nudgeMsg) {
+            nudgeMsg = "¡Hola! Sigues ahí? Cuéntame si tienes alguna duda con tu pedido, con gusto te ayudo.";
+          }
 
           console.log(`[Follow-up] Sending nudge to ${phone}: ${nudgeMsg}`);
           

@@ -45,8 +45,11 @@ import {
 import * as React from "react";
 import { useState, useEffect, useRef, useMemo } from "react";
 import type { ReactNode } from "react";
-import { db, auth, storage, handleFirestoreError } from "./firebase";
 import { 
+  db, 
+  auth, 
+  storage, 
+  handleFirestoreError,
   collection, 
   onSnapshot, 
   query, 
@@ -61,11 +64,19 @@ import {
   getDocs,
   getDoc,
   serverTimestamp,
-  limit
-} from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
-import { cn } from "./lib/utils";
+  limit,
+  ref, 
+  uploadBytes, 
+  getDownloadURL,
+  signInWithPopup, 
+  GoogleAuthProvider, 
+  signOut, 
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signUpWithEmailAndPassword,
+  SupabaseUser as FirebaseUser
+} from "./supabase";
+import { cn, getProxiedImageUrl } from "./lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { 
@@ -192,6 +203,9 @@ function JanAdmin() {
   const [copied, setCopied] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [loginError, setLoginError] = useState<string | null>(null);
   const [configStatus, setConfigStatus] = useState<{ type: 'idle' | 'success' | 'error', message: string }>({ type: 'idle', message: '' });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -306,7 +320,10 @@ function JanAdmin() {
 
     const unsubOrders = onSnapshot(qOrders, 
       (snapshot) => {
-        const docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Order));
+        let docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Order));
+        if (userStore.id === "default") {
+          docs = docs.filter(o => !o.storeId || o.storeId === "default");
+        }
         setOrders(docs);
       },
       (err) => {
@@ -317,7 +334,10 @@ function JanAdmin() {
 
     const unsubProducts = onSnapshot(qProducts, 
       (snapshot) => {
-        const docs = snapshot.docs.map(d => ({ docId: d.id, ...d.data() } as Product));
+        let docs = snapshot.docs.map(d => ({ docId: d.id, ...d.data() } as Product));
+        if (userStore.id === "default") {
+          docs = docs.filter(p => !p.storeId || p.storeId === "default");
+        }
         setProducts(docs);
       },
       (err) => {
@@ -328,7 +348,10 @@ function JanAdmin() {
 
     const unsubActivity = onSnapshot(qActivity, 
       (snapshot) => {
-        const docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Activity));
+        let docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Activity));
+        if (userStore.id === "default") {
+          docs = docs.filter(a => !a.storeId || a.storeId === "default");
+        }
         setActivities(docs);
       },
       (err) => {
@@ -340,7 +363,10 @@ function JanAdmin() {
     // CRM
     const unsubCustomers = onSnapshot(qCustomers, 
       (snapshot) => {
-        const docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        let docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        if (userStore.id === "default") {
+          docs = docs.filter((c: any) => !c.storeId || c.storeId === "default");
+        }
         // local sort to avoid need of index for now because we might vary order fields
         docs.sort((a: any, b: any) => (b.ultima_interaccion?.toMillis?.() || 0) - (a.ultima_interaccion?.toMillis?.() || 0));
         setCustomers(docs);
@@ -355,7 +381,14 @@ function JanAdmin() {
       (snapshot) => {
         const convs: Record<string, any> = {};
         snapshot.docs.forEach(d => {
-          convs[d.id] = d.data();
+          const data = d.data();
+          if (userStore.id === "default") {
+            if (!data.storeId || data.storeId === "default") {
+              convs[d.id] = data;
+            }
+          } else {
+            convs[d.id] = data;
+          }
         });
         setConversations(convs);
       },
@@ -413,6 +446,32 @@ function JanAdmin() {
       } else if (err.code !== "auth/popup-closed-by-user") {
         setLoginError("No se pudo iniciar sesión. Intenta otra vez.");
       }
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      setLoginError("Por favor completa todos los campos.");
+      return;
+    }
+    if (password.length < 6) {
+      setLoginError("La contraseña debe tener al menos 6 caracteres.");
+      return;
+    }
+    setIsLoggingIn(true);
+    setLoginError(null);
+    try {
+      if (authMode === "login") {
+        await signInWithEmailAndPassword(email, password);
+      } else {
+        await signUpWithEmailAndPassword(email, password);
+      }
+    } catch (err: any) {
+      console.error("Email auth error:", err);
+      setLoginError(err.message || "Error de autenticación con Supabase.");
     } finally {
       setIsLoggingIn(false);
     }
@@ -527,14 +586,14 @@ function JanAdmin() {
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="max-w-md w-full text-center space-y-8 bg-neutral-900/50 p-10 rounded-3xl border border-neutral-800 backdrop-blur-xl shadow-2xl"
+          className="max-w-md w-full text-center space-y-6 bg-neutral-900/50 p-8 rounded-3xl border border-neutral-800 backdrop-blur-xl shadow-2xl"
         >
-          <div className="mx-auto w-20 h-20 bg-dark-accent/10 rounded-2xl flex items-center justify-center border border-dark-accent/20">
-            <Cpu className="w-10 h-10 text-dark-accent" />
+          <div className="mx-auto w-16 h-16 bg-dark-accent/10 rounded-2xl flex items-center justify-center border border-dark-accent/20">
+            <Cpu className="w-8 h-8 text-dark-accent" />
           </div>
           <div>
             <h1 className="text-3xl font-serif italic text-dark-accent">JANSEL SHOP</h1>
-            <p className="text-neutral-500 text-sm mt-2">Acceso exclusivo al panel de control de ventas y pedidos.</p>
+            <p className="text-neutral-500 text-sm mt-1">Acceso exclusivo al panel de control de ventas y pedidos.</p>
           </div>
           
           <div className="flex justify-center">
@@ -543,21 +602,84 @@ function JanAdmin() {
             </div>
           </div>
 
+          {/* Formulario de Email/Password para Supabase */}
+          <form onSubmit={handleEmailAuth} className="space-y-4 text-left">
+            <div>
+              <label className="block text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">
+                Correo Electrónico
+              </label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="ejemplo@jansel.com"
+                className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-dark-accent transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">
+                Contraseña
+              </label>
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-dark-accent transition-colors"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoggingIn}
+              className="w-full bg-white hover:bg-neutral-200 text-black font-bold py-3.5 rounded-xl transition-all active:scale-[0.98] text-sm flex items-center justify-center gap-2"
+            >
+              {isLoggingIn ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : null}
+              {authMode === "login" ? "Iniciar Sesión con Correo" : "Registrarse y Crear Cuenta"}
+            </button>
+          </form>
+
+          <div className="flex items-center my-4">
+            <div className="flex-1 border-t border-neutral-800 animate-pulse"></div>
+            <span className="px-3 text-xs text-neutral-500 uppercase tracking-widest font-bold">o también</span>
+            <div className="flex-1 border-t border-neutral-800 animate-pulse"></div>
+          </div>
+
           <button 
+            type="button"
             onClick={login}
             disabled={isLoggingIn}
             className={cn(
-              "w-full font-bold py-4 rounded-xl flex items-center justify-center gap-3 transition-all active:scale-[0.98] shadow-[0_0_20px_rgba(242,125,38,0.2)]",
+              "w-full font-bold py-3.5 rounded-xl flex items-center justify-center gap-3 transition-all active:scale-[0.98] shadow-[0_0_15px_rgba(242,125,38,0.15)] text-sm",
               isLoggingIn ? "bg-neutral-800 text-neutral-500 cursor-not-allowed" : "bg-dark-accent hover:bg-dark-accent/90 text-black"
             )}
           >
             {isLoggingIn ? (
-              <RefreshCw className="w-5 h-5 animate-spin" />
+              <RefreshCw className="w-4 h-4 animate-spin" />
             ) : (
-              <ExternalLink className="w-5 h-5" />
+              <ExternalLink className="w-4 h-4" />
             )}
-            {isLoggingIn ? "Conectando..." : "Ingresar con Google"}
+            {isLoggingIn ? "Conectando..." : "Ingresar con Google (Supabase)"}
           </button>
+
+          <div className="text-center pt-2">
+            <button
+              type="button"
+              onClick={() => {
+                setAuthMode(authMode === "login" ? "signup" : "login");
+                setLoginError(null);
+              }}
+              className="text-xs text-neutral-400 hover:text-dark-accent underline transition-colors"
+            >
+              {authMode === "login" 
+                ? "¿No tienes una cuenta? Regístrate gratis aquí" 
+                : "¿Ya tienes cuenta? Inicia sesión aquí"}
+            </button>
+          </div>
 
           {loginError && (
             <motion.div 
@@ -569,7 +691,7 @@ function JanAdmin() {
               <p className="text-[10px] text-red-400 font-bold uppercase tracking-tight">{loginError}</p>
             </motion.div>
           )}
-          <p className="text-[10px] text-neutral-600 uppercase tracking-widest">Powered by Google AI Studio</p>
+          <p className="text-[10px] text-neutral-600 uppercase tracking-widest pt-2">Powered by Supabase & Google AI Studio</p>
         </motion.div>
       </div>
     );
@@ -1325,7 +1447,7 @@ function ReportsTab({
       return <audio src={url} controls className="mt-2 w-full" />;
     }
     if (isImage) {
-      return <img src={url} alt="Media" className="mt-2 rounded-lg max-w-full h-auto" />;
+      return <img src={url} referrerPolicy="no-referrer" alt="Media" className="mt-2 rounded-lg max-w-full h-auto" />;
     }
     return null;
   };
@@ -2159,12 +2281,12 @@ function InventoryTab({ products, onUpdateStock, onReset, isResetting, userStore
              </thead>
              <tbody className="divide-y divide-neutral-800">
                 {filteredProducts.map((p) => (
-                  <tr key={p.id} className="hover:bg-white/5 transition-colors group">
+                  <tr key={p.docId || p.id} className="hover:bg-white/5 transition-colors group">
                     <td className="p-5">
                       <div className="flex items-center gap-3">
                         <div className="relative w-10 h-10 rounded-xl bg-neutral-900 flex items-center justify-center border border-white/5 text-neutral-500 overflow-hidden group-hover:border-dark-accent/30 transition-all">
                            {p.imageUrl ? 
-                              <img src={p.imageUrl} alt={p.name} className={cn("w-full h-full object-cover transition-transform duration-500 group-hover:scale-110", uploadingDocId === p.docId && "opacity-20 blur-[2px]")} /> :
+                              <img src={getProxiedImageUrl(p.imageUrl)} alt={p.name} referrerPolicy="no-referrer" className={cn("w-full h-full object-cover transition-transform duration-500 group-hover:scale-110", uploadingDocId === p.docId && "opacity-20 blur-[2px]")} /> :
                               <Box size={16} />
                            }
                            {uploadingDocId === p.docId && (

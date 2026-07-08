@@ -2,24 +2,23 @@ import fs from 'fs';
 import path from 'path';
 
 const catalogPath = path.join(process.cwd(), 'src', 'catalog.json');
-const data = JSON.parse(fs.readFileSync(catalogPath, 'utf-8'));
+const raw = fs.readFileSync(catalogPath, 'utf-8');
+const catalog = JSON.parse(raw);
 
-data.products = data.products.map((p: any) => {
-    // Determine new price - reduce by ~20k when high, keeping a minimum margin.
-    let baseNewPrice = p.cost * 1.5;
-    let target = p.price;
-    if (p.price > 110000) target = p.price - 20000;
-    else if (p.price > 80000) target = p.price - 15000;
-    else if (p.price > 50000) target = Math.max(p.price - 10000, baseNewPrice);
-    else target = Math.max(p.price - 5000, baseNewPrice);
-    
-    // Add 900
-    let tempPrice = Math.floor(target / 1000) * 1000 + 900;
-    
-    console.log(`${p.name} - Old: ${p.price} | New: ${tempPrice} | Cost: ${p.cost}`);
-    p.price = tempPrice;
-    return p;
+const FLETE = 17000;
+const DEVOLUCIONES = 10000;
+const PUBLICIDAD = 10000;
+const GANANCIA = 15000;
+const COMISION_DROPI = 0.05;
+
+catalog.products = catalog.products.map((p: any) => {
+  const sum = p.cost + FLETE + DEVOLUCIONES + PUBLICIDAD + GANANCIA;
+  const exactPrice = sum / (1 - COMISION_DROPI);
+  // Round to nearest 900 for marketing
+  const rounded = Math.floor(exactPrice / 1000) * 1000 + 900;
+  p.price = rounded;
+  return p;
 });
 
-fs.writeFileSync(catalogPath, JSON.stringify(data, null, 2));
-console.log('Done!');
+fs.writeFileSync(catalogPath, JSON.stringify(catalog, null, 2));
+console.log(`Updated prices for ${catalog.products.length} products using strict formula.`);
