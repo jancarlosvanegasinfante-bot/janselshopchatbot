@@ -19,3 +19,22 @@
     @apply bg-dark-bg text-dark-text antialiased;
   }
 }
+
+.PhoneInput-custom {
+  display: flex;
+  align-items: center;
+}
+.PhoneInput-custom .PhoneInputCountry {
+  margin-right: 0.75rem;
+}
+.PhoneInput-custom .PhoneInputInput {
+  flex: 1;
+  background: transparent;
+  outline: none;
+  border: none;
+  color: white;
+  min-width: 0;
+}
+.PhoneInput-custom .PhoneInputCountrySelectArrow {
+  opacity: 0.5;
+}

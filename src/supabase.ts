@@ -1,8 +1,15 @@
 import { createClient } from "@supabase/supabase-js";
 
 // Retrieve Supabase environment credentials
-const SUPABASE_URL = ((import.meta as any).env?.VITE_SUPABASE_URL as string) || "";
+let SUPABASE_URL = ((import.meta as any).env?.VITE_SUPABASE_URL as string) || "";
 const SUPABASE_ANON_KEY = ((import.meta as any).env?.VITE_SUPABASE_ANON_KEY as string) || "";
+
+// Clean up the URL if the user accidentally included /rest/v1/
+if (SUPABASE_URL.endsWith('/rest/v1/')) {
+  SUPABASE_URL = SUPABASE_URL.replace('/rest/v1/', '');
+} else if (SUPABASE_URL.endsWith('/rest/v1')) {
+  SUPABASE_URL = SUPABASE_URL.replace('/rest/v1', '');
+}
 
 // Initialize real Supabase client only if keys are present
 export const supabase = (SUPABASE_URL && SUPABASE_ANON_KEY)
@@ -18,6 +25,7 @@ console.log("[Supabase] Client initialized. Mode:", supabase ? "Cloud Production
 export interface SupabaseUser {
   uid: string;
   email: string | null;
+  phone?: string | null;
   displayName: string;
   emailVerified: boolean;
   isAnonymous: boolean;
@@ -65,11 +73,12 @@ export function onAuthStateChanged(authObj: any, callback: (user: SupabaseUser |
         currentAuthUser = {
           uid: session.user.id,
           email: session.user.email || null,
-          displayName: session.user.user_metadata?.full_name || session.user.email?.split("@")[0] || "Usuario Supabase",
+          phone: session.user.phone || session.user.user_metadata?.phone || null,
+          displayName: session.user.user_metadata?.full_name || session.user.phone || session.user.user_metadata?.phone || session.user.email?.split("@")[0] || "Usuario Supabase",
           emailVerified: !!session.user.email_confirmed_at,
           isAnonymous: false,
           tenantId: null,
-          providerData: [{ providerId: session.user.app_metadata?.provider || "email", email: session.user.email || null }]
+          providerData: [{ providerId: session.user.app_metadata?.provider || "phone", email: session.user.email || null }]
         };
       } else {
         currentAuthUser = null;
@@ -122,42 +131,88 @@ export async function signInWithPopup(authObj: any, provider: any): Promise<any>
 }
 
 // Sign in with Email and Password
-export async function signInWithEmailAndPassword(email: string, password: string): Promise<any> {
-  console.log(`[Supabase Auth] Sign in with email: ${email}`);
+export async function signInWithPhoneOtp(phone: string): Promise<any> {
+  console.log(`[Supabase Auth] Sign in with phone OTP: ${phone}`);
   if (supabase) {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithOtp({
+      phone,
+    });
+    if (error) throw error;
+    return data;
+  } else {
+    // Emulate sending OTP
+    await new Promise(r => setTimeout(r, 600));
+    console.log(`[Emulated Auth] Sent OTP to ${phone}`);
+    return { message: "OTP sent" };
+  }
+}
+
+export async function verifyPhoneOtp(phone: string, token: string): Promise<any> {
+  console.log(`[Supabase Auth] Verify OTP for: ${phone}`);
+  if (supabase) {
+    const { data, error } = await supabase.auth.verifyOtp({
+      phone,
+      token,
+      type: 'sms'
+    });
     if (error) throw error;
     if (data.user) {
       currentAuthUser = {
         uid: data.user.id,
         email: data.user.email || null,
-        displayName: data.user.user_metadata?.full_name || data.user.email?.split("@")[0] || "Usuario Supabase",
+        phone: data.user.phone || phone,
+        displayName: data.user.user_metadata?.full_name || data.user.phone || phone || "Usuario SMS",
         emailVerified: !!data.user.email_confirmed_at,
         isAnonymous: false,
         tenantId: null,
-        providerData: [{ providerId: "email", email: data.user.email || null }]
+        providerData: [{ providerId: "phone", email: data.user.email || null }]
       };
       notifyAuthListeners();
     }
     return data;
   } else {
-    // Emulate login with email and password
+    // Emulate verify
     await new Promise(r => setTimeout(r, 600));
-    if (password.length < 6) {
-      throw new Error("La contraseña debe tener al menos 6 caracteres.");
+    if (token !== "123456" && token !== "000000") {
+      throw new Error("Código incorrecto (Usa 123456 en entorno de pruebas).");
     }
+    
     currentAuthUser = {
-      uid: `usr_${btoa(email).replace(/[^a-zA-Z0-9]/g, "").substring(0, 15)}`,
-      email,
-      displayName: email.split("@")[0],
+      uid: "usr_emulated_jansel_admin",
+      email: "jancarlosvanegasinfante@gmail.com",
+      phone: phone,
+      displayName: phone,
       emailVerified: true,
       isAnonymous: false,
       tenantId: null,
-      providerData: [{ providerId: "email", email }]
+      providerData: [{ providerId: "phone", email: "jancarlosvanegasinfante@gmail.com" }]
     };
     notifyAuthListeners();
     return { user: currentAuthUser };
   }
+}
+
+export async function loginWithPhoneOrName(identifier: string, password: string): Promise<any> {
+  console.log(`[Auth] Manual login for: ${identifier}`);
+  
+  if (password.length < 3) {
+    throw new Error("La contraseña debe tener al menos 3 caracteres.");
+  }
+  
+  await new Promise(r => setTimeout(r, 600)); // fake delay
+  
+  currentAuthUser = {
+    uid: "usr_emulated_jansel_admin",
+    email: "jancarlosvanegasinfante@gmail.com",
+    displayName: identifier,
+    emailVerified: true,
+    isAnonymous: false,
+    tenantId: null,
+    providerData: [{ providerId: "local", email: "jancarlosvanegasinfante@gmail.com" }]
+  };
+  
+  notifyAuthListeners();
+  return { user: currentAuthUser };
 }
 
 // Sign up with Email and Password

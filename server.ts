@@ -22,9 +22,15 @@ import { writeFileSync } from "fs";
 // 1. Initialize Supabase / Local JSON File Storage
 const cwd = process.cwd();
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
+let SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+
+if (SUPABASE_URL.endsWith('/rest/v1/')) {
+  SUPABASE_URL = SUPABASE_URL.replace('/rest/v1/', '');
+} else if (SUPABASE_URL.endsWith('/rest/v1')) {
+  SUPABASE_URL = SUPABASE_URL.replace('/rest/v1', '');
+}
 
 const supabaseKey = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
 export const supabaseServer = (SUPABASE_URL && supabaseKey)
@@ -852,35 +858,30 @@ ESTADO ACTUAL DEL EMBUDO: Utiliza los campos intencion, probabilidad_compra, urg
 
     let result: any = null;
     const modelsCascade: Array<{ name: string; label: string; provider?: string }> = [
-      { name: "gemini-3.1-flash-lite", label: "Primera línea de eficiencia", provider: "gemini" },
-      { name: "gemini-flash-lite-latest", label: "Segundo respaldo de la línea rápida", provider: "gemini" },
-      { name: "gemini-flash-latest", label: "Respaldo Flash estable", provider: "gemini" },
-      { name: "gemini-3.1-flash-image", label: "Respaldo multimodal avanzado", provider: "gemini" },
-      { name: "gemini-3.1-pro-preview", label: "Última línea de razonamiento profundo", provider: "gemini" }
-    ];
-
-    // Append the 18 NVIDIA models from the user's prompt (NVIDIA catalog free endpoints)
-    const nvidiaModels = [
+      // NVIDIA MODELS (ordenados de mayor a menor probabilidad de éxito/rapidez)
+      { name: "meta/llama-3.1-8b-instruct", provider: "nvidia", label: "NVIDIA Llama 3.1 8B" },
+      { name: "meta/llama-3.1-70b-instruct", provider: "nvidia", label: "NVIDIA Llama 3.1 70B" },
       { name: "meta/llama-3.3-70b-instruct", provider: "nvidia", label: "NVIDIA Llama 3.3 70B" },
+      { name: "meta/llama-3.2-3b-instruct", provider: "nvidia", label: "NVIDIA Llama 3.2 3B" },
+      { name: "meta/llama-3.2-1b-instruct", provider: "nvidia", label: "NVIDIA Llama 3.2 1B" },
+      { name: "mistralai/mixtral-8x7b-instruct-v0.1", provider: "nvidia", label: "NVIDIA Mixtral 8x7B" },
+      { name: "mistralai/mistral-large-3-675b-instruct-2512", provider: "nvidia", label: "NVIDIA Mistral Large 3" },
+      { name: "mistralai/mistral-medium-3.5-128b", provider: "nvidia", label: "NVIDIA Mistral Medium 3.5" },
+      { name: "nvidia/llama-3.1-nemotron-nano-8b-v1", provider: "nvidia", label: "NVIDIA Nemotron Nano" },
+      { name: "nvidia/llama-3.3-nemotron-super-49b-v1.5", provider: "nvidia", label: "NVIDIA Nemotron Super" },
+      { name: "microsoft/phi-4-mini-instruct", provider: "nvidia", label: "NVIDIA Phi 4 Mini" },
+      { name: "google/gemma-4-31b-it", provider: "nvidia", label: "NVIDIA Gemma 4 31B" },
+      { name: "google/gemma-2-2b-it", provider: "nvidia", label: "NVIDIA Gemma 2 2B" },
       { name: "deepseek-ai/deepseek-v4-pro", provider: "nvidia", label: "NVIDIA DeepSeek V4 Pro" },
       { name: "deepseek-ai/deepseek-v4-flash", provider: "nvidia", label: "NVIDIA DeepSeek V4 Flash" },
       { name: "qwen/qwen3.5-122b-a10b", provider: "nvidia", label: "NVIDIA Qwen 3.5 122B" },
       { name: "qwen/qwen3.5-397b-a17b", provider: "nvidia", label: "NVIDIA Qwen 3.5 400B" },
-      { name: "mistralai/mistral-large-3-675b-instruct-2512", provider: "nvidia", label: "NVIDIA Mistral Large 3" },
-      { name: "mistralai/mistral-medium-3.5-128b", provider: "nvidia", label: "NVIDIA Mistral Medium 3.5" },
-      { name: "microsoft/phi-4-mini-instruct", provider: "nvidia", label: "NVIDIA Phi 4 Mini" },
-      { name: "nvidia/llama-3.3-nemotron-super-49b-v1.5", provider: "nvidia", label: "NVIDIA Nemotron Super" },
-      { name: "nvidia/llama-3.1-nemotron-nano-8b-v1", provider: "nvidia", label: "NVIDIA Nemotron Nano" },
-      { name: "google/gemma-2-2b-it", provider: "nvidia", label: "NVIDIA Gemma 2 2B" },
-      { name: "google/gemma-4-31b-it", provider: "nvidia", label: "NVIDIA Gemma 4 31B" },
-      { name: "meta/llama-3.1-70b-instruct", provider: "nvidia", label: "NVIDIA Llama 3.1 70B" },
-      { name: "meta/llama-3.1-8b-instruct", provider: "nvidia", label: "NVIDIA Llama 3.1 8B" },
-      { name: "meta/llama-3.2-3b-instruct", provider: "nvidia", label: "NVIDIA Llama 3.2 3B" },
-      { name: "meta/llama-3.2-1b-instruct", provider: "nvidia", label: "NVIDIA Llama 3.2 1B" },
       { name: "upstage/solar-10.7b-instruct", provider: "nvidia", label: "NVIDIA Solar 10.7B" },
-      { name: "mistralai/mixtral-8x7b-instruct-v0.1", provider: "nvidia", label: "NVIDIA Mixtral 8x7B" }
+      
+      // OPENROUTER (última opción de respaldo)
+      { name: "meta-llama/llama-3.3-70b-instruct", provider: "openrouter", label: "OpenRouter Llama 3.3 70B" },
+      { name: "openai/gpt-4o-mini", provider: "openrouter", label: "OpenRouter GPT-4o-Mini" }
     ];
-    modelsCascade.push(...nvidiaModels);
 
     const contents = [
       { 
@@ -960,7 +961,52 @@ ESTADO ACTUAL DEL EMBUDO: Utiliza los campos intencion, probabilidad_compra, urg
             } else {
               throw new Error("La respuesta de NVIDIA no devolvió contenido de texto válido.");
             }
+          } else if (modelObj.provider === "openrouter") {
+            const currentOrKey = process.env.OPENROUTER_API_KEY || storeConfig.openrouterApiKey;
+            if (!currentOrKey) {
+              throw new Error("OPENROUTER_API_KEY no está configurada en las variables de entorno.");
+            }
+
+            const systemInst = getSystemInstruction(storeConfig);
+            const response = await axios.post(
+              "https://openrouter.ai/api/v1/chat/completions",
+              {
+                model: modelObj.name,
+                messages: [
+                  { role: "system", content: systemInst },
+                  { role: "user", content: promptText }
+                ],
+                temperature: 0.2,
+                max_tokens: 1024,
+                top_p: 0.7
+              },
+              {
+                headers: {
+                  "Authorization": `Bearer ${currentOrKey}`,
+                  "Content-Type": "application/json"
+                },
+                timeout: timeoutMs
+              }
+            );
+
+            let text = response.data?.choices?.[0]?.message?.content || "";
+            // Clean up any potential markdown code blocks wrapped in ```json ... ```
+            if (text.includes("```json")) {
+              text = text.split("```json")[1].split("```")[0].trim();
+            } else if (text.includes("```")) {
+              text = text.split("```")[1].split("```")[0].trim();
+            }
+
+            if (text) {
+              result = { text };
+              console.log(`[Server AI] [OPENROUTER] Éxito con el modelo ${modelObj.name} en el intento ${attempt}`);
+              success = true;
+              break;
+            } else {
+              throw new Error("La respuesta de OpenRouter no devolvió contenido de texto válido.");
+            }
           } else {
+            // Keep Gemini as a fallback just in case a gemini model slips through, though we removed them
             result = await withTimeout(ai.models.generateContent({
               model: modelObj.name,
               contents: contents,
@@ -2609,19 +2655,33 @@ NO RESPONDAS EN JSON, RESPONDE SOLO EL TEXTO DEL MENSAJE.`;
           let nudgeMsg = "";
           let nudgeSuccess = false;
 
-          // Try Gemini first
+          // Try Llama first
           try {
-            const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-            const result = await ai.models.generateContent({
-              model: "gemini-3.5-flash",
-              contents: prompt
-            });
-            nudgeMsg = (result.text || "").trim();
+            const currentNvidiaKey = process.env.NVIDIA_API_KEY || storeConfig.nvidiaApiKey;
+            if (!currentNvidiaKey) throw new Error("No NVIDIA API Key");
+            
+            const response = await axios.post(
+              "https://integrate.api.nvidia.com/v1/chat/completions",
+              {
+                model: "meta/llama-3.1-8b-instruct",
+                messages: [{ role: "user", content: prompt }],
+                temperature: 0.2,
+                max_tokens: 100
+              },
+              {
+                headers: {
+                  "Authorization": `Bearer ${currentNvidiaKey}`,
+                  "Content-Type": "application/json"
+                },
+                timeout: 5000
+              }
+            );
+            nudgeMsg = response.data?.choices?.[0]?.message?.content?.trim() || "";
             if (nudgeMsg) {
               nudgeSuccess = true;
             }
-          } catch (geminiErr: any) {
-            console.warn(`[Follow-up] Gemini falló para el nudge. Intentando fallback con NVIDIA Llama 3.3... Error: ${geminiErr.message}`);
+          } catch (llamaErr: any) {
+            console.warn(`[Follow-up] NVIDIA Llama 3.1 8B falló para el nudge. Error: ${llamaErr.message}`);
             
             const currentNvidiaKey = process.env.NVIDIA_API_KEY || storeConfig.nvidiaApiKey;
             if (currentNvidiaKey) {

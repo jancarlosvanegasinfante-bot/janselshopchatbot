@@ -1,5 +1,7 @@
 import { motion, AnimatePresence } from "motion/react";
 import toast, { Toaster } from "react-hot-toast";
+import PhoneInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 import { 
   MessageSquare, 
   Settings, 
@@ -72,7 +74,9 @@ import {
   GoogleAuthProvider, 
   signOut, 
   onAuthStateChanged,
-  signInWithEmailAndPassword,
+  loginWithPhoneOrName,
+  signInWithPhoneOtp,
+  verifyPhoneOtp,
   signUpWithEmailAndPassword,
   SupabaseUser as FirebaseUser
 } from "./supabase";
@@ -203,9 +207,11 @@ function JanAdmin() {
   const [copied, setCopied] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
-  const [authMode, setAuthMode] = useState<"login" | "signup">("login");
+  const [authMethod, setAuthMethod] = useState<"password" | "otp">("otp");
+  const [authStep, setAuthStep] = useState<"login" | "otp">("login");
+  const [otpCode, setOtpCode] = useState("");
   const [loginError, setLoginError] = useState<string | null>(null);
   const [configStatus, setConfigStatus] = useState<{ type: 'idle' | 'success' | 'error', message: string }>({ type: 'idle', message: '' });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -245,8 +251,19 @@ function JanAdmin() {
         let list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
         const adminEmail = "jancarlosvanegasinfante@gmail.com";
+        const adminPhone = "+573133647176";
+        const cleanPhone = (p: string | null | undefined) => p ? p.replace(/\D/g, "") : "";
+        const targetClean = cleanPhone(adminPhone);
+        
+        const isAdmin = user.email === adminEmail || 
+                        user.uid === "usr_emulated_jansel_admin" ||
+                        cleanPhone(user.phone) === targetClean || 
+                        cleanPhone(user.displayName) === targetClean;
+        
+        console.log("[Store] User:", { uid: user.uid, email: user.email, phone: user.phone, displayName: user.displayName, isAdmin });
+        
         // Backward compatibility for Jan's original store
-        if (user.email === adminEmail && !list.find(s => s.id === "default")) {
+        if (isAdmin && !list.find(s => s.id === "default")) {
            const defSnap = await getDoc(doc(db, "stores", "default"));
            let finalStore;
            if (!defSnap.exists()) {
@@ -262,17 +279,24 @@ function JanAdmin() {
               await setDoc(doc(db, "stores", "default"), baseStore);
               finalStore = { id: "default", ...baseStore };
            } else {
-              // Ensure owner mapping
-              if (!defSnap.data().ownerId) await updateDoc(doc(db, "stores", "default"), { ownerId: user.uid });
+              // Ensure owner mapping (update if it belongs to admin but wrong UID)
+              if (!defSnap.data().ownerId) {
+                await updateDoc(doc(db, "stores", "default"), { ownerId: user.uid });
+              }
               const fetchDef = await getDoc(doc(db, "stores", "default"));
               finalStore = { id: "default", ...fetchDef.data() };
            }
-           list = [finalStore, ...list]; // Prepend default
+           list = [finalStore, ...list.filter(s => s.id !== "default")];
+        }
+
+        if (isAdmin) {
+          list.sort((a, b) => a.id === "default" ? -1 : b.id === "default" ? 1 : 0);
         }
 
         if (list.length > 0) {
           setUserStores(list);
-          setUserStore(list[0]);
+          const defStore = list.find(s => s.id === "default");
+          setUserStore(isAdmin && defStore ? defStore : list[0]);
         } else {
           const storeId = "store_" + Math.random().toString(36).substring(2, 9);
           const newStore = {
@@ -451,27 +475,41 @@ function JanAdmin() {
     }
   };
 
-  const handleEmailAuth = async (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      setLoginError("Por favor completa todos los campos.");
-      return;
-    }
-    if (password.length < 6) {
-      setLoginError("La contraseña debe tener al menos 6 caracteres.");
-      return;
-    }
-    setIsLoggingIn(true);
     setLoginError(null);
+    setIsLoggingIn(true);
+
     try {
-      if (authMode === "login") {
-        await signInWithEmailAndPassword(email, password);
+      if (authMethod === "password") {
+        if (!identifier || !password) {
+          setLoginError("Por favor ingresa tu nombre/teléfono y la contraseña.");
+          setIsLoggingIn(false);
+          return;
+        }
+        await loginWithPhoneOrName(identifier, password);
       } else {
-        await signUpWithEmailAndPassword(email, password);
+        // OTP Mode
+        if (authStep === "login") {
+          if (!identifier) {
+            setLoginError("Por favor ingresa tu número de teléfono.");
+            setIsLoggingIn(false);
+            return;
+          }
+          await signInWithPhoneOtp(identifier);
+          setAuthStep("otp");
+        } else {
+          if (!otpCode) {
+            setLoginError("Por favor ingresa el código OTP.");
+            setIsLoggingIn(false);
+            return;
+          }
+          await verifyPhoneOtp(identifier, otpCode);
+        }
       }
     } catch (err: any) {
-      console.error("Email auth error:", err);
-      setLoginError(err.message || "Error de autenticación con Supabase.");
+      console.error("Auth error:", err);
+      setLoginError(err.message || "Error de acceso.");
     } finally {
       setIsLoggingIn(false);
     }
@@ -602,34 +640,84 @@ function JanAdmin() {
             </div>
           </div>
 
-          {/* Formulario de Email/Password para Supabase */}
-          <form onSubmit={handleEmailAuth} className="space-y-4 text-left">
-            <div>
-              <label className="block text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">
-                Correo Electrónico
-              </label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="ejemplo@jansel.com"
-                className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-dark-accent transition-colors"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">
-                Contraseña
-              </label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-dark-accent transition-colors"
-              />
-            </div>
+          <div className="flex bg-neutral-900 p-1 rounded-xl mb-6">
+            <button
+              onClick={() => { setAuthMethod("otp"); setAuthStep("login"); setLoginError(null); }}
+              className={cn("flex-1 text-xs font-bold py-2 rounded-lg transition-colors", authMethod === "otp" ? "bg-neutral-800 text-white" : "text-neutral-500 hover:text-neutral-300")}
+            >
+              SMS / WhatsApp
+            </button>
+            <button
+              onClick={() => { setAuthMethod("password"); setAuthStep("login"); setLoginError(null); }}
+              className={cn("flex-1 text-xs font-bold py-2 rounded-lg transition-colors", authMethod === "password" ? "bg-neutral-800 text-white" : "text-neutral-500 hover:text-neutral-300")}
+            >
+              Contraseña
+            </button>
+          </div>
+
+          <form onSubmit={handleAuth} className="space-y-4 text-left">
+            {authMethod === "otp" ? (
+              <>
+                {authStep === "login" ? (
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">
+                      Número de Teléfono
+                    </label>
+                    <PhoneInput
+                      defaultCountry="CO"
+                      value={identifier}
+                      onChange={(v) => setIdentifier(v || "")}
+                      placeholder="+57 300 123 4567"
+                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm focus-within:border-dark-accent transition-colors text-white PhoneInput-custom"
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">
+                      Código de Verificación (OTP)
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value)}
+                      placeholder="123456"
+                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-dark-accent transition-colors text-white text-center tracking-widest text-lg font-mono"
+                    />
+                    <button type="button" onClick={() => setAuthStep("login")} className="text-[10px] text-neutral-500 mt-2 underline">Cambiar número</button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div>
+                  <label className="block text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">
+                    Usuario o Correo
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    placeholder="Ingresa tu usuario"
+                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-dark-accent transition-colors text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">
+                    Contraseña
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-dark-accent transition-colors text-white"
+                  />
+                </div>
+              </>
+            )}
 
             <button
               type="submit"
@@ -639,53 +727,15 @@ function JanAdmin() {
               {isLoggingIn ? (
                 <RefreshCw className="w-4 h-4 animate-spin" />
               ) : null}
-              {authMode === "login" ? "Iniciar Sesión con Correo" : "Registrarse y Crear Cuenta"}
+              {authMethod === "otp" ? (authStep === "login" ? "Enviar Código SMS" : "Verificar e Ingresar") : "Ingresar al Panel"}
             </button>
           </form>
-
-          <div className="flex items-center my-4">
-            <div className="flex-1 border-t border-neutral-800 animate-pulse"></div>
-            <span className="px-3 text-xs text-neutral-500 uppercase tracking-widest font-bold">o también</span>
-            <div className="flex-1 border-t border-neutral-800 animate-pulse"></div>
-          </div>
-
-          <button 
-            type="button"
-            onClick={login}
-            disabled={isLoggingIn}
-            className={cn(
-              "w-full font-bold py-3.5 rounded-xl flex items-center justify-center gap-3 transition-all active:scale-[0.98] shadow-[0_0_15px_rgba(242,125,38,0.15)] text-sm",
-              isLoggingIn ? "bg-neutral-800 text-neutral-500 cursor-not-allowed" : "bg-dark-accent hover:bg-dark-accent/90 text-black"
-            )}
-          >
-            {isLoggingIn ? (
-              <RefreshCw className="w-4 h-4 animate-spin" />
-            ) : (
-              <ExternalLink className="w-4 h-4" />
-            )}
-            {isLoggingIn ? "Conectando..." : "Ingresar con Google (Supabase)"}
-          </button>
-
-          <div className="text-center pt-2">
-            <button
-              type="button"
-              onClick={() => {
-                setAuthMode(authMode === "login" ? "signup" : "login");
-                setLoginError(null);
-              }}
-              className="text-xs text-neutral-400 hover:text-dark-accent underline transition-colors"
-            >
-              {authMode === "login" 
-                ? "¿No tienes una cuenta? Regístrate gratis aquí" 
-                : "¿Ya tienes cuenta? Inicia sesión aquí"}
-            </button>
-          </div>
 
           {loginError && (
             <motion.div 
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-red-900/10 border border-red-900/20 p-4 rounded-xl flex items-start gap-3 text-left"
+              className="bg-red-900/10 border border-red-900/20 p-4 rounded-xl flex items-start gap-3 text-left mt-4"
             >
               <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
               <p className="text-[10px] text-red-400 font-bold uppercase tracking-tight">{loginError}</p>
