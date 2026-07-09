@@ -11,6 +11,7 @@ import { createClient } from "@supabase/supabase-js";
 import sgMail from '@sendgrid/mail';
 import { getSystemInstruction } from "./src/lib/janAgent.js";
 import { writeFileSync } from "fs";
+import crypto from "crypto";
 
 // 1. Initialize Supabase / Local JSON File Storage
 const cwd = process.cwd();
@@ -1594,8 +1595,8 @@ async function sendCategoryFeaturedProducts(to: string, from: string, category: 
       return prodCat.includes(searchCat) || searchCat.includes(prodCat);
     });
 
-    // Tomar los primeros 4 o 5 productos
-    const featured = matched.slice(0, 5);
+    // Tomar hasta 10 productos (límite de la lista interactiva de WhatsApp)
+    const featured = matched.slice(0, 10);
 
     let responseText = `✨ *PRODUCTOS DESTACADOS: ${categoryLabel.toUpperCase()}* ✨\n\n`;
     
@@ -1611,16 +1612,198 @@ async function sendCategoryFeaturedProducts(to: string, from: string, category: 
 
     responseText += `⚠️ *RECUERDA:* Vendemos cualquier tipo de producto que imagines. Si buscas algo específico (marca, modelo, tipo de artículo) que no ves aquí, ¡solo pregúntame por él por este chat para confirmar disponibilidad y precio de inmediato! 📲\n`;
 
-    // Enviar la lista de productos
+    // Enviar la lista de productos en texto
     await sendWhatsApp(to, responseText, undefined, undefined, from);
 
-    // Enviar pregunta persuasiva sobre qué producto desea de una vez
+    if (featured.length === 0) return;
+
+    const cleanClientPhone = to.replace('whatsapp:', '').trim();
+    const customerProfileId = `${assignedStoreId}_${cleanClientPhone}`;
+
+    // Enviar la lista interactiva (tocable) para que elija el producto con un tap
     setTimeout(async () => {
-      await sendWhatsApp(to, "¿Cuál de estos productos te interesó para agendar tu despacho hoy mismo con *ENVÍO GRATIS* y *PAGO CONTRA ENTREGA*? 🚛💨 ¡Escríbeme el nombre o número y te lo reservo de una! 🔥", undefined, undefined, from);
+      const sent = await sendProductListPicker(to, from, featured, category, customerProfileId);
+      if (!sent) {
+        // Fallback: si no se pudo crear/enviar la lista interactiva, seguimos con texto libre
+        await sendWhatsApp(to, "¿Cuál de estos productos te interesó para agendar tu despacho hoy mismo con *ENVÍO GRATIS* y *PAGO CONTRA ENTREGA*? 🚛💨 ¡Escríbeme el nombre o número y te lo reservo de una! 🔥", undefined, undefined, from);
+      }
     }, 1500);
 
   } catch (e: any) {
     console.error(`[WhatsApp Buttons] Error enviando productos destacados para categoría ${category}:`, e.message);
+  }
+}
+
+// ==============================================
+// 🛒 LISTA INTERACTIVA DE PRODUCTOS + CARRITO (WhatsApp List Picker)
+// ==============================================
+// WhatsApp/Twilio no soporta selección múltiple dentro de una sola lista, así que
+// el flujo es: el cliente toca UN producto de la lista -> se agrega al carrito ->
+// le mostramos botones "➕ Agregar otro" / "✅ Confirmar pedido". Así puede
+// repetir cuantas veces quiera antes de cerrar el pedido.
+
+// Crea (o reutiliza, si el catálogo no cambió) el Content Template de tipo
+// twilio/list-picker para una categoría específica. Se cachea por hash del
+// contenido para no crear un template nuevo en cada mensaje.
+async function ensureProductListTemplate(categoryKey: string, items: any[]): Promise<string | null> {
+  if (!twilioClient) return null;
+  try {
+    const hashSource = items.map((p: any) => `${p.name}|${p.price}`).join(";");
+    const hash = crypto.createHash("md5").update(hashSource).digest("hex").slice(0, 12);
+    const cfgKey = `productListSid_${categoryKey}`;
+    const cfgHashKey = `productListHash_${categoryKey}`;
+
+    const cfgSnap = await getDoc(doc(db, "config", "system"));
+    const d = cfgSnap.exists() ? cfgSnap.data() : {};
+    if (d?.[cfgKey] && d?.[cfgHashKey] === hash) {
+      return d[cfgKey];
+    }
+
+    const listItems = items.map((p: any, idx: number) => ({
+      item: String(p.name || `Producto ${idx + 1}`).slice(0, 24),
+      id: `PROD_${idx}`,
+      description: `$${Number(p.price || 0).toLocaleString("es-CO")} COP`.slice(0, 72)
+    }));
+
+    const textFallback = items
+      .map((p: any, idx: number) => `${idx + 1}. ${p.name} - $${Number(p.price || 0).toLocaleString("es-CO")}`)
+      .join("\n");
+
+    const content = await (twilioClient as any).content.v1.contents.create({
+      friendlyName: `jan_prodlist_${categoryKey}_${Date.now()}`,
+      language: "es",
+      variables: {},
+      types: {
+        "twilio/list-picker": {
+          body: "Toca *Ver productos* 👇 y elige el que te interesa. Después podrás agregar más o confirmar tu pedido.",
+          button: "Ver productos 📦",
+          items: listItems
+        },
+        "twilio/text": {
+          body: `Escríbeme el número del producto que te interesa:\n\n${textFallback}`
+        }
+      }
+    });
+
+    await setDoc(doc(db, "config", "system"), { [cfgKey]: content.sid, [cfgHashKey]: hash }, { merge: true });
+    console.log(`[WhatsApp List] Template de lista creado para categoría ${categoryKey}: ${content.sid}`);
+    return content.sid;
+  } catch (e: any) {
+    console.error(`[WhatsApp List] Error creando lista de productos (${categoryKey}):`, e.message);
+    return null;
+  }
+}
+
+// Envía la lista interactiva y guarda en el perfil del cliente qué productos se
+// le mostraron (índice -> producto), para poder resolver cuál tocó.
+async function sendProductListPicker(to: string, from: string, products: any[], categoryKey: string, customerProfileId: string): Promise<boolean> {
+  if (!twilioClient) return false;
+  const top = products.slice(0, 10);
+  if (top.length === 0) return false;
+
+  const contentSid = await ensureProductListTemplate(categoryKey, top);
+  if (!contentSid) return false;
+
+  try {
+    await setDoc(doc(db, "customers", customerProfileId), {
+      lastProductList: top.map((p: any) => ({ name: p.name, price: Number(p.price || 0) }))
+    }, { merge: true });
+
+    await (twilioClient as any).messages.create({
+      from: normalizePhone(from || TWILIO_FROM_NUMBER || "+14155238886"),
+      to: normalizePhone(to),
+      contentSid
+    });
+    console.log(`[WhatsApp List] Lista de productos (${categoryKey}) enviada a ${to}`);
+    return true;
+  } catch (e: any) {
+    console.error(`[WhatsApp List] Error enviando lista de productos:`, e.message);
+    return false;
+  }
+}
+
+// Botones "➕ Agregar otro producto" / "✅ Confirmar pedido" que aparecen justo
+// después de que el cliente toca un producto de la lista.
+async function ensureCartActionTemplate(): Promise<string | null> {
+  if (!twilioClient) return null;
+  try {
+    const cfgSnap = await getDoc(doc(db, "config", "system"));
+    const existingSid = cfgSnap.exists() ? cfgSnap.data()?.cartActionTemplateSid : null;
+    if (existingSid) return existingSid;
+
+    const content = await (twilioClient as any).content.v1.contents.create({
+      friendlyName: `jan_cart_action_${Date.now()}`,
+      language: "es",
+      variables: { "1": "1x Producto - $50.000" },
+      types: {
+        "twilio/quick-reply": {
+          body: "🛒 *Tu carrito:*\n{{1}}\n\n¿Deseas agregar otro producto o ya confirmamos tu pedido?",
+          actions: [
+            { title: "➕ Agregar otro", id: "CART_ADD_MORE" },
+            { title: "✅ Confirmar pedido", id: "CART_CHECKOUT" }
+          ]
+        },
+        "twilio/text": {
+          body: "🛒 Tu carrito:\n{{1}}\n\n¿Deseas agregar otro producto o ya confirmamos tu pedido? Responde AGREGAR o CONFIRMAR."
+        }
+      }
+    });
+
+    await setDoc(doc(db, "config", "system"), { cartActionTemplateSid: content.sid }, { merge: true });
+    return content.sid;
+  } catch (e: any) {
+    console.error("[WhatsApp Buttons] Error creando template de carrito:", e.message);
+    return null;
+  }
+}
+
+async function sendCartActionButtons(to: string, from: string, cartSummary: string, total: number): Promise<boolean> {
+  if (!twilioClient) return false;
+  const contentSid = await ensureCartActionTemplate();
+  if (!contentSid) return false;
+
+  try {
+    const line = `${cartSummary}\n💵 *Total: $${total.toLocaleString("es-CO")} COP*`.slice(0, 620);
+    await (twilioClient as any).messages.create({
+      from: normalizePhone(from || TWILIO_FROM_NUMBER || "+14155238886"),
+      to: normalizePhone(to),
+      contentSid,
+      contentVariables: JSON.stringify({ "1": line })
+    });
+    return true;
+  } catch (e: any) {
+    console.error("[WhatsApp Buttons] Error enviando botones de carrito:", e.message);
+    return false;
+  }
+}
+
+// Variante de startCheckoutFlow que arranca directamente desde un carrito ya
+// armado (varios productos), en vez de un solo producto suelto.
+async function startCheckoutFlowFromCart(from: string, cleanFrom: string, to: string, assignedStoreId: string, productoTexto: string, valorTotal: number) {
+  try {
+    const customerProfileId = `${assignedStoreId}_${cleanFrom}`;
+    const checkoutData = {
+      producto: productoTexto,
+      nombre: "",
+      telefono: "",
+      ciudad: "",
+      direccion: "",
+      referencia: "",
+      valor: valorTotal
+    };
+
+    await setDoc(doc(db, "customers", customerProfileId), {
+      checkoutStep: "nombre",
+      checkoutData,
+      etapa: "negociando",
+      lastInteractionAt: serverTimestamp()
+    }, { merge: true });
+
+    await sendWhatsApp(from, `¡Excelente elección! 🛒 Tu pedido quedó así:\n\n📦 *${productoTexto}*\n💵 *Total: $${valorTotal.toLocaleString("es-CO")} COP*\n\nPor favor dime tu *Nombre y Apellido completo* para la guía de despacho: 📝`, undefined, undefined, to);
+    return true;
+  } catch (e: any) {
+    console.error(`[startCheckoutFlowFromCart] Error:`, e.message);
+    return false;
   }
 }
 
@@ -2999,6 +3182,48 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
           await sendCategoryFeaturedProducts(from, to, "belleza", "Salud y Belleza 🧴", assignedStoreId);
         } else if (buttonPayload === "MENU_BACK") {
           await sendMainMenu(from, to);
+        } else if (buttonPayload.startsWith("PROD_")) {
+          // El cliente tocó un producto de la lista interactiva
+          const idx = parseInt(buttonPayload.replace("PROD_", ""), 10);
+          const lastList = customerData?.lastProductList || [];
+          const picked = lastList[idx];
+
+          if (!picked) {
+            await sendWhatsApp(from, "Uy, esa opción ya no está disponible 😅. Volvamos al catálogo:", undefined, undefined, to);
+            await sendCategoriesMenu(from, to);
+          } else {
+            const currentCart: any[] = Array.isArray(customerData?.cart) ? [...customerData.cart] : [];
+            const existing = currentCart.find((it: any) => it.name === picked.name);
+            if (existing) {
+              existing.cantidad = (existing.cantidad || 1) + 1;
+            } else {
+              currentCart.push({ name: picked.name, price: picked.price, cantidad: 1 });
+            }
+            await updateDoc(doc(db, "customers", customerProfileId), { cart: currentCart });
+
+            const cartSummary = currentCart
+              .map((it: any) => `• ${it.cantidad}x ${it.name} - $${Number(it.price * it.cantidad).toLocaleString("es-CO")}`)
+              .join("\n");
+            const totalCart = currentCart.reduce((sum: number, it: any) => sum + (it.price * it.cantidad), 0);
+
+            const sent = await sendCartActionButtons(from, to, cartSummary, totalCart);
+            if (!sent) {
+              await sendWhatsApp(from, `🛒 Agregado a tu carrito:\n${cartSummary}\n\n💵 Total: $${totalCart.toLocaleString("es-CO")} COP\n\n¿Deseas agregar otro producto? Responde AGREGAR o CONFIRMAR.`, undefined, undefined, to);
+            }
+          }
+        } else if (buttonPayload === "CART_ADD_MORE") {
+          await sendCategoriesMenu(from, to);
+        } else if (buttonPayload === "CART_CHECKOUT") {
+          const currentCart: any[] = Array.isArray(customerData?.cart) ? customerData.cart : [];
+          if (currentCart.length === 0) {
+            await sendWhatsApp(from, "Tu carrito está vacío todavía 🙂. Elige al menos un producto del catálogo.", undefined, undefined, to);
+            await sendCategoriesMenu(from, to);
+          } else {
+            const productoTexto = currentCart.map((it: any) => `${it.cantidad}x ${it.name}`).join(", ");
+            const valorTotal = currentCart.reduce((sum: number, it: any) => sum + (it.price * it.cantidad), 0);
+            await updateDoc(doc(db, "customers", customerProfileId), { cart: null });
+            await startCheckoutFlowFromCart(from, cleanFrom, to, assignedStoreId, productoTexto, valorTotal);
+          }
         } else {
           console.warn(`[WhatsApp Webhook] ButtonPayload desconocido: ${buttonPayload}`);
         }
