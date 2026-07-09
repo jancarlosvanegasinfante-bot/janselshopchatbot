@@ -3316,7 +3316,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/tienda/:slug" element={<Storefront />} />
-        <Route path="/catalog" element={<Catalog />} />
+        <Route path="/catalog" element={<Navigate to="/landing" replace />} />
         <Route path="/landing" element={<LandingPage />} />
         <Route path="/" element={<JanAdmin />} />
         {/* Fallback */}

@@ -504,12 +504,18 @@ export default function LandingPage() {
       <header className="bg-slate-950/80 backdrop-blur-xl border-b border-slate-900/80 z-40 relative">
         <div className="max-w-6xl mx-auto px-4 h-24 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-600 flex items-center justify-center text-black font-black text-2xl shadow-[0_0_20px_rgba(245,158,11,0.3)]">
-              J
-            </div>
-            <div>
-              <h1 className="font-black text-xl tracking-tight leading-none bg-gradient-to-r from-white via-amber-200 to-amber-400 bg-clip-text text-transparent">Jan Sel Shop</h1>
-              <span className="text-[10px] text-slate-500 tracking-widest uppercase font-mono">Tendencias de Colombia</span>
+            <img 
+              src="/src/assets/images/logo.jpg" 
+              alt="Jansel Shop Logo" 
+              className="w-16 h-16 object-contain rounded-xl shadow-[0_0_20px_rgba(0,180,255,0.4)] hover:scale-105 transition-transform"
+              onError={(e) => {
+                e.currentTarget.src = "/src/assets/images/logo.png";
+                e.currentTarget.onerror = null; // Prevent infinite loop if both fail
+              }}
+            />
+            <div className="hidden sm:block">
+              <h1 className="font-black text-xl tracking-tight leading-none bg-gradient-to-r from-white via-blue-200 to-blue-400 bg-clip-text text-transparent">JANSEL SHOP</h1>
+              <span className="text-[10px] text-blue-500 tracking-widest uppercase font-mono">Tendencias de Colombia</span>
             </div>
           </div>
           

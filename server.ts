@@ -957,7 +957,10 @@ Asegúrate de que la propiedad "mensaje" contenga tu respuesta real dirigida al 
     // Para modelos de visión metemos las imágenes como image_url (base64 data URI).
     // NOTA: Meta exige que con imágenes NO se use mensaje "system" aparte, así que
     // en ese caso el system prompt se antepone dentro del propio mensaje de usuario.
-    const systemInst = getSystemInstruction(storeConfig);
+    const systemInst = getSystemInstruction({
+      ...storeConfig,
+      storeUrl: currentAppUrl || process.env.APP_URL || "https://jansel-shop.com"
+    });
     const buildMessages = (isVision: boolean) => {
       if (isVision && imageParts.length > 0) {
         const userContent: any[] = [
@@ -1661,9 +1664,9 @@ async function sendCategoryFeaturedProducts(to: string, from: string, category: 
     // Enviar la lista de productos
     await sendWhatsApp(to, responseText, undefined, undefined, from);
 
-    // Enviar el prompt de continuar chat después de un pequeño delay
+    // Enviar pregunta persuasiva sobre qué producto desea de una vez
     setTimeout(async () => {
-      await sendKeepChatPrompt(to, from);
+      await sendWhatsApp(to, "¿Cuál de estos productos te interesó para agendar tu despacho hoy mismo con *ENVÍO GRATIS* y *PAGO CONTRA ENTREGA*? 🚛💨 ¡Escríbeme el nombre o número y te lo reservo de una! 🔥", undefined, undefined, from);
     }, 1500);
 
   } catch (e: any) {
@@ -3638,6 +3641,9 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
       res.status(404).send("Not found");
     }
   });
+
+  // Servir imágenes locales desde src/assets para asegurar que siempre carguen en producción o dev
+  app.use("/src/assets", express.static(path.join(process.cwd(), "src/assets")));
 
   // Vite setup
   if (process.env.NODE_ENV !== "production") {

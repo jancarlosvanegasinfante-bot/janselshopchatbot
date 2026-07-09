@@ -110,7 +110,22 @@ export default function Catalog() {
           <div className="absolute top-1/2 -right-24 w-96 h-96 bg-dark-green rounded-full blur-[120px]" />
         </div>
         
-        <div className="max-w-6xl mx-auto text-center">
+        <div className="max-w-6xl mx-auto text-center flex flex-col items-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="mb-8"
+          >
+            <img 
+              src="/src/assets/images/logo.jpg" 
+              alt="Jansel Shop Logo" 
+              className="w-24 h-24 object-contain rounded-2xl shadow-[0_0_30px_rgba(0,180,255,0.4)] mx-auto hover:scale-105 transition-transform"
+              onError={(e) => {
+                e.currentTarget.src = "/src/assets/images/logo.png";
+                e.currentTarget.onerror = null;
+              }}
+            />
+          </motion.div>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
