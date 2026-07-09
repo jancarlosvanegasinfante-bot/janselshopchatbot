@@ -834,6 +834,11 @@ async function processInferenceOnServer(activityId: string, data: any) {
       return;
     }
 
+    const compactProductsString = products.map(p => {
+      const desc = p.description ? (p.description.length > 80 ? p.description.substring(0, 80) + "..." : p.description) : "";
+      return `- ${p.name} ($${p.price}) [id: ${p.id}]${p.category ? ` [Cat: ${p.category}]` : ""}${desc ? ` - ${desc}` : ""}`;
+    }).join("\n");
+
     const promptText = `ESTÁS ATENDIENDO EN LA TIENDA: ${storeConfig.name || "Jan Sel Shop"} (Slug: ${assignedStoreId})
 CLIENTE: ${fromPhone}
 NOMBRE: ${customerProfile?.name || "Desconocido"}
@@ -845,7 +850,7 @@ ${history}
 MENSAJE ACTUAL: ${safeMessage}${imageParts.length > 0 ? " (El cliente también envió una imagen que adjunto para tu análisis)" : ""}
 
 INVENTARIO ACTUAL:
-${JSON.stringify(products)}
+${compactProductsString}
 
 ⚠️ REGLA DE SALIDA ULTRA-ESTRICTA (OBLIGATORIA):
 DEBES RESPONDER EXCLUSIVAMENTE CON UN OBJETO JSON VÁLIDO.
@@ -1131,6 +1136,54 @@ Asegúrate de que la propiedad "mensaje" contenga tu respuesta real dirigida al 
       } catch (e) {
         console.error("[Server AI] Error en el flujo de confirmación por botones:", e);
       }
+    } else if (jsonResponse.accion === "mostrar_menu" && data.from.startsWith("whatsapp:")) {
+      console.log("[Server AI] Acción mostrar_menu detectada. Enviando botones de menú principal...");
+      try {
+        if (jsonResponse.mensaje) {
+          await sendWhatsApp(data.from, jsonResponse.mensaje, undefined, activityId, data.to);
+        }
+        await sendMainMenu(data.from, data.to);
+        jsonResponse._skipTextReply = true;
+      } catch (e) {
+        console.error("[Server AI] Error en el flujo de mostrar_menu:", e);
+      }
+    } else if (jsonResponse.accion === "mostrar_categorias" && data.from.startsWith("whatsapp:")) {
+      console.log("[Server AI] Acción mostrar_categorias detectada. Enviando botones de categorías...");
+      try {
+        if (jsonResponse.mensaje) {
+          await sendWhatsApp(data.from, jsonResponse.mensaje, undefined, activityId, data.to);
+        }
+        await sendCategoriesMenu(data.from, data.to);
+        jsonResponse._skipTextReply = true;
+      } catch (e) {
+        console.error("[Server AI] Error en el flujo de mostrar_categorias:", e);
+      }
+    } else if (jsonResponse.accion === "preguntar_continuar" && data.from.startsWith("whatsapp:")) {
+      console.log("[Server AI] Acción preguntar_continuar detectada. Enviando prompt de continuar chat...");
+      try {
+        if (jsonResponse.mensaje) {
+          await sendWhatsApp(data.from, jsonResponse.mensaje, undefined, activityId, data.to);
+        }
+        await sendKeepChatPrompt(data.from, data.to);
+        jsonResponse._skipTextReply = true;
+      } catch (e) {
+        console.error("[Server AI] Error en el flujo de preguntar_continuar:", e);
+      }
+    } else if (jsonResponse.accion === "finalizar_chat") {
+      console.log("[Server AI] Acción finalizar_chat detectada. Finalizando conversación...");
+      try {
+        if (jsonResponse.mensaje) {
+          await sendWhatsApp(data.from, jsonResponse.mensaje, undefined, activityId, data.to);
+        }
+        await updateDoc(doc(db, "customers", customerProfileId), { 
+          pendingConfirmation: null,
+          etapa: "finalizado",
+          score: 0 
+        });
+        jsonResponse._skipTextReply = true;
+      } catch (e) {
+        console.error("[Server AI] Error en el flujo de finalizar_chat:", e);
+      }
     }
 
     // 3. Enviar respuesta por la plataforma correcta
@@ -1306,6 +1359,283 @@ async function sendOrderConfirmationButtons(to: string, from: string, jsonRespon
   } catch (e: any) {
     console.error("[WhatsApp Buttons] Error enviando botones de confirmación:", e.message);
     return false;
+  }
+}
+
+// Unified Template Provisioner for All Interactive Bot Flow Elements
+async function ensureAllTemplates(): Promise<{
+  orderConfirmSid: string | null;
+  mainMenuSid: string | null;
+  categoriesSid: string | null;
+  otherCategoriesSid: string | null;
+  keepChatSid: string | null;
+}> {
+  const result = {
+    orderConfirmSid: null as string | null,
+    mainMenuSid: null as string | null,
+    categoriesSid: null as string | null,
+    otherCategoriesSid: null as string | null,
+    keepChatSid: null as string | null
+  };
+
+  if (!twilioClient) return result;
+
+  try {
+    const cfgSnap = await getDoc(doc(db, "config", "system"));
+    const d = cfgSnap.exists() ? cfgSnap.data() : {};
+
+    // 1. Order Confirm
+    if (d?.orderConfirmTemplateSid) {
+      result.orderConfirmSid = d.orderConfirmTemplateSid;
+    } else {
+      console.log("[WhatsApp Buttons] Creando template de confirmación...");
+      const content = await (twilioClient as any).content.v1.contents.create({
+        friendlyName: `jan_order_confirm_${Date.now()}`,
+        language: "es",
+        variables: { "1": "Producto x1 - $50.000, Cra 10 #20-30" },
+        types: {
+          "twilio/quick-reply": {
+            body: "🧾 Resumen de tu pedido:\n{{1}}\n\n¿Confirmas para enviarlo ya?",
+            actions: [
+              { title: "Sí, confirmar ✅", id: CONFIRM_YES_ID },
+              { title: "No, cambiar algo ✏️", id: CONFIRM_NO_ID }
+            ]
+          },
+          "twilio/text": {
+            body: "🧾 Resumen de tu pedido:\n{{1}}\n\n¿Confirmas para enviarlo ya? Responde SI o NO."
+          }
+        }
+      });
+      result.orderConfirmSid = content.sid;
+      await setDoc(doc(db, "config", "system"), { orderConfirmTemplateSid: content.sid }, { merge: true });
+    }
+
+    // 2. Main Menu
+    if (d?.mainMenuTemplateSid) {
+      result.mainMenuSid = d.mainMenuTemplateSid;
+    } else {
+      console.log("[WhatsApp Buttons] Creando template de menú principal...");
+      const content = await (twilioClient as any).content.v1.contents.create({
+        friendlyName: `jan_main_menu_${Date.now()}`,
+        language: "es",
+        variables: {},
+        types: {
+          "twilio/quick-reply": {
+            body: "¡Hola! 👋 Te doy la bienvenida a nuestro catálogo con más de 360 productos. ¿Cómo te puedo ayudar hoy? Selecciona una opción 👇",
+            actions: [
+              { title: "Ver Catálogo 📦", id: "MENU_CATALOG" },
+              { title: "Hablar con Asesor 🙋‍♂️", id: "MENU_HUMAN" },
+              { title: "Finalizar Chat 🛑", id: "MENU_END" }
+            ]
+          },
+          "twilio/text": {
+            body: "¡Hola! 👋 Te doy la bienvenida a nuestro catálogo. ¿Cómo te puedo ayudar hoy?\n\n1. Ver Catálogo 📦\n2. Hablar con Asesor 🙋‍♂️\n3. Finalizar Chat 🛑"
+          }
+        }
+      });
+      result.mainMenuSid = content.sid;
+      await setDoc(doc(db, "config", "system"), { mainMenuTemplateSid: content.sid }, { merge: true });
+    }
+
+    // 3. Categories Menu
+    if (d?.categoriesTemplateSid) {
+      result.categoriesSid = d.categoriesTemplateSid;
+    } else {
+      console.log("[WhatsApp Buttons] Creando template de categorías...");
+      const content = await (twilioClient as any).content.v1.contents.create({
+        friendlyName: `jan_categories_${Date.now()}`,
+        language: "es",
+        variables: {},
+        types: {
+          "twilio/quick-reply": {
+            body: "Tenemos las mejores ofertas en todas las categorías de Colombia. Selecciona una sección para ver los productos destacados 👇",
+            actions: [
+              { title: "Tecnología 💻", id: "CAT_TECH" },
+              { title: "Hogar y Aseo 🧼", id: "CAT_HOME" },
+              { title: "Otras Secciones 📑", id: "CAT_OTHER" }
+            ]
+          },
+          "twilio/text": {
+            body: "Selecciona una sección para ver los productos destacados:\n\n- Tecnología 💻\n- Hogar y Aseo 🧼\n- Otras Secciones 📑"
+          }
+        }
+      });
+      result.categoriesSid = content.sid;
+      await setDoc(doc(db, "config", "system"), { categoriesTemplateSid: content.sid }, { merge: true });
+    }
+
+    // 4. Other Categories Menu
+    if (d?.otherCategoriesTemplateSid) {
+      result.otherCategoriesSid = d.otherCategoriesTemplateSid;
+    } else {
+      console.log("[WhatsApp Buttons] Creando template de otras categorías...");
+      const content = await (twilioClient as any).content.v1.contents.create({
+        friendlyName: `jan_other_cats_${Date.now()}`,
+        language: "es",
+        variables: {},
+        types: {
+          "twilio/quick-reply": {
+            body: "También contamos con estas increíbles secciones. Selecciona una opción 👇",
+            actions: [
+              { title: "Autos y Herram. 🚗", id: "CAT_AUTOS" },
+              { title: "Salud y Belleza 🧴", id: "CAT_BEAUTY" },
+              { title: "Menú Principal 🔙", id: "MENU_BACK" }
+            ]
+          },
+          "twilio/text": {
+            body: "Otras secciones disponibles:\n\n- Autos y Herram. 🚗\n- Salud y Belleza 🧴\n- Menú Principal 🔙"
+          }
+        }
+      });
+      result.otherCategoriesSid = content.sid;
+      await setDoc(doc(db, "config", "system"), { otherCategoriesTemplateSid: content.sid }, { merge: true });
+    }
+
+    // 5. Keep Chatting Menu
+    if (d?.keepChatTemplateSid) {
+      result.keepChatSid = d.keepChatTemplateSid;
+    } else {
+      console.log("[WhatsApp Buttons] Creando template de continuar chat...");
+      const content = await (twilioClient as any).content.v1.contents.create({
+        friendlyName: `jan_keep_chat_${Date.now()}`,
+        language: "es",
+        variables: {},
+        types: {
+          "twilio/quick-reply": {
+            body: "¿Deseas continuar chateando o tienes alguna otra consulta sobre nuestros productos? 👇",
+            actions: [
+              { title: "Sí, continuar ✅", id: "CHAT_KEEP" },
+              { title: "No, finalizar 🛑", id: "CHAT_END" }
+            ]
+          },
+          "twilio/text": {
+            body: "¿Deseas continuar chateando o tienes alguna otra consulta sobre nuestros productos?\n\n- Sí, continuar ✅\n- No, finalizar 🛑"
+          }
+        }
+      });
+      result.keepChatSid = content.sid;
+      await setDoc(doc(db, "config", "system"), { keepChatTemplateSid: content.sid }, { merge: true });
+    }
+
+  } catch (e: any) {
+    console.error("[WhatsApp Buttons] Error asegurando templates de Twilio Content API:", e.message);
+  }
+
+  return result;
+}
+
+async function sendMainMenu(to: string, from: string): Promise<boolean> {
+  if (!twilioClient) return false;
+  const templates = await ensureAllTemplates();
+  if (!templates.mainMenuSid) return false;
+  try {
+    await (twilioClient as any).messages.create({
+      from: normalizePhone(from || TWILIO_FROM_NUMBER || "+14155238886"),
+      to: normalizePhone(to),
+      contentSid: templates.mainMenuSid
+    });
+    console.log(`[WhatsApp Buttons] Menú principal enviado a ${to}`);
+    return true;
+  } catch (e: any) {
+    console.error("[WhatsApp Buttons] Error enviando Menú Principal:", e.message);
+    return false;
+  }
+}
+
+async function sendCategoriesMenu(to: string, from: string): Promise<boolean> {
+  if (!twilioClient) return false;
+  const templates = await ensureAllTemplates();
+  if (!templates.categoriesSid) return false;
+  try {
+    await (twilioClient as any).messages.create({
+      from: normalizePhone(from || TWILIO_FROM_NUMBER || "+14155238886"),
+      to: normalizePhone(to),
+      contentSid: templates.categoriesSid
+    });
+    console.log(`[WhatsApp Buttons] Menú de categorías enviado a ${to}`);
+    return true;
+  } catch (e: any) {
+    console.error("[WhatsApp Buttons] Error enviando Menú de Categorías:", e.message);
+    return false;
+  }
+}
+
+async function sendOtherCategoriesMenu(to: string, from: string): Promise<boolean> {
+  if (!twilioClient) return false;
+  const templates = await ensureAllTemplates();
+  if (!templates.otherCategoriesSid) return false;
+  try {
+    await (twilioClient as any).messages.create({
+      from: normalizePhone(from || TWILIO_FROM_NUMBER || "+14155238886"),
+      to: normalizePhone(to),
+      contentSid: templates.otherCategoriesSid
+    });
+    console.log(`[WhatsApp Buttons] Menú de otras categorías enviado a ${to}`);
+    return true;
+  } catch (e: any) {
+    console.error("[WhatsApp Buttons] Error enviando Menú de Otras Categorías:", e.message);
+    return false;
+  }
+}
+
+async function sendKeepChatPrompt(to: string, from: string): Promise<boolean> {
+  if (!twilioClient) return false;
+  const templates = await ensureAllTemplates();
+  if (!templates.keepChatSid) return false;
+  try {
+    await (twilioClient as any).messages.create({
+      from: normalizePhone(from || TWILIO_FROM_NUMBER || "+14155238886"),
+      to: normalizePhone(to),
+      contentSid: templates.keepChatSid
+    });
+    console.log(`[WhatsApp Buttons] Prompt de continuar chat enviado a ${to}`);
+    return true;
+  } catch (e: any) {
+    console.error("[WhatsApp Buttons] Error enviando Prompt de Continuar Chat:", e.message);
+    return false;
+  }
+}
+
+async function sendCategoryFeaturedProducts(to: string, from: string, category: string, categoryLabel: string, assignedStoreId: string) {
+  try {
+    const products = await loadProductsForStore(assignedStoreId);
+    
+    // Normalizar la categoría para buscar coincidencias
+    const searchCat = category.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    
+    const matched = products.filter((p: any) => {
+      if (!p.category) return false;
+      const prodCat = p.category.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      return prodCat.includes(searchCat) || searchCat.includes(prodCat);
+    });
+
+    // Tomar los primeros 4 o 5 productos
+    const featured = matched.slice(0, 5);
+
+    let responseText = `✨ *PRODUCTOS DESTACADOS: ${categoryLabel.toUpperCase()}* ✨\n\n`;
+    
+    if (featured.length === 0) {
+      responseText += `Actualmente estamos actualizando esta sección, pero contamos con excelentes opciones. ¡Pregúntame por lo que buscas! 🛒\n\n`;
+    } else {
+      featured.forEach((p, idx) => {
+        const formattedPrice = Number(p.price || 0).toLocaleString("es-CO");
+        const desc = p.description ? (p.description.length > 120 ? p.description.substring(0, 120) + "..." : p.description) : "Excelente calidad y garantía.";
+        responseText += `${idx + 1}. *${p.name}* 🌟\n💵 *Precio:* $${formattedPrice} COP\n📝 *Detalle:* ${desc}\n\n`;
+      });
+    }
+
+    responseText += `⚠️ *RECUERDA:* Vendemos cualquier tipo de producto que imagines. Si buscas algo específico (marca, modelo, tipo de artículo) que no ves aquí, ¡solo pregúntame por él por este chat para confirmar disponibilidad y precio de inmediato! 📲\n`;
+
+    // Enviar la lista de productos
+    await sendWhatsApp(to, responseText, undefined, undefined, from);
+
+    // Enviar el prompt de continuar chat después de un pequeño delay
+    setTimeout(async () => {
+      await sendKeepChatPrompt(to, from);
+    }, 1500);
+
+  } catch (e: any) {
+    console.error(`[WhatsApp Buttons] Error enviando productos destacados para categoría ${category}:`, e.message);
   }
 }
 
@@ -2441,10 +2771,10 @@ async function startServer() {
     }
 
     // ==============================================
-    // 🔘 RESPUESTA A BOTONES DE CONFIRMACIÓN DE PEDIDO
+    // 🔘 RESPUESTA A BOTONES INTERACTIVOS (MENÚS Y CONFIRMACIÓN)
     // ==============================================
-    // Si el cliente tocó un botón (Sí/No), Twilio manda ButtonPayload con el id que
-    // definimos al crear el template. Esto es 100% determinístico: no pasa por la IA.
+    // Si el cliente tocó un botón, Twilio manda ButtonPayload con el id que definimos.
+    // Esto es 100% determinístico: no pasa por la IA, garantizando velocidad y precisión.
     const buttonPayload = req.body?.ButtonPayload;
     if (buttonPayload) {
       try {
@@ -2455,10 +2785,10 @@ async function startServer() {
         const customerData = cxSnap.exists() ? cxSnap.data() : null;
         const pending = customerData?.pendingConfirmation;
 
-        if (pending && pending.jsonResponse) {
-          await cancelPendingFollowUps(from, assignedStoreId);
+        await cancelPendingFollowUps(from, assignedStoreId);
 
-          if (buttonPayload === CONFIRM_YES_ID) {
+        if (buttonPayload === CONFIRM_YES_ID) {
+          if (pending && pending.jsonResponse) {
             let storeConfig: any = {};
             const storeSnap = await getDoc(doc(db, "stores", assignedStoreId));
             if (storeSnap.exists()) storeConfig = storeSnap.data();
@@ -2467,20 +2797,61 @@ async function startServer() {
             await finalizeOrder(pending.jsonResponse, storeConfig, customerData, cleanFrom, assignedStoreId, products, db);
             await updateDoc(doc(db, "customers", customerProfileId), { pendingConfirmation: null });
             await sendWhatsApp(from, "¡Listo! 🎉 Tu pedido quedó confirmado, ya te lo estamos alistando. ¡Gracias por tu compra!", undefined, undefined, to);
-          } else if (buttonPayload === CONFIRM_NO_ID) {
-            await updateDoc(doc(db, "customers", customerProfileId), { pendingConfirmation: null });
-            await sendWhatsApp(from, "Tranqui, no confirmé nada todavía 🙂 Contame qué querés cambiar y seguimos.", undefined, undefined, to);
           } else {
-            console.warn(`[WhatsApp Webhook] ButtonPayload desconocido: ${buttonPayload}`);
+            await sendWhatsApp(from, "No encontramos ningún pedido pendiente de confirmación. 😊 ¿En qué más te puedo ayudar?", undefined, undefined, to);
           }
-
-          return res.status(200).send("");
+        } else if (buttonPayload === CONFIRM_NO_ID) {
+          await updateDoc(doc(db, "customers", customerProfileId), { pendingConfirmation: null });
+          await sendWhatsApp(from, "Tranqui, no confirmé nada todavía 🙂 Contame qué querés cambiar y seguimos.", undefined, undefined, to);
+        } else if (buttonPayload === "MENU_CATALOG") {
+          await sendCategoriesMenu(from, to);
+        } else if (buttonPayload === "MENU_HUMAN") {
+          await updateDoc(doc(db, "customers", customerProfileId), { etapa: "asesoria_solicitada" });
+          
+          // Notificar a los administradores
+          const adminMessage = `🚨 *ASESORÍA HUMANA SOLICITADA*
+Cliente: ${customerData?.name || cleanFrom} (${cleanFrom})
+Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
+          
+          const adminNumbersRaw = process.env.ADMIN_WHATSAPP_NUMBERS || "";
+          const adminNumbers = adminNumbersRaw.split(",").filter(n => n.trim().length > 0);
+          for (const num of adminNumbers) {
+            try {
+              const target = num.trim().startsWith("whatsapp:") ? num.trim() : `whatsapp:${num.trim()}`;
+              await sendWhatsApp(target, adminMessage);
+            } catch (e) {
+              console.error("[Server AI] Error notificando asesoría de botón:", e);
+            }
+          }
+          await sendWhatsApp(from, "¡Perfecto! Ya le he avisado a un asesor humano 🙋‍♂️. Te escribirá en un momento. Mientras tanto, si tienes otra duda, puedes escribirme por acá. 😊", undefined, undefined, to);
+        } else if (buttonPayload === "MENU_END" || buttonPayload === "CHAT_END") {
+          await updateDoc(doc(db, "customers", customerProfileId), { 
+            pendingConfirmation: null,
+            etapa: "finalizado",
+            score: 0 
+          });
+          await sendWhatsApp(from, "¡Fue un gusto ayudarte! 😊 Una vez vuelvas a escribir, iniciaremos una nueva conversación. ¡Te espero de regreso! 👋", undefined, undefined, to);
+        } else if (buttonPayload === "CHAT_KEEP") {
+          await sendWhatsApp(from, "¡Súper! Dime en qué más te puedo colaborar hoy o qué producto estás buscando. 🔎", undefined, undefined, to);
+        } else if (buttonPayload === "CAT_TECH") {
+          await sendCategoryFeaturedProducts(from, to, "tecnologia", "Tecnología 💻", assignedStoreId);
+        } else if (buttonPayload === "CAT_HOME") {
+          await sendCategoryFeaturedProducts(from, to, "hogar", "Hogar, Cocina y Aseo 🧼", assignedStoreId);
+        } else if (buttonPayload === "CAT_OTHER") {
+          await sendOtherCategoriesMenu(from, to);
+        } else if (buttonPayload === "CAT_AUTOS") {
+          await sendCategoryFeaturedProducts(from, to, "autos", "Autos y Herramientas 🚗", assignedStoreId);
+        } else if (buttonPayload === "CAT_BEAUTY") {
+          await sendCategoryFeaturedProducts(from, to, "belleza", "Salud y Belleza 🧴", assignedStoreId);
+        } else if (buttonPayload === "MENU_BACK") {
+          await sendMainMenu(from, to);
+        } else {
+          console.warn(`[WhatsApp Webhook] ButtonPayload desconocido: ${buttonPayload}`);
         }
-        // Si no había pendingConfirmation (ej. botón viejo, ya resuelto), seguimos el
-        // flujo normal más abajo tratando el ButtonText como si fuera texto escrito.
+
+        return res.status(200).send("");
       } catch (e: any) {
         console.error("[WhatsApp Webhook] Error procesando ButtonPayload:", e.message);
-        // No cortamos el flujo: si algo falla acá, seguimos abajo como mensaje normal.
       }
     }
 
