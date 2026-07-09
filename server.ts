@@ -1599,18 +1599,29 @@ async function sendCategoryFeaturedProducts(to: string, from: string, category: 
     const featured = matched.slice(0, 10);
 
     let responseText = `✨ *PRODUCTOS DESTACADOS: ${categoryLabel.toUpperCase()}* ✨\n\n`;
-    
+
     if (featured.length === 0) {
       responseText += `Actualmente estamos actualizando esta sección, pero contamos con excelentes opciones. ¡Pregúntame por lo que buscas! 🛒\n\n`;
     } else {
+      // Texto CORTO (solo nombre + precio) para no pasarnos del límite de 1600
+      // caracteres de WhatsApp/Twilio. El detalle completo de cada producto
+      // (descripción, foto, etc.) lo mostramos en la lista interactiva tocable
+      // que se envía justo después.
       featured.forEach((p, idx) => {
         const formattedPrice = Number(p.price || 0).toLocaleString("es-CO");
-        const desc = p.description ? (p.description.length > 120 ? p.description.substring(0, 120) + "..." : p.description) : "Excelente calidad y garantía.";
-        responseText += `${idx + 1}. *${p.name}* 🌟\n💵 *Precio:* $${formattedPrice} COP\n📝 *Detalle:* ${desc}\n\n`;
+        responseText += `${idx + 1}. *${p.name}* 🌟 — $${formattedPrice} COP\n`;
       });
+      responseText += `\n👇 Toca la lista que te envío a continuación para ver el detalle y elegir el que quieras.\n\n`;
     }
 
     responseText += `⚠️ *RECUERDA:* Vendemos cualquier tipo de producto que imagines. Si buscas algo específico (marca, modelo, tipo de artículo) que no ves aquí, ¡solo pregúntame por él por este chat para confirmar disponibilidad y precio de inmediato! 📲\n`;
+
+    // Red de seguridad: por más que acortemos, nunca dejar pasar un mensaje que
+    // exceda el límite de Twilio/WhatsApp (1600 caracteres).
+    const TWILIO_BODY_LIMIT = 1550;
+    if (responseText.length > TWILIO_BODY_LIMIT) {
+      responseText = responseText.slice(0, TWILIO_BODY_LIMIT - 20).trimEnd() + "\n…(sigue en la lista 👇)";
+    }
 
     // Enviar la lista de productos en texto
     await sendWhatsApp(to, responseText, undefined, undefined, from);
