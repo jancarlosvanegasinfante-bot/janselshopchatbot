@@ -1,6 +1,6 @@
 {
-  "products": [
-    {
+  "products": {
+    "default_cargador-bateria-inteligente": {
       "imageUrl": "/src/assets/images/INICIADOR DE VEHICULOS.png",
       "provider": "Dropi",
       "currency": "COP",
@@ -12,9 +12,11 @@
       "name": "Cargador Iniciador De Bateria Para Carro",
       "price": 94900,
       "stock": 499,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:40.628Z"
     },
-    {
+    "default_volante-seguro-pro": {
       "imageUrl": "/src/assets/images/SEGURO PARA VOLANTE.png",
       "provider": "Dropi",
       "currency": "COP",
@@ -26,9 +28,11 @@
       "name": "Volante Seguro Pro",
       "price": 79900,
       "stock": 20,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:40.891Z"
     },
-    {
+    "default_cables-inicio-100": {
       "imageUrl": "https://loremflickr.com/400/400/consumer-product?lock=1488",
       "provider": "Dropi",
       "currency": "COP",
@@ -40,9 +44,11 @@
       "name": "Cables De Inicio Batería Vehículos 100",
       "price": 86900,
       "stock": 20,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:41.098Z"
     },
-    {
+    "default_camara-dvr-25": {
       "freight": 15000,
       "stock": 20,
       "price": 123900,
@@ -54,9 +60,11 @@
       "id": "camara-dvr-25",
       "currency": "COP",
       "provider": "Dropi",
-      "imageUrl": "/src/assets/images/CAMARA DUAL.png"
+      "imageUrl": "/src/assets/images/CAMARA DUAL.png",
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:41.334Z"
     },
-    {
+    "default_cera-m1-cojineria": {
       "currency": "COP",
       "provider": "Dropi",
       "imageUrl": "https://loremflickr.com/400/400/ergonomic-pillow-cushion?lock=1607",
@@ -68,9 +76,11 @@
       "name": "Cera M1 Vehículos Cojinería Y Plásticos",
       "videoUrl": "https://vt.tiktok.com/ZS9JyNJtm/",
       "freight": 15000,
-      "stock": 20
+      "stock": 20,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:41.535Z"
     },
-    {
+    "default_compresor-aire-2cil": {
       "currency": "COP",
       "provider": "Dropi",
       "imageUrl": "https://loremflickr.com/400/400/portable-air-compressor?lock=1855",
@@ -82,9 +92,11 @@
       "name": "Compresor Cyclone 2 Cilindros 12v 150PSI",
       "videoUrl": "https://vt.tiktok.com/ZS9Jy5Jt2/",
       "freight": 15000,
-      "stock": 20
+      "stock": 20,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:41.765Z"
     },
-    {
+    "default_compresor-portatil-digital": {
       "videoUrl": "https://vt.tiktok.com/ZS9JyCaBT/",
       "name": "Compresor Portátil Vehículos Digital Car",
       "price": 158900,
@@ -96,9 +108,11 @@
       "id": "compresor-portatil-digital",
       "category": "autos",
       "cost": 98900,
-      "description": "Compresor inteligente con pantalla digital y apagado automático al llegar a la presión deseada."
+      "description": "Compresor inteligente con pantalla digital y apagado automático al llegar a la presión deseada.",
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:41.964Z"
     },
-    {
+    "default_convertidor-veh-carga": {
       "price": 123900,
       "name": "Inversor de Corriente Car Power Inverter",
       "videoUrl": "https://vt.tiktok.com/ZS9Jf1fCF/",
@@ -110,9 +124,11 @@
       "description": "Convierte 12V a toma de AC, incluye puerto USB QC 3.0 de carga flash, puertos USB normales y pantalla LED de voltaje.",
       "cost": 65000,
       "category": "autos",
-      "id": "convertidor-veh-carga"
+      "id": "convertidor-veh-carga",
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:42.186Z"
     },
-    {
+    "default_hidro-lavadora-48v": {
       "videoUrl": "https://vt.tiktok.com/ZS9JU65EG/",
       "name": "Hidro Lavadora Inalámbrica 48v Vehículos",
       "price": 112900,
@@ -124,9 +140,11 @@
       "id": "hidro-lavadora-48v",
       "category": "autos",
       "cost": 55000,
-      "description": "Potente hidro lavadora inalámbrica perfecta para el lavado de vehículos y fachadas. Portátil y eficiente."
+      "description": "Potente hidro lavadora inalámbrica perfecta para el lavado de vehículos y fachadas. Portátil y eficiente.",
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:42.415Z"
     },
-    {
+    "default_holder-cargador-inalambr": {
       "stock": 20,
       "freight": 15000,
       "videoUrl": "https://vt.tiktok.com/ZS9JUpKGf/",
@@ -138,9 +156,11 @@
       "description": "Soporte inteligente que carga tu celular por inducción mientras conduces.",
       "imageUrl": "/src/assets/images/CARGADOR MAGNETICO.png",
       "provider": "Dropi",
-      "currency": "COP"
+      "currency": "COP",
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:42.637Z"
     },
-    {
+    "default_kit-renovacion-veh": {
       "name": "Kit de Renovación Lubristone 3 Pasos",
       "price": 89900,
       "videoUrl": "https://vt.tiktok.com/ZS9JfDF62/",
@@ -152,9 +172,11 @@
       "description": "Incluye Quita rayones, Acondicionador de partes negras y Renovador de farolas. Recupera tu vehículo en sólo 3 pasos.",
       "id": "kit-renovacion-veh",
       "category": "autos",
-      "cost": 33000
+      "cost": 33000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:42.841Z"
     },
-    {
+    "default_maletin-kit-carretera": {
       "description": "Kit reglamentario de carretera en un bolso compacto y resistente. Incluye lo necesario para viajar seguro.",
       "category": "autos",
       "id": "maletin-kit-carretera",
@@ -166,9 +188,11 @@
       "stock": 20,
       "price": 67900,
       "name": "Maletín Kit De Carretera Bolso Vehicular",
-      "videoUrl": "https://vimeo.com/914562306"
+      "videoUrl": "https://vimeo.com/914562306",
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:43.049Z"
     },
-    {
+    "default_mini-aspiradora-port": {
       "price": 75900,
       "name": "Mini Aspiradora Portátil Gold Edition",
       "videoUrl": "https://vt.tiktok.com/ZS9JfH7o1/",
@@ -180,9 +204,11 @@
       "description": "Limpia cada rincón con total comodidad, diseño premium dorado de alta succión.",
       "category": "autos",
       "id": "mini-aspiradora-port",
-      "cost": 20000
+      "cost": 20000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:43.254Z"
     },
-    {
+    "default_parasol-vehiculo": {
       "description": "Protege el interior de tu auto del calor y los rayos UV. Fácil de instalar.",
       "id": "parasol-vehiculo",
       "category": "autos",
@@ -194,9 +220,11 @@
       "stock": 20,
       "name": "Parasol Para Vehículo",
       "price": 80900,
-      "videoUrl": "https://vt.tiktok.com/ZS9JPdtaQ/"
+      "videoUrl": "https://vt.tiktok.com/ZS9JPdtaQ/",
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:43.479Z"
     },
-    {
+    "default_saca-golpes-herramie": {
       "id": "saca-golpes-herramie",
       "category": "autos",
       "cost": 24000,
@@ -208,9 +236,11 @@
       "freight": 15000,
       "videoUrl": "https://vt.tiktok.com/ZS9JPkb3F/",
       "name": "Kit Saca Golpes Pops-a-Dent DIY",
-      "price": 80900
+      "price": 80900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:43.680Z"
     },
-    {
+    "default_sistema-antirrobo-veh": {
       "cost": 35000,
       "id": "sistema-antirrobo-veh",
       "category": "autos",
@@ -222,9 +252,11 @@
       "freight": 15000,
       "videoUrl": "https://vt.tiktok.com/ZS9JP5GEp/",
       "name": "Sistema de Alarma Universal Vehículo",
-      "price": 91900
+      "price": 91900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:43.902Z"
     },
-    {
+    "default_soporte-silicona-veh": {
       "stock": 20,
       "freight": 15000,
       "videoUrl": "https://vt.tiktok.com/ZS9JPwRru/",
@@ -236,9 +268,11 @@
       "description": "Soporte antideslizante de silicona para celular de alta adherencia al tablero.",
       "imageUrl": "https://loremflickr.com/400/400/consumer-product?lock=2043",
       "provider": "Dropi",
-      "currency": "COP"
+      "currency": "COP",
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:44.109Z"
     },
-    {
+    "default_ventilador-doble-360": {
       "videoUrl": "https://vt.tiktok.com/ZS9JPE8Sj/",
       "price": 105900,
       "name": "Ventilador Doble 360 Vehículo Mars918",
@@ -250,9 +284,11 @@
       "category": "autos",
       "id": "ventilador-doble-360",
       "cost": 48000,
-      "description": "Doble ventilador con rotación total para mantener el vehículo fresco en todo momento."
+      "description": "Doble ventilador con rotación total para mantener el vehículo fresco en todo momento.",
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:44.352Z"
     },
-    {
+    "default_maquina-donas-x7": {
       "id": "maquina-donas-x7",
       "name": "Máquina De Donas X7",
       "description": "Prepara deliciosas donas caseras en minutos con esta máquina de diseño compacto y placas antiadherentes.",
@@ -263,9 +299,11 @@
       "imageUrl": "https://d39ru7awumhhs2.cloudfront.net/colombia/products/2025957/1766178012IMG_7506.jpeg",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 100900
+      "price": 100900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:44.553Z"
     },
-    {
+    "default_limpiadora-vapor": {
       "id": "limpiadora-vapor",
       "name": "Limpiadora A Vapor",
       "description": "Limpiador a vapor portátil de alta presión con múltiples accesorios para desinfectar y limpiar azulejos, ventanas y cocinas.",
@@ -276,9 +314,11 @@
       "imageUrl": "https://d39ru7awumhhs2.cloudfront.net/colombia/products/2109535/1776611984D_NQ_NP_772290-MCO101261817599_122025-O.webp",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 144900
+      "price": 144900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:44.782Z"
     },
-    {
+    "default_candado-alarma-grande": {
       "id": "candado-alarma-grande",
       "name": "Candado Alarma Grande",
       "description": "Candado de alta seguridad con alarma integrada de 110dB que se activa ante golpes o forcejeos. Incluye 3 llaves.",
@@ -289,9 +329,11 @@
       "imageUrl": "/src/assets/images/CANDADO ALARMA.jpeg",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 72900
+      "price": 72900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:44.991Z"
     },
-    {
+    "default_destornillador-atornillador-electrico": {
       "id": "destornillador-atornillador-electrico",
       "name": "Destornillador Atornillador Eléctrico",
       "description": "Destornillador eléctrico recargable inalámbrico de diseño compacto con juego completo de puntas y cable de carga USB.",
@@ -302,9 +344,11 @@
       "imageUrl": "/src/assets/images/ATORNILLADOR INALAMBRICO.png",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 78900
+      "price": 78900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:45.204Z"
     },
-    {
+    "default_inter-comunicador-y10": {
       "id": "inter-comunicador-y10",
       "name": "Inter Comunicador Y10",
       "description": "Intercomunicador Bluetooth Y10 para cascos de moto con luces RGB, reducción de ruido y manos libres impermeable.",
@@ -315,9 +359,11 @@
       "imageUrl": "/src/assets/images/INTERCOMUNICADOR.png",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 96900
+      "price": 96900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:45.422Z"
     },
-    {
+    "default_religioso-w-213": {
       "id": "religioso-w-213",
       "name": "Religioso W 213",
       "description": "Cuadro decorativo políptico religioso de 5 paneles de alta calidad con diseño del Sagrado Corazón de Jesús.",
@@ -328,9 +374,11 @@
       "imageUrl": "https://d39ru7awumhhs2.cloudfront.net/colombia/products/845654/RELIGIOSO-W-213-jpg.jpg",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 143900
+      "price": 143900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:45.644Z"
     },
-    {
+    "default_modem-wifi-portatil": {
       "id": "modem-wifi-portatil",
       "name": "Módem Wifi Portátil Pro",
       "description": "Módem router wifi portátil 4G/5G LTE recargable de alta velocidad. Conecta hasta 10 dispositivos simultáneamente.",
@@ -341,9 +389,11 @@
       "imageUrl": "/src/assets/images/WIFIPORTATIL.png",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 196900
+      "price": 196900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:45.853Z"
     },
-    {
+    "default_potenmax-gomas": {
       "id": "potenmax-gomas",
       "name": "Potenmax X 60 Gomas",
       "description": "Potenmax gomas masticables con borojó y chontaduro. Estimulante natural, energético, ayuda a aumentar las defensas y reforzar el organismo.",
@@ -354,9 +404,11 @@
       "imageUrl": "https://d39ru7awumhhs2.cloudfront.net/colombia/products/1805565/1746404603POTENMAX%20X%2060%20GOMAS.jpeg",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 91900
+      "price": 91900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:46.055Z"
     },
-    {
+    "default_lampara-led-sensor": {
       "id": "lampara-led-sensor",
       "name": "Lámpara Led Sensor Ever Brite",
       "description": "Lámpara solar Ever Brite con sensor de movimiento, panel de 0.44W, batería de litio de 600 mAh y luces LED de alta luminosidad. Ideal para exteriores, jardín y fachadas.",
@@ -367,9 +419,11 @@
       "imageUrl": "/src/assets/images/LAMPARA LED.png",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 85900
+      "price": 85900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:46.256Z"
     },
-    {
+    "default_pistola-pintura": {
       "id": "pistola-pintura",
       "name": "Pistola De Pintura Eléctrica",
       "description": "Pistola pulverizadora Wap de pintura eléctrica portátil de alto rendimiento. Permite pintar de forma rápida, uniforme y profesional con diseño ultra ergonómico.",
@@ -380,9 +434,11 @@
       "imageUrl": "https://d39ru7awumhhs2.cloudfront.net/colombia/products/2018112/1765293903OIP%20(1).webp",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 133900
+      "price": 133900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:46.475Z"
     },
-    {
+    "default_combo-compresor-linterna": {
       "id": "combo-compresor-linterna",
       "name": "Combo Compresor Multifuncional + Linterna",
       "description": "Combo inteligente de compresor de aire digital inalámbrico recargable de alta presión y linterna de alta potencia para emergencias y mantenimiento vial.",
@@ -393,9 +449,11 @@
       "imageUrl": "https://d39ru7awumhhs2.cloudfront.net/colombia/products/1747538/1744056531Post%20de%20Instagram%20nuevo%20producto%20Minimalista%20Beige%20Marr%C3%B3n%20Blanco%20%20(27).png",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 172900
+      "price": 172900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:46.704Z"
     },
-    {
+    "default_tina-plegable": {
       "id": "tina-plegable",
       "name": "Tina Plegable",
       "description": "Práctica tina plegable portátil de alta calidad para bebés o mascotas, ultra compacta, segura, ergonómica y fácil de guardar.",
@@ -406,9 +464,11 @@
       "imageUrl": "https://loremflickr.com/400/400/folding-bathtub?lock=1301",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 99900
+      "price": 99900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:46.925Z"
     },
-    {
+    "default_glucosamina-chondroitin": {
       "id": "glucosamina-chondroitin",
       "name": "Glucosamin Chondroitin Msm",
       "description": "Suplemento alimenticio avanzado de Glucosamina, Condroitina y MSM para el fortalecimiento de articulaciones, cartílagos y ligamentos.",
@@ -419,9 +479,11 @@
       "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_660995-MCO48325838520_112021-O.webp",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 91900
+      "price": 91900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:47.125Z"
     },
-    {
+    "default_pista-de-carros": {
       "id": "pista-de-carros",
       "name": "Pista De Carros",
       "description": "Pista de carros interactiva de alta velocidad con giros extremos de 360 grados, propulsor y luces. Diversión garantizada.",
@@ -432,9 +494,11 @@
       "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_895393-MLA50901235122_072022-O.webp",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 133900
+      "price": 133900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:47.339Z"
     },
-    {
+    "default_masajeador-gun-8820": {
       "id": "masajeador-gun-8820",
       "name": "Masajeador Gun 8820",
       "description": "Pistola de masaje muscular profunda con 6 velocidades y múltiples cabezales ajustables para aliviar tensión, fatiga y dolor.",
@@ -445,9 +509,11 @@
       "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_934149-MCO46182181513_052021-O.webp",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 107900
+      "price": 107900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:47.544Z"
     },
-    {
+    "default_mini-gun-lanzador-hidrogel": {
       "id": "mini-gun-lanzador-hidrogel",
       "name": "Mini Gun Lanzador De Dardos E Hidrogel",
       "description": "Divertido lanzador semiautomático con dardos suaves de espuma y balines de hidrogel ecológicos para batallas seguras en exteriores.",
@@ -458,9 +524,11 @@
       "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_632349-MCO51123498112_082022-O.webp",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 122900
+      "price": 122900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:47.781Z"
     },
-    {
+    "default_fbmax-1000ml": {
       "id": "fbmax-1000ml",
       "name": "Fbmax 1000 Ml",
       "description": "Bebida energizante premium y suplemento natural concentrado FBMAX para potenciar el rendimiento físico, mental y la quema de grasa.",
@@ -471,9 +539,11 @@
       "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_603845-MCO74491959345_022024-O.webp",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 86900
+      "price": 86900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:48.032Z"
     },
-    {
+    "default_cepillo-secador-plancha-aguacate": {
       "id": "cepillo-secador-plancha-aguacate",
       "name": "Cepillo Secador Y Plancha De Aguacate",
       "description": "Kit profesional de belleza compuesto por cepillo secador giratorio y plancha alisadora con placas infundidas en aceite de aguacate y macadamia.",
@@ -484,9 +554,11 @@
       "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_825835-MCO74100913554_012024-O.webp",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 127900
+      "price": 127900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:48.242Z"
     },
-    {
+    "default_probador-de-corriente": {
       "id": "probador-de-corriente",
       "name": "Probador De Corriente",
       "description": "Lápiz detector y probador de corriente digital sin contacto, seguro, con alerta sonora y pantalla retroiluminada.",
@@ -497,9 +569,11 @@
       "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_753139-MCO48100913123_112021-O.webp",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 78900
+      "price": 78900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:48.464Z"
     },
-    {
+    "default_sopladora-larga-inalambrica-2bat": {
       "id": "sopladora-larga-inalambrica-2bat",
       "name": "Sopladora Larga Inalambrica 2 Baterias",
       "description": "Sopladora inalámbrica ultra potente de largo alcance, ideal para jardinería, talleres y limpieza de hojas. Incluye 2 baterías de alto rendimiento.",
@@ -510,9 +584,11 @@
       "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_908123-MCO74512938123_022024-O.webp",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 133900
+      "price": 133900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:48.669Z"
     },
-    {
+    "default_shilajit-1000ml": {
       "id": "shilajit-1000ml",
       "name": "Shilajit 1000 Ml",
       "description": "Extracto líquido purificado de Shilajit del Himalaya de 1000 ml. Rico en ácido fúlvico y 84+ minerales para maximizar tu energía y enfoque.",
@@ -523,9 +599,11 @@
       "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_723491-MCO74291849182_012024-O.webp",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 81900
+      "price": 81900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:48.880Z"
     },
-    {
+    "default_mini-martillo-8oz": {
       "id": "mini-martillo-8oz",
       "name": "Mini Martillo 8 Oz",
       "description": "Martillo de uña mini de 8 oz con mango ergonómico antideslizante de goma. Compacto y sumamente resistente para el hogar.",
@@ -536,9 +614,11 @@
       "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_918239-MCO49102931293_022022-O.webp",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 86900
+      "price": 86900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:49.154Z"
     },
-    {
+    "default_calostrum-calostro-500g": {
       "id": "calostrum-calostro-500g",
       "name": "Calostrum Calostro Bovino 500g",
       "description": "Polvo de Calostro Bovino 100% puro y liofilizado de 500g. Potencia el sistema inmune, mejora la digestión y regeneración celular.",
@@ -549,9 +629,11 @@
       "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_834912-MCO74910293812_032024-O.webp",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 87900
+      "price": 87900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:49.356Z"
     },
-    {
+    "default_bichota-500ml": {
       "id": "bichota-500ml",
       "name": "Bichota 500 Ml",
       "description": "Suplemento alimenticio líquido Bichota de 500 ml formulado con colágeno, biotina y antioxidantes para resaltar la belleza y vitalidad de la mujer.",
@@ -562,9 +644,11 @@
       "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_603912-MCO74910293910_032024-O.webp",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 86900
+      "price": 86900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:49.581Z"
     },
-    {
+    "default_cargador-carro-sky-dolphin": {
       "id": "cargador-carro-sky-dolphin",
       "name": "Cargador Carro Sky Dolphin Usb 3a",
       "description": "Cargador vehicular rápido Sky Dolphin de 3 amperios con puerto USB inteligente y protección contra sobrecargas.",
@@ -575,9 +659,11 @@
       "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_819234-MCO50102931293_052022-O.webp",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 76900
+      "price": 76900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:49.793Z"
     },
-    {
+    "default_triturador-de-pollo": {
       "id": "triturador-de-pollo",
       "name": "Triturador De Pollo",
       "description": "Práctico y rápido triturador de carne y pollo manual con asas ergonómicas y base de silicona antideslizante para tu cocina.",
@@ -588,9 +674,11 @@
       "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_728391-MCO74102931923_012024-O.webp",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 86900
+      "price": 86900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:49.999Z"
     },
-    {
+    "default_maquina-barbera-patillera": {
       "id": "maquina-barbera-patillera",
       "name": "Maquina Barbera Patillera",
       "description": "Máquina patillera y delineadora profesional inalámbrica con cuchillas ultra afiladas y pantalla LCD de carga. Ideal para contornos.",
@@ -601,9 +689,11 @@
       "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_923849-MCO48102931234_112021-O.webp",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 87900
+      "price": 87900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:50.205Z"
     },
-    {
+    "default_porta-vaso-carro-multifuncional": {
       "id": "porta-vaso-carro-multifuncional",
       "name": "Porta Vaso Para Carro Multifuncional",
       "description": "Expansor multifuncional de portavasos para automóvil con rotación ajustable 360 grados, soporte para celular y compartimento extra.",
@@ -614,9 +704,11 @@
       "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_918231-MCO74192839123_022024-O.webp",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 101900
+      "price": 101900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:50.441Z"
     },
-    {
+    "default_herramienta-recoger-fruta": {
       "id": "herramienta-recoger-fruta",
       "name": "Herramienta Para Recoger Fruta Pequeña",
       "description": "Dispositivo para recolectar fruta desde el suelo o altura de manera segura, sin dañar la planta ni la fruta.",
@@ -627,9 +719,11 @@
       "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_821923-MCO74291829312_012024-O.webp",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 96900
+      "price": 96900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:50.640Z"
     },
-    {
+    "default_juego-candados": {
       "id": "juego-candados",
       "name": "Juego Candados",
       "description": "Kit de candados blindados de alta resistencia fabricados en aleación de alta dureza con juego de llaves de seguridad.",
@@ -640,9 +734,11 @@
       "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_721839-MCO50192831293_052022-O.webp",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 127900
+      "price": 127900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:50.838Z"
     },
-    {
+    "default_desengrasante-lava-motor": {
       "id": "desengrasante-lava-motor",
       "name": "Desengrasante Lava Motor",
       "description": "Poderoso limpiador desengrasante biodegradable de acción rápida para eliminar aceite pesado y suciedad en motores y autopartes.",
@@ -653,9 +749,11 @@
       "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_912839-MCO74910293129_032024-O.webp",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 112900
+      "price": 112900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:51.056Z"
     },
-    {
+    "default_parlante-para-ducha": {
       "id": "parlante-para-ducha",
       "name": "Parlante Para Ducha",
       "description": "Mini altavoz Bluetooth impermeable IPX4 con ventosa, micrófono integrado para llamadas y excelente calidad de audio.",
@@ -666,9 +764,11 @@
       "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_821920-MCO49102931293_022022-O.webp",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 80900
+      "price": 80900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:51.261Z"
     },
-    {
+    "default_candida-cleanse": {
       "id": "candida-cleanse",
       "name": "Candida Cleanse",
       "description": "Suplemento natural de limpieza y desintoxicación intestinal para combatir el exceso de levaduras de Candida y mejorar la digestión.",
@@ -679,9 +779,11 @@
       "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_718293-MCO74102931293_012024-O.webp",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 93900
+      "price": 93900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:51.467Z"
     },
-    {
+    "default_resveratrol-nath-1000ml": {
       "id": "resveratrol-nath-1000ml",
       "name": "Resveratrol Nath X 1000 Ml Nh",
       "description": "Antioxidante natural líquido a base de extracto concentrado de uva Resveratrol de 1000 ml para el cuidado cardiovascular.",
@@ -692,9 +794,11 @@
       "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_601928-MCO74291829312_012024-O.webp",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 82900
+      "price": 82900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:51.675Z"
     },
-    {
+    "default_audifonos-sound15-power": {
       "id": "audifonos-sound15-power",
       "name": "Audifonos Sound 15 Power Bluetooth",
       "description": "Auriculares inalámbricos de diadema de alta fidelidad, con cancelación pasiva de ruido, graves profundos y almohadillas acolchadas.",
@@ -705,9 +809,11 @@
       "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_812931-MCO74291823912_012024-O.webp",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 114900
+      "price": 114900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:51.882Z"
     },
-    {
+    "default_molino-de-verduras": {
       "id": "molino-de-verduras",
       "name": "Molino De Verduras",
       "description": "Molino manual premium giratorio de cocina para rallar, rebanar y triturar todo tipo de verduras en segundos con total seguridad.",
@@ -718,9 +824,11 @@
       "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_901239-MCO74192831293_022024-O.webp",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 91900
+      "price": 91900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:52.091Z"
     },
-    {
+    "default_bombillo-solar-emergencia": {
       "id": "bombillo-solar-emergencia",
       "name": "Bombillo Solar Emergencia",
       "description": "Bombillo solar portátil LED de emergencia recargable con panel solar incorporado, puerto USB de carga y gancho para colgar.",
@@ -731,9 +839,11 @@
       "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_819231-MCO50192831293_052022-O.webp",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 91900
+      "price": 91900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:52.291Z"
     },
-    {
+    "default_cepillo-secador-aguacate-solo": {
       "id": "cepillo-secador-aguacate-solo",
       "name": "Cepillo Secador Aguacate",
       "description": "Cepillo alisador y secador 3 en 1 con revestimiento de cerámica enriquecido con aceite de aguacate para un secado rápido y sin frizz.",
@@ -744,9 +854,11 @@
       "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_819321-MCO51293812938_082022-O.webp",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 91900
+      "price": 91900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:52.487Z"
     },
-    {
+    "default_aceite-post-afeitador-acido": {
       "id": "aceite-post-afeitador-acido",
       "name": "Aceite Post Afeitador Acido Hialuronico",
       "description": "Aceite reparador post-afeitado ultra hidratante formulado con Ácido Hialurónico para prevenir irritaciones y calmar la piel.",
@@ -757,9 +869,11 @@
       "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_923812-MCO74910293129_032024-O.webp",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 96900
+      "price": 96900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:52.702Z"
     },
-    {
+    "default_juguete-perro-grande": {
       "id": "juguete-perro-grande",
       "name": "Juguete Perro Grande",
       "description": "Mordedor ultra duradero y súper resistente de caucho no tóxico para perros medianos y grandes. Ideal para masticadores fuertes.",
@@ -770,9 +884,11 @@
       "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_821938-MCO50293812938_062022-O.webp",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 133900
+      "price": 133900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:52.922Z"
     },
-    {
+    "default_camara-exterior-doble-lente": {
       "id": "camara-exterior-doble-lente",
       "name": "Camara De Exterior Doble Lente",
       "description": "Cámara de seguridad para exteriores de doble lente de alta definición con rotación PTZ, visión nocturna infrarroja y a color con app móvil.",
@@ -783,9 +899,11 @@
       "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_918239-MCO74910293129_032024-O.webp",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 148900
+      "price": 148900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:53.116Z"
     },
-    {
+    "default_jabonera-transparente-doble": {
       "id": "jabonera-transparente-doble",
       "name": "Jabonera Transparente Doble",
       "description": "Soporte de doble bandeja transparente autoadhesivo para jabones. Diseño elegante que drena de manera eficiente en baños y duchas.",
@@ -796,9 +914,11 @@
       "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_812938-MCO50192831293_052022-O.webp",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 83900
+      "price": 83900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:53.341Z"
     },
-    {
+    "default_pistola-hidrogel-sr079b": {
       "id": "pistola-hidrogel-sr079b",
       "name": "Pistola Hidrogel SR079B",
       "description": "Lanzador de juguete automático de balines de hidrogel ecológicos modelo SR079B. Incluye batería de larga duración, mira telescópica y accesorios de combate.",
@@ -809,9 +929,11 @@
       "imageUrl": "https://http2.mlstatic.com/D_NQ_NP_918231-MCO74102931293_012024-O.webp",
       "currency": "COP",
       "provider": "Dropi",
-      "price": 148900
+      "price": 148900,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:53.566Z"
     },
-    {
+    "default_tablero-futbol": {
       "id": "tablero-futbol",
       "name": "Tablero Futbol",
       "description": "Divertido tablero de fútbol de mesa interactivo para niños y adultos. Ideal para jugar en familia y desarrollar la coordinación.",
@@ -822,9 +944,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 122900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:53.763Z"
     },
-    {
+    "default_organizador-giratorio-360-especies": {
       "id": "organizador-giratorio-360-especies",
       "name": "Organizador Giratorio 360 Especies",
       "description": "Práctico organizador de especias y condimentos con base giratoria 360 grados. Ahorra espacio y mantén tu cocina ordenada.",
@@ -835,9 +959,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 91900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:53.991Z"
     },
-    {
+    "default_organizador-de-toallas": {
       "id": "organizador-de-toallas",
       "name": "Organizador De Toallas",
       "description": "Soporte organizador de toallas para baño, diseño elegante y moderno. Fácil de instalar y muy resistente.",
@@ -848,9 +974,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 81900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:54.216Z"
     },
-    {
+    "default_maca": {
       "id": "maca",
       "name": "Maca",
       "description": "Suplemento natural de Maca en polvo. Excelente fuente de energía y vitalidad, ideal para mejorar el rendimiento físico y mental.",
@@ -861,9 +989,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 87900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:54.422Z"
     },
-    {
+    "default_linterna-led-potente-tactica": {
       "id": "linterna-led-potente-tactica",
       "name": "Linterna Led Potente Tactica",
       "description": "Linterna táctica LED de alta potencia con zoom ajustable y batería recargable. Perfecta para camping, seguridad y emergencias.",
@@ -874,9 +1004,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 112900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:54.691Z"
     },
-    {
+    "default_set-de-marcadores-x-48-piezas": {
       "id": "set-de-marcadores-x-48-piezas",
       "name": "Set De Marcadores X 48 Piezas",
       "description": "Estuche con 48 marcadores de colores vibrantes y doble punta. Ideal para diseño, ilustración, lettering y coloreado.",
@@ -887,9 +1019,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 90900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:54.911Z"
     },
-    {
+    "default_quita-callos": {
       "id": "quita-callos",
       "name": "Quita Callos",
       "description": "Removedor de callos eléctrico recargable. Suaviza la piel de tus pies de forma rápida, segura y sin dolor en la comodidad de tu hogar.",
@@ -900,9 +1034,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 80900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:55.125Z"
     },
-    {
+    "default_termometro-para-alimentos": {
       "id": "termometro-para-alimentos",
       "name": "Termometro Para Alimentos",
       "description": "Termómetro digital de cocina tipo sonda para carnes, líquidos y repostería. Lectura rápida y precisa para resultados profesionales.",
@@ -913,9 +1049,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 73900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:55.319Z"
     },
-    {
+    "default_llavero-sorpresa-la-bubu-y-capibara": {
       "id": "llavero-sorpresa-la-bubu-y-capibara",
       "name": "Llavero Sorpresa La Bubu Y Capibara",
       "description": "Llaveros coleccionables sorpresa con adorables diseños de La Bubu y Capibara. Perfectos para regalar o decorar tu mochila.",
@@ -926,9 +1064,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 71900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:55.549Z"
     },
-    {
+    "default_zapatero-plegable-6-niveles-en-acrilico": {
       "id": "zapatero-plegable-6-niveles-en-acrilico",
       "name": "Zapatero Plegable 6 Niveles En Acrilico",
       "description": "Organizador de zapatos plegable de 6 niveles fabricado en acrílico transparente. Diseño elegante, resistente y apilable.",
@@ -939,9 +1079,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 148900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:55.762Z"
     },
-    {
+    "default_rayador-de-verdura-electrico": {
       "id": "rayador-de-verdura-electrico",
       "name": "Rayador De Verdura Electrico",
       "description": "Rallador y cortador eléctrico de verduras con múltiples cuchillas intercambiables. Ahorra tiempo en la cocina con cortes perfectos.",
@@ -952,9 +1094,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 115900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:55.962Z"
     },
-    {
+    "default_pistola-lanzadora-de-hidrogel": {
       "id": "pistola-lanzadora-de-hidrogel",
       "name": "Pistola Lanzadora De Hidrogel",
       "description": "Pistola de juguete que dispara seguras bolas de hidrogel ecológicas. Batería recargable y diseño futurista para máxima diversión.",
@@ -965,9 +1109,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 85900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:56.181Z"
     },
-    {
+    "default_perchero-doble-con-ruedas-de-160-cm": {
       "id": "perchero-doble-con-ruedas-de-160-cm",
       "name": "Perchero Doble Con Ruedas De 160 Cm",
       "description": "Práctico perchero metálico de doble barra ajustable con ruedas para fácil movilidad. Ideal para organizar ropa y zapatos.",
@@ -978,9 +1124,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 114900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:56.382Z"
     },
-    {
+    "default_parches-acne": {
       "id": "parches-acne",
       "name": "Parches Acne",
       "description": "Parches hidrocoloides invisibles para el tratamiento de granos y acné. Absorben impurezas, reducen la inflamación y protegen la piel.",
@@ -991,9 +1139,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 74900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:56.585Z"
     },
-    {
+    "default_espumador-batidora-electrica-4-en-1": {
       "id": "espumador-batidora-electrica-4-en-1",
       "name": "Espumador Batidora Electrica 4 En 1",
       "description": "Batidora de mano y espumador eléctrico multifuncional 4 en 1. Prepara deliciosos capuchinos, bate huevos y mezcla con facilidad.",
@@ -1004,9 +1154,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 127900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:56.802Z"
     },
-    {
+    "default_convertidor-de-pilas-aaa-en-aa-x2": {
       "id": "convertidor-de-pilas-aaa-en-aa-x2",
       "name": "Convertidor De Pilas Aaa En Aa X2",
       "description": "Adaptador práctico para convertir pilas AAA a tamaño AA. Solución económica y ecológica para tus dispositivos electrónicos.",
@@ -1017,9 +1169,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 71900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:57.005Z"
     },
-    {
+    "default_lonchera-porta-comida-2-en-1": {
       "id": "lonchera-porta-comida-2-en-1",
       "name": "Lonchera Porta Comida 2 En 1",
       "description": "Lonchera eléctrica y porta comidas térmico 2 en 1. Calienta tu almuerzo en la oficina o el auto sin necesidad de microondas.",
@@ -1030,9 +1184,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 91900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:57.241Z"
     },
-    {
+    "default_chlorum-x-6": {
       "id": "chlorum-x-6",
       "name": "Chlorum X 6",
       "description": "Suplemento natural líquido a base de clorofila. Potente desintoxicante, oxigena la sangre y ayuda a neutralizar los malos olores corporales.",
@@ -1043,9 +1199,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 85900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:57.436Z"
     },
-    {
+    "default_tope-de-puerta-con-sistema-de-alarma": {
       "id": "tope-de-puerta-con-sistema-de-alarma",
       "name": "Tope De Puerta Con Sistema De Alarma",
       "description": "Tope de puerta de seguridad con alarma sirena de 120dB integrada. Se activa al intentar abrir la puerta, ideal para viajes o vivir solo.",
@@ -1056,9 +1214,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 80900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:57.659Z"
     },
-    {
+    "default_yerba-magic-peach-mango": {
       "id": "yerba-magic-peach-mango",
       "name": "Yerba Magic Peach Mango",
       "description": "Bebida energizante natural a base de Yerba Mate sabor Durazno y Mango. Energía limpia y prolongada sin el bajón del café.",
@@ -1069,9 +1229,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 89900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:57.856Z"
     },
-    {
+    "default_funda-protectora-para-moto": {
       "id": "funda-protectora-para-moto",
       "name": "Funda Protectora Para Moto",
       "description": "Pijama carpa impermeable para motocicleta con protección UV. Protege tu moto de la lluvia, el sol, el polvo y los rayones.",
@@ -1082,9 +1244,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 80900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:58.072Z"
     },
-    {
+    "default_set-de-utensilios-x-19-pequeno": {
       "id": "set-de-utensilios-x-19-pequeno",
       "name": "Set De Utensilios X 19 Pequeno",
       "description": "Completo set de 19 utensilios de cocina en silicona antiadherente de grado alimenticio con mango de madera. Resistentes al calor.",
@@ -1095,9 +1259,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 110900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:58.275Z"
     },
-    {
+    "default_linterna-frontal": {
       "id": "linterna-frontal",
       "name": "Linterna Frontal",
       "description": "Linterna de cabeza manos libres con luz LED COB súper brillante, sensor de movimiento y batería recargable vía USB.",
@@ -1108,9 +1274,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 91900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:58.513Z"
     },
-    {
+    "default_maquillaje-capibara": {
       "id": "maquillaje-capibara",
       "name": "Maquillaje Capibara",
       "description": "Set de maquillaje infantil con temática del adorable Capibara. Seguro, no tóxico y fácil de lavar, perfecto para las más pequeñas.",
@@ -1121,9 +1289,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 86900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:58.713Z"
     },
-    {
+    "default_limpiadora-a-vapor-multifuncional": {
       "id": "limpiadora-a-vapor-multifuncional",
       "name": "Limpiadora A Vapor Multifuncional",
       "description": "Máquina de limpieza a vapor de alta presión con múltiples boquillas. Limpia, desinfecta y quita la grasa sin usar químicos.",
@@ -1134,9 +1304,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 159900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:58.926Z"
     },
-    {
+    "default_lector-interactivo-educativo-ingles": {
       "id": "lector-interactivo-educativo-ingles",
       "name": "Lector Interactivo Educativo Ingles",
       "description": "Juguete educativo bilingüe con tarjetas interactivas para que los niños aprendan vocabulario, pronunciación y sonidos en inglés de forma divertida.",
@@ -1147,9 +1319,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 95900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:59.130Z"
     },
-    {
+    "default_silla-de-camping-portatil": {
       "id": "silla-de-camping-portatil",
       "name": "Silla De Camping Portatil",
       "description": "Silla plegable ultraligera y resistente para acampar, pescar o ir a la playa. Incluye bolsa de transporte, fácil de armar.",
@@ -1160,9 +1334,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 139900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:59.355Z"
     },
-    {
+    "default_lampara-reloj-astronauta-en-la-luna-led": {
       "id": "lampara-reloj-astronauta-en-la-luna-led",
       "name": "Lampara Reloj Astronauta En La Luna Led",
       "description": "Innovadora lámpara de noche con diseño de astronauta, proyector de galaxias, reloj digital y cargador inalámbrico incorporado.",
@@ -1173,9 +1349,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 154900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:59.590Z"
     },
-    {
+    "default_humificador-gotas-bluetooth": {
       "id": "humificador-gotas-bluetooth",
       "name": "Humificador Gotas Bluetooth",
       "description": "Humidificador y difusor de aromaterapia con efecto visual de gotas antigravedad, luz LED y parlante Bluetooth integrado.",
@@ -1186,9 +1364,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 159900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:13:59.806Z"
     },
-    {
+    "default_plantillas-en-silicona": {
       "id": "plantillas-en-silicona",
       "name": "Plantillas En Silicona",
       "description": "Plantillas ortopédicas de gel de silicona para amortiguar el impacto. Alivian el dolor de pies, talones y fascitis plantar.",
@@ -1199,9 +1379,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 80900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:00.038Z"
     },
-    {
+    "default_carro-control-remoto-sin-limites": {
       "id": "carro-control-remoto-sin-limites",
       "name": "Carro Control Remoto Sin Limites",
       "description": "Auto acrobático a control remoto 4x4 con luces LED, giro 360 grados y sensor de gestos con la mano para controlarlo.",
@@ -1212,9 +1394,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 116900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:00.243Z"
     },
-    {
+    "default_organizador-ropa-sucia": {
       "id": "organizador-ropa-sucia",
       "name": "Organizador Ropa Sucia",
       "description": "Cesto plegable organizador para ropa sucia con estructura de aluminio. Diseño moderno, duradero y ahorrador de espacio.",
@@ -1225,9 +1409,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 94900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:00.481Z"
     },
-    {
+    "default_gafas-bt": {
       "id": "gafas-bt",
       "name": "Gafas Bt",
       "description": "Gafas de sol deportivas inteligentes con conectividad Bluetooth, auriculares integrados y micrófono para llamadas y música manos libres.",
@@ -1238,9 +1424,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 85900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:00.680Z"
     },
-    {
+    "default_bombillo-inteligente-tuya-app": {
       "id": "bombillo-inteligente-tuya-app",
       "name": "Bombillo Inteligente Tuya App",
       "description": "Foco LED WiFi RGB+W compatible con Tuya Smart, Alexa y Google Home. Controla color, brillo y horarios desde tu celular.",
@@ -1251,9 +1439,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 91900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:00.901Z"
     },
-    {
+    "default_sofa-inflable-banana": {
       "id": "sofa-inflable-banana",
       "name": "Sofa Inflable Banana",
       "description": "Puff sofá perezoso inflable portátil y ultra ligero. Se infla con el viento en segundos, ideal para camping, playa o jardín.",
@@ -1264,9 +1454,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 88900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:01.104Z"
     },
-    {
+    "default_rueda-abdominal": {
       "id": "rueda-abdominal",
       "name": "Rueda Abdominal",
       "description": "Rodillo para ejercicios abdominales de doble rueda antideslizante con rodillera incluida. Tonifica tu core desde casa.",
@@ -1277,9 +1469,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 84900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:01.334Z"
     },
-    {
+    "default_destprnillador-taladro": {
       "id": "destprnillador-taladro",
       "name": "Destprnillador Taladro",
       "description": "Taladro atornillador inalámbrico de 12V a 24V con kit de accesorios y baterías. Potente, ergonómico y multiusos para el hogar.",
@@ -1290,9 +1484,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 143900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:01.549Z"
     },
-    {
+    "default_multi-collagen-microingredients": {
       "id": "multi-collagen-microingredients",
       "name": "Multi Collagen Microingredients",
       "description": "Péptidos de Colágeno Multi tipo I, II, III, V y X hidrolizado. Mejora la salud de la piel, cabello, uñas y articulaciones.",
@@ -1303,9 +1499,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 86900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:01.771Z"
     },
-    {
+    "default_maquina-htc": {
       "id": "maquina-htc",
       "name": "Maquina Htc",
       "description": "Máquina cortapelo profesional HTC recargable. Cuchillas de acero de precisión, diseño ergonómico y guías de corte incluidas.",
@@ -1316,9 +1514,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 101900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:02.014Z"
     },
-    {
+    "default_casco-proteccion": {
       "id": "casco-proteccion",
       "name": "Casco Proteccion",
       "description": "Casco de seguridad industrial de alta resistencia certificado para construcción y trabajos de obra. Cómodo y ajustable.",
@@ -1329,9 +1529,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 84900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:02.226Z"
     },
-    {
+    "default_termo-termico-stainless": {
       "id": "termo-termico-stainless",
       "name": "Termo Termico Stainless",
       "description": "Termo de acero inoxidable con aislamiento al vacío de doble pared. Mantiene bebidas calientes o frías por hasta 12 horas.",
@@ -1342,9 +1544,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 90900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:02.425Z"
     },
-    {
+    "default_combo-3-en-1-keratina": {
       "id": "combo-3-en-1-keratina",
       "name": "Combo 3 En 1 Keratina",
       "description": "Tratamiento completo capilar alisador con keratina. Incluye shampoo preparador, tratamiento alisante y mascarilla selladora.",
@@ -1355,9 +1559,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 154900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:02.643Z"
     },
-    {
+    "default_juego-set-de-maquillaje-para-ninas-cute": {
       "id": "juego-set-de-maquillaje-para-ninas-cute",
       "name": "Juego Set De Maquillaje Para Ninas Cute",
       "description": "Maletín completo de maquillaje de fantasía para niñas. Cosméticos reales lavables, seguros y con hermosos colores y accesorios.",
@@ -1368,9 +1574,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 106900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:02.854Z"
     },
-    {
+    "default_maquillaje-kuromi-bolso": {
       "id": "maquillaje-kuromi-bolso",
       "name": "Maquillaje Kuromi Bolso",
       "description": "Set de brochas y maquillaje inspirado en Kuromi, viene en un lindo bolso cosmetiquero kawaii. Perfecto para fans de Sanrio.",
@@ -1381,9 +1589,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 93900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:03.058Z"
     },
-    {
+    "default_cuchillo-vikingo": {
       "id": "cuchillo-vikingo",
       "name": "Cuchillo Vikingo",
       "description": "Cuchillo hacha de chef estilo artesanal serbio forjado a mano en acero al carbono. Filo extremo para carnes y vegetales.",
@@ -1394,9 +1604,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 93900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:03.277Z"
     },
-    {
+    "default_humificador-base-de-madera": {
       "id": "humificador-base-de-madera",
       "name": "Humificador Base De Madera",
       "description": "Difusor de aceites esenciales ultrasónico con elegante base diseño madera y luces LED tenues. Crea un ambiente relajante.",
@@ -1407,9 +1619,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 108900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:03.484Z"
     },
-    {
+    "default_muneco-sonny-angel-hippers": {
       "id": "muneco-sonny-angel-hippers",
       "name": "Muneco Sonny Angel Hippers",
       "description": "Figuras coleccionables Sonny Angel Hippers. Diseñados para asomarse desde la parte superior de tu celular o monitor.",
@@ -1420,9 +1634,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 73900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:03.706Z"
     },
-    {
+    "default_rueda-abdominal-rebote-automatico": {
       "id": "rueda-abdominal-rebote-automatico",
       "name": "Rueda Abdominal Rebote Automatico",
       "description": "Rodillo abdominal inteligente con sistema de asistencia de rebote automático para proteger tu espalda y maximizar el esfuerzo.",
@@ -1433,9 +1649,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 115900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:03.927Z"
     },
-    {
+    "default_patineta-hidrahulica": {
       "id": "patineta-hidrahulica",
       "name": "Patineta Hidrahulica",
       "description": "Excelente producto: Patineta Hidrahulica. Calidad garantizada.",
@@ -1446,9 +1664,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 140900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:04.142Z"
     },
-    {
+    "default_reloj-despertador-con-carga-inalambrica": {
       "id": "reloj-despertador-con-carga-inalambrica",
       "name": "Reloj Despertador Con Carga Inalambrica",
       "description": "Excelente producto: Reloj Despertador Con Carga Inalambrica. Calidad garantizada.",
@@ -1459,9 +1679,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 105900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:04.384Z"
     },
-    {
+    "default_citrato-de-magnesio-natural": {
       "id": "citrato-de-magnesio-natural",
       "name": "Citrato De Magnesio Natural",
       "description": "Excelente producto: Citrato De Magnesio Natural. Calidad garantizada.",
@@ -1472,9 +1694,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 86900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:04.583Z"
     },
-    {
+    "default_reloj-smartwatch-t800-ultra": {
       "id": "reloj-smartwatch-t800-ultra",
       "name": "Reloj Smartwatch T800 Ultra",
       "description": "Excelente producto: Reloj Smartwatch T800 Ultra. Calidad garantizada.",
@@ -1485,9 +1709,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 101900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:04.800Z"
     },
-    {
+    "default_pelota-para-mascota": {
       "id": "pelota-para-mascota",
       "name": "Pelota Para Mascota",
       "description": "Excelente producto: Pelota Para Mascota. Calidad garantizada.",
@@ -1498,9 +1724,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 75900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:05.021Z"
     },
-    {
+    "default_dvd-niaduvan": {
       "id": "dvd-niaduvan",
       "name": "Dvd Niaduvan",
       "description": "Excelente producto: Dvd Niaduvan. Calidad garantizada.",
@@ -1511,9 +1739,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 133900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:05.237Z"
     },
-    {
+    "default_tgreen": {
       "id": "tgreen",
       "name": "Tgreen",
       "description": "Excelente producto: Tgreen. Calidad garantizada.",
@@ -1524,9 +1754,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 87900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:05.461Z"
     },
-    {
+    "default_telescopio-f36050": {
       "id": "telescopio-f36050",
       "name": "Telescopio F36050",
       "description": "Excelente producto: Telescopio F36050. Calidad garantizada.",
@@ -1537,9 +1769,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 143900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:05.661Z"
     },
-    {
+    "default_carpa-castillo-con-luces-led": {
       "id": "carpa-castillo-con-luces-led",
       "name": "Carpa Castillo Con Luces Led",
       "description": "Excelente producto: Carpa Castillo Con Luces Led. Calidad garantizada.",
@@ -1550,9 +1784,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 122900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:05.860Z"
     },
-    {
+    "default_combo-pinza-cepillo-aguacate": {
       "id": "combo-pinza-cepillo-aguacate",
       "name": "Combo Pinza Cepillo Aguacate",
       "description": "Excelente producto: Combo Pinza Cepillo Aguacate. Calidad garantizada.",
@@ -1563,9 +1799,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 133900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:06.056Z"
     },
-    {
+    "default_espejo-decorativo-pared-hexagonal-18cm": {
       "id": "espejo-decorativo-pared-hexagonal-18cm",
       "name": "Espejo Decorativo Pared Hexagonal 18cm",
       "description": "Excelente producto: Espejo Decorativo Pared Hexagonal 18cm. Calidad garantizada.",
@@ -1576,9 +1814,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 93900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:06.289Z"
     },
-    {
+    "default_diadema-major-iv": {
       "id": "diadema-major-iv",
       "name": "Diadema Major Iv",
       "description": "Excelente producto: Diadema Major Iv. Calidad garantizada.",
@@ -1589,9 +1829,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 108900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:06.504Z"
     },
-    {
+    "default_radio-para-ninos": {
       "id": "radio-para-ninos",
       "name": "Radio Para Ninos",
       "description": "Excelente producto: Radio Para Ninos. Calidad garantizada.",
@@ -1602,9 +1844,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 164900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:06.709Z"
     },
-    {
+    "default_pistola-mini-3": {
       "id": "pistola-mini-3",
       "name": "Pistola Mini 3",
       "description": "Excelente producto: Pistola Mini 3. Calidad garantizada.",
@@ -1615,9 +1859,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 143900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:06.926Z"
     },
-    {
+    "default_limpiador-electrico-de-biberones": {
       "id": "limpiador-electrico-de-biberones",
       "name": "Limpiador Electrico De Biberones",
       "description": "Excelente producto: Limpiador Electrico De Biberones. Calidad garantizada.",
@@ -1628,9 +1874,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 100900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:07.142Z"
     },
-    {
+    "default_olla-de-cera-calentador-depilar": {
       "id": "olla-de-cera-calentador-depilar",
       "name": "Olla De Cera Calentador Depilar",
       "description": "Excelente producto: Olla De Cera Calentador Depilar. Calidad garantizada.",
@@ -1641,9 +1889,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 96900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:07.392Z"
     },
-    {
+    "default_mini-ventilador-clip-usb-portatil": {
       "id": "mini-ventilador-clip-usb-portatil",
       "name": "Mini Ventilador Clip Usb Portatil",
       "description": "Excelente producto: Mini Ventilador Clip Usb Portatil. Calidad garantizada.",
@@ -1654,9 +1904,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 85900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:07.614Z"
     },
-    {
+    "default_espejo-retrovisor-camara-dual-carro": {
       "id": "espejo-retrovisor-camara-dual-carro",
       "name": "Espejo Retrovisor Camara Dual Carro",
       "description": "Excelente producto: Espejo Retrovisor Camara Dual Carro. Calidad garantizada.",
@@ -1667,9 +1919,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 110900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:07.844Z"
     },
-    {
+    "default_soporte-de-carga-magnetica": {
       "id": "soporte-de-carga-magnetica",
       "name": "Soporte De Carga Magnetica",
       "description": "Excelente producto: Soporte De Carga Magnetica. Calidad garantizada.",
@@ -1680,9 +1934,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 120900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:08.075Z"
     },
-    {
+    "default_car-blook": {
       "id": "car-blook",
       "name": "Car Blook",
       "description": "Excelente producto: Car Blook. Calidad garantizada.",
@@ -1693,9 +1949,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 128900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:08.273Z"
     },
-    {
+    "default_audifonos-bt-tour-pro-60": {
       "id": "audifonos-bt-tour-pro-60",
       "name": "Audifonos Bt Tour Pro 60",
       "description": "Excelente producto: Audifonos Bt Tour Pro 60. Calidad garantizada.",
@@ -1706,9 +1964,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 118900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:08.496Z"
     },
-    {
+    "default_caja-registradora-pantalla": {
       "id": "caja-registradora-pantalla",
       "name": "Caja Registradora Pantalla",
       "description": "Excelente producto: Caja Registradora Pantalla. Calidad garantizada.",
@@ -1719,9 +1979,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 93900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:08.706Z"
     },
-    {
+    "default_gancho-pequeno": {
       "id": "gancho-pequeno",
       "name": "Gancho Pequeno",
       "description": "Excelente producto: Gancho Pequeno. Calidad garantizada.",
@@ -1732,9 +1994,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 71900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:08.928Z"
     },
-    {
+    "default_organizador-de-cubiertos-en-acero": {
       "id": "organizador-de-cubiertos-en-acero",
       "name": "Organizador De Cubiertos En Acero",
       "description": "Excelente producto: Organizador De Cubiertos En Acero. Calidad garantizada.",
@@ -1745,9 +2009,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 110900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:09.125Z"
     },
-    {
+    "default_olla-de-chocolate": {
       "id": "olla-de-chocolate",
       "name": "Olla De Chocolate",
       "description": "Excelente producto: Olla De Chocolate. Calidad garantizada.",
@@ -1758,9 +2024,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 99900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:09.326Z"
     },
-    {
+    "default_mary-ruth-oregano": {
       "id": "mary-ruth-oregano",
       "name": "Mary Ruth Oregano",
       "description": "Excelente producto: Mary Ruth Oregano. Calidad garantizada.",
@@ -1771,9 +2039,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 86900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:09.545Z"
     },
-    {
+    "default_audifonos-para-discapacitados": {
       "id": "audifonos-para-discapacitados",
       "name": "Audifonos Para Discapacitados",
       "description": "Excelente producto: Audifonos Para Discapacitados. Calidad garantizada.",
@@ -1784,9 +2054,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 96900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:09.764Z"
     },
-    {
+    "default_limpiadora-de-vapor-12-en-1": {
       "id": "limpiadora-de-vapor-12-en-1",
       "name": "Limpiadora De Vapor 12 En 1",
       "description": "Excelente producto: Limpiadora De Vapor 12 En 1. Calidad garantizada.",
@@ -1797,9 +2069,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 164900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:09.964Z"
     },
-    {
+    "default_set-de-maquillaje-diy-besds": {
       "id": "set-de-maquillaje-diy-besds",
       "name": "Set De Maquillaje Diy Besds",
       "description": "Excelente producto: Set De Maquillaje Diy Besds. Calidad garantizada.",
@@ -1810,9 +2084,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 95900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:10.187Z"
     },
-    {
+    "default_humificador-nube": {
       "id": "humificador-nube",
       "name": "Humificador Nube",
       "description": "Excelente producto: Humificador Nube. Calidad garantizada.",
@@ -1823,9 +2099,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 143900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:10.388Z"
     },
-    {
+    "default_llavero-linterna": {
       "id": "llavero-linterna",
       "name": "Llavero Linterna",
       "description": "Excelente producto: Llavero Linterna. Calidad garantizada.",
@@ -1836,9 +2114,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 87900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:10.605Z"
     },
-    {
+    "default_sanduchera-figuras-doble-puesto": {
       "id": "sanduchera-figuras-doble-puesto",
       "name": "Sanduchera Figuras Doble Puesto",
       "description": "Excelente producto: Sanduchera Figuras Doble Puesto. Calidad garantizada.",
@@ -1849,9 +2129,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 127900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:10.835Z"
     },
-    {
+    "default_organizador-cosmeticos-caja": {
       "id": "organizador-cosmeticos-caja",
       "name": "Organizador Cosmeticos Caja",
       "description": "Excelente producto: Organizador Cosmeticos Caja. Calidad garantizada.",
@@ -1862,9 +2144,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 106900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:11.062Z"
     },
-    {
+    "default_airi": {
       "id": "airi",
       "name": "Airi",
       "description": "Excelente producto: Airi. Calidad garantizada.",
@@ -1875,9 +2159,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 89900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:11.282Z"
     },
-    {
+    "default_pulpo-cuerda-elastica": {
       "id": "pulpo-cuerda-elastica",
       "name": "Pulpo Cuerda Elastica",
       "description": "Excelente producto: Pulpo Cuerda Elastica. Calidad garantizada.",
@@ -1888,9 +2174,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 77900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:11.523Z"
     },
-    {
+    "default_extractor-de-jugo": {
       "id": "extractor-de-jugo",
       "name": "Extractor De Jugo",
       "description": "Excelente producto: Extractor De Jugo. Calidad garantizada.",
@@ -1901,9 +2189,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 98900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:11.768Z"
     },
-    {
+    "default_multi-collagen-peptides": {
       "id": "multi-collagen-peptides",
       "name": "Multi Collagen Peptides",
       "description": "Excelente producto: Multi Collagen Peptides. Calidad garantizada.",
@@ -1914,9 +2204,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 86900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:11.978Z"
     },
-    {
+    "default_microscopio-nfantil": {
       "id": "microscopio-nfantil",
       "name": "Microscopio Nfantil",
       "description": "Excelente producto: Microscopio Nfantil. Calidad garantizada.",
@@ -1927,9 +2219,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 127900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:12.202Z"
     },
-    {
+    "default_dispensador-de-crema-dental": {
       "id": "dispensador-de-crema-dental",
       "name": "Dispensador De Crema Dental",
       "description": "Excelente producto: Dispensador De Crema Dental. Calidad garantizada.",
@@ -1940,9 +2234,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 91900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:12.393Z"
     },
-    {
+    "default_gimnasio-de-chanclas": {
       "id": "gimnasio-de-chanclas",
       "name": "Gimnasio De Chanclas",
       "description": "Excelente producto: Gimnasio De Chanclas. Calidad garantizada.",
@@ -1953,9 +2249,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 110900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:12.618Z"
     },
-    {
+    "default_olla-de-vidrio-oreja-izquierda": {
       "id": "olla-de-vidrio-oreja-izquierda",
       "name": "Olla De Vidrio Oreja Izquierda",
       "description": "Excelente producto: Olla De Vidrio Oreja Izquierda. Calidad garantizada.",
@@ -1966,9 +2264,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 93900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:12.886Z"
     },
-    {
+    "default_picacador-y-costador-de-fruta": {
       "id": "picacador-y-costador-de-fruta",
       "name": "Picacador Y Costador De Fruta",
       "description": "Excelente producto: Picacador Y Costador De Fruta. Calidad garantizada.",
@@ -1979,9 +2279,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 76900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:13.113Z"
     },
-    {
+    "default_carpa-camping-200x150-cm": {
       "id": "carpa-camping-200x150-cm",
       "name": "Carpa Camping 200x150 Cm",
       "description": "Excelente producto: Carpa Camping 200x150 Cm. Calidad garantizada.",
@@ -1992,9 +2294,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 114900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:13.333Z"
     },
-    {
+    "default_caja-fuerte-sencilla": {
       "id": "caja-fuerte-sencilla",
       "name": "Caja Fuerte Sencilla",
       "description": "Excelente producto: Caja Fuerte Sencilla. Calidad garantizada.",
@@ -2005,9 +2309,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 117900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:13.558Z"
     },
-    {
+    "default_combo-nano-titanium": {
       "id": "combo-nano-titanium",
       "name": "Combo Nano Titanium",
       "description": "Excelente producto: Combo Nano Titanium. Calidad garantizada.",
@@ -2018,9 +2324,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 106900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:13.756Z"
     },
-    {
+    "default_set-de-arte-208-pcs-de-personajes": {
       "id": "set-de-arte-208-pcs-de-personajes",
       "name": "Set De Arte 208 Pcs De Personajes",
       "description": "Excelente producto: Set De Arte 208 Pcs De Personajes. Calidad garantizada.",
@@ -2031,9 +2339,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 101900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:13.998Z"
     },
-    {
+    "default_parlante-pantalla-tactil": {
       "id": "parlante-pantalla-tactil",
       "name": "Parlante Pantalla Tactil",
       "description": "Excelente producto: Parlante Pantalla Tactil. Calidad garantizada.",
@@ -2044,9 +2354,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 135900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:14.193Z"
     },
-    {
+    "default_luz-rgb-con-sensor": {
       "id": "luz-rgb-con-sensor",
       "name": "Luz Rgb Con Sensor",
       "description": "Excelente producto: Luz Rgb Con Sensor. Calidad garantizada.",
@@ -2057,9 +2369,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 80900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:14.405Z"
     },
-    {
+    "default_set-de-maquillaje-maleta-grande": {
       "id": "set-de-maquillaje-maleta-grande",
       "name": "Set De Maquillaje Maleta Grande",
       "description": "Excelente producto: Set De Maquillaje Maleta Grande. Calidad garantizada.",
@@ -2070,9 +2384,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 249900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:14.629Z"
     },
-    {
+    "default_combo-reloj-audifonos-bala-game-boy": {
       "id": "combo-reloj-audifonos-bala-game-boy",
       "name": "Combo Reloj Audifonos Bala Game Boy",
       "description": "Excelente producto: Combo Reloj Audifonos Bala Game Boy. Calidad garantizada.",
@@ -2083,9 +2399,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 143900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:14.848Z"
     },
-    {
+    "default_bombillo-4-aspas-led": {
       "id": "bombillo-4-aspas-led",
       "name": "Bombillo 4 Aspas Led",
       "description": "Excelente producto: Bombillo 4 Aspas Led. Calidad garantizada.",
@@ -2096,9 +2414,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 100900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:15.046Z"
     },
-    {
+    "default_organizador-cajones": {
       "id": "organizador-cajones",
       "name": "Organizador Cajones",
       "description": "Excelente producto: Organizador Cajones. Calidad garantizada.",
@@ -2109,9 +2429,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 76900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:15.275Z"
     },
-    {
+    "default_maleta-morral-deportiva-escolar": {
       "id": "maleta-morral-deportiva-escolar",
       "name": "Maleta Morral Deportiva Escolar",
       "description": "Excelente producto: Maleta Morral Deportiva Escolar. Calidad garantizada.",
@@ -2122,9 +2444,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 122900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:15.492Z"
     },
-    {
+    "default_organizador-de-tocador-jm701": {
       "id": "organizador-de-tocador-jm701",
       "name": "Organizador De Tocador Jm701",
       "description": "Excelente producto: Organizador De Tocador Jm701. Calidad garantizada.",
@@ -2135,9 +2459,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 107900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:15.694Z"
     },
-    {
+    "default_juego-de-memoria-electrico": {
       "id": "juego-de-memoria-electrico",
       "name": "Juego De Memoria Electrico",
       "description": "Excelente producto: Juego De Memoria Electrico. Calidad garantizada.",
@@ -2148,9 +2474,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 85900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:15.933Z"
     },
-    {
+    "default_peluche-muneco-para-pintar": {
       "id": "peluche-muneco-para-pintar",
       "name": "Peluche Muneco Para Pintar",
       "description": "Excelente producto: Peluche Muneco Para Pintar. Calidad garantizada.",
@@ -2161,9 +2489,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 93900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:16.136Z"
     },
-    {
+    "default_patillera-km2293": {
       "id": "patillera-km2293",
       "name": "Patillera Km2293",
       "description": "Excelente producto: Patillera Km2293. Calidad garantizada.",
@@ -2174,9 +2504,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 133900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:16.349Z"
     },
-    {
+    "default_mary-ruth-fresa": {
       "id": "mary-ruth-fresa",
       "name": "Mary Ruth Fresa",
       "description": "Excelente producto: Mary Ruth Fresa. Calidad garantizada.",
@@ -2187,9 +2519,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 86900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:16.572Z"
     },
-    {
+    "default_proyector-lentes-intercambiables": {
       "id": "proyector-lentes-intercambiables",
       "name": "Proyector Lentes Intercambiables",
       "description": "Excelente producto: Proyector Lentes Intercambiables. Calidad garantizada.",
@@ -2200,9 +2534,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 145900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:16.782Z"
     },
-    {
+    "default_kit-boxeo-musical-grande": {
       "id": "kit-boxeo-musical-grande",
       "name": "Kit Boxeo Musical Grande",
       "description": "Excelente producto: Kit Boxeo Musical Grande. Calidad garantizada.",
@@ -2213,9 +2549,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 164900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:17.038Z"
     },
-    {
+    "default_cuello-ventilaador": {
       "id": "cuello-ventilaador",
       "name": "Cuello Ventilaador",
       "description": "Excelente producto: Cuello Ventilaador. Calidad garantizada.",
@@ -2226,9 +2564,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 88900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:17.256Z"
     },
-    {
+    "default_cepillo-de-dientes-para-ninos-electrico": {
       "id": "cepillo-de-dientes-para-ninos-electrico",
       "name": "Cepillo De Dientes Para Ninos Electrico",
       "description": "Excelente producto: Cepillo De Dientes Para Ninos Electrico. Calidad garantizada.",
@@ -2239,9 +2579,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 79900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:17.455Z"
     },
-    {
+    "default_bombillo-para-camping-regargable": {
       "id": "bombillo-para-camping-regargable",
       "name": "Bombillo Para Camping Regargable",
       "description": "Excelente producto: Bombillo Para Camping Regargable. Calidad garantizada.",
@@ -2252,9 +2594,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 80900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:17.684Z"
     },
-    {
+    "default_lintera-multi-proposito": {
       "id": "lintera-multi-proposito",
       "name": "Lintera Multi Proposito",
       "description": "Excelente producto: Lintera Multi Proposito. Calidad garantizada.",
@@ -2265,9 +2609,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 85900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:17.903Z"
     },
-    {
+    "default_humidificador-chimenea-negro": {
       "id": "humidificador-chimenea-negro",
       "name": "Humidificador Chimenea Negro",
       "description": "Excelente producto: Humidificador Chimenea Negro. Calidad garantizada.",
@@ -2278,9 +2624,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 127900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:18.117Z"
     },
-    {
+    "default_la-bubu-coca-cola": {
       "id": "la-bubu-coca-cola",
       "name": "La Bubu Coca Cola",
       "description": "Excelente producto: La Bubu Coca Cola. Calidad garantizada.",
@@ -2291,9 +2639,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 91900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:18.385Z"
     },
-    {
+    "default_tazon-para-mascota-fresh-cold": {
       "id": "tazon-para-mascota-fresh-cold",
       "name": "Tazon Para Mascota Fresh Cold",
       "description": "Excelente producto: Tazon Para Mascota Fresh Cold. Calidad garantizada.",
@@ -2304,9 +2654,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 94900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:18.606Z"
     },
-    {
+    "default_combo-reloj-audifonos-y-consola": {
       "id": "combo-reloj-audifonos-y-consola",
       "name": "Combo Reloj Audifonos Y Consola",
       "description": "Excelente producto: Combo Reloj Audifonos Y Consola. Calidad garantizada.",
@@ -2317,9 +2669,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 130900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:18.832Z"
     },
-    {
+    "default_ventosa-para-masajes-prla871": {
       "id": "ventosa-para-masajes-prla871",
       "name": "Ventosa Para Masajes Prla871",
       "description": "Excelente producto: Ventosa Para Masajes Prla871. Calidad garantizada.",
@@ -2330,9 +2684,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 96900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:19.036Z"
     },
-    {
+    "default_extractor-de-leche-recargable": {
       "id": "extractor-de-leche-recargable",
       "name": "Extractor De Leche Recargable",
       "description": "Excelente producto: Extractor De Leche Recargable. Calidad garantizada.",
@@ -2343,9 +2699,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 138900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:19.243Z"
     },
-    {
+    "default_tendedero-doble-tubular": {
       "id": "tendedero-doble-tubular",
       "name": "Tendedero Doble Tubular",
       "description": "Excelente producto: Tendedero Doble Tubular. Calidad garantizada.",
@@ -2356,9 +2714,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 133900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:19.464Z"
     },
-    {
+    "default_audifono-traductor": {
       "id": "audifono-traductor",
       "name": "Audifono Traductor",
       "description": "Excelente producto: Audifono Traductor. Calidad garantizada.",
@@ -2369,9 +2729,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 96900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:19.685Z"
     },
-    {
+    "default_sopladora-speed-high": {
       "id": "sopladora-speed-high",
       "name": "Sopladora Speed High",
       "description": "Excelente producto: Sopladora Speed High. Calidad garantizada.",
@@ -2382,9 +2744,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 133900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:19.916Z"
     },
-    {
+    "default_parlante-portatil-alaxe-super-bass": {
       "id": "parlante-portatil-alaxe-super-bass",
       "name": "Parlante Portatil Alaxe Super Bass",
       "description": "Excelente producto: Parlante Portatil Alaxe Super Bass. Calidad garantizada.",
@@ -2395,9 +2759,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 104900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:20.120Z"
     },
-    {
+    "default_mini-linterna-led-recargable-transparent": {
       "id": "mini-linterna-led-recargable-transparent",
       "name": "Mini Linterna Led Recargable Transparent",
       "description": "Excelente producto: Mini Linterna Led Recargable Transparent. Calidad garantizada.",
@@ -2408,9 +2774,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 86900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:20.356Z"
     },
-    {
+    "default_kit-manicure-pedicure-x16-piezas": {
       "id": "kit-manicure-pedicure-x16-piezas",
       "name": "Kit Manicure Pedicure X16 Piezas",
       "description": "Excelente producto: Kit Manicure Pedicure X16 Piezas. Calidad garantizada.",
@@ -2421,9 +2789,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 85900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:20.577Z"
     },
-    {
+    "default_combo-reloj-jl19-ultra-2": {
       "id": "combo-reloj-jl19-ultra-2",
       "name": "Combo Reloj Jl19 Ultra 2",
       "description": "Excelente producto: Combo Reloj Jl19 Ultra 2. Calidad garantizada.",
@@ -2434,9 +2804,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 120900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:20.784Z"
     },
-    {
+    "default_maleta-kawai-5-en-1": {
       "id": "maleta-kawai-5-en-1",
       "name": "Maleta Kawai 5 En 1",
       "description": "Excelente producto: Maleta Kawai 5 En 1. Calidad garantizada.",
@@ -2447,9 +2819,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 101900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:21.014Z"
     },
-    {
+    "default_organizador-cajon-pequeno": {
       "id": "organizador-cajon-pequeno",
       "name": "Organizador Cajon Pequeno",
       "description": "Excelente producto: Organizador Cajon Pequeno. Calidad garantizada.",
@@ -2460,9 +2834,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 82900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:21.214Z"
     },
-    {
+    "default_set-de-bombillos-inalambricos-x3": {
       "id": "set-de-bombillos-inalambricos-x3",
       "name": "Set De Bombillos Inalambricos X3",
       "description": "Excelente producto: Set De Bombillos Inalambricos X3. Calidad garantizada.",
@@ -2473,9 +2849,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 83900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:21.445Z"
     },
-    {
+    "default_liver-detox": {
       "id": "liver-detox",
       "name": "Liver Detox",
       "description": "Excelente producto: Liver Detox. Calidad garantizada.",
@@ -2486,9 +2864,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 90900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:21.673Z"
     },
-    {
+    "default_proyector-robot": {
       "id": "proyector-robot",
       "name": "Proyector Robot",
       "description": "Excelente producto: Proyector Robot. Calidad garantizada.",
@@ -2499,9 +2879,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 118900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:21.879Z"
     },
-    {
+    "default_lavadora-de-brochas": {
       "id": "lavadora-de-brochas",
       "name": "Lavadora De Brochas",
       "description": "Excelente producto: Lavadora De Brochas. Calidad garantizada.",
@@ -2512,9 +2894,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 84900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:22.113Z"
     },
-    {
+    "default_organizador-para-lavadora": {
       "id": "organizador-para-lavadora",
       "name": "Organizador Para Lavadora",
       "description": "Excelente producto: Organizador Para Lavadora. Calidad garantizada.",
@@ -2525,9 +2909,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 111900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:22.320Z"
     },
-    {
+    "default_organizador-de-condimentos-esquinero-3": {
       "id": "organizador-de-condimentos-esquinero-3",
       "name": "Organizador De Condimentos Esquinero 3",
       "description": "Excelente producto: Organizador De Condimentos Esquinero 3. Calidad garantizada.",
@@ -2538,9 +2924,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 95900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:22.536Z"
     },
-    {
+    "default_parlante-boobox-x4": {
       "id": "parlante-boobox-x4",
       "name": "Parlante Boobox X4",
       "description": "Excelente producto: Parlante Boobox X4. Calidad garantizada.",
@@ -2551,9 +2939,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 159900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:22.754Z"
     },
-    {
+    "default_combo-teclado-y-mouse-inalambrico-mac": {
       "id": "combo-teclado-y-mouse-inalambrico-mac",
       "name": "Combo Teclado Y Mouse Inalambrico Mac",
       "description": "Excelente producto: Combo Teclado Y Mouse Inalambrico Mac. Calidad garantizada.",
@@ -2564,9 +2954,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 111900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:22.993Z"
     },
-    {
+    "default_mini-pulidora-inalambrica": {
       "id": "mini-pulidora-inalambrica",
       "name": "Mini Pulidora Inalambrica",
       "description": "Excelente producto: Mini Pulidora Inalambrica. Calidad garantizada.",
@@ -2577,9 +2969,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 123900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:23.199Z"
     },
-    {
+    "default_cinta-reflectiva-antideslizante": {
       "id": "cinta-reflectiva-antideslizante",
       "name": "Cinta Reflectiva Antideslizante",
       "description": "Excelente producto: Cinta Reflectiva Antideslizante. Calidad garantizada.",
@@ -2590,9 +2984,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 127900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:23.404Z"
     },
-    {
+    "default_humificador-bola-130-ml": {
       "id": "humificador-bola-130-ml",
       "name": "Humificador Bola 130 Ml",
       "description": "Excelente producto: Humificador Bola 130 Ml. Calidad garantizada.",
@@ -2603,9 +2999,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 80900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:23.628Z"
     },
-    {
+    "default_sarten-electrico-multifuncional": {
       "id": "sarten-electrico-multifuncional",
       "name": "Sarten Electrico Multifuncional",
       "description": "Excelente producto: Sarten Electrico Multifuncional. Calidad garantizada.",
@@ -2616,9 +3014,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 138900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:23.857Z"
     },
-    {
+    "default_full-cql-bayas-de-goji-x-500g": {
       "id": "full-cql-bayas-de-goji-x-500g",
       "name": "Full Cql Bayas De Goji X 500g",
       "description": "Excelente producto: Full Cql Bayas De Goji X 500g. Calidad garantizada.",
@@ -2629,9 +3029,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 87900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:24.089Z"
     },
-    {
+    "default_humificador-de-flama": {
       "id": "humificador-de-flama",
       "name": "Humificador De Flama",
       "description": "Excelente producto: Humificador De Flama. Calidad garantizada.",
@@ -2642,9 +3044,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 91900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:24.324Z"
     },
-    {
+    "default_cortador-de-verduras-en-espiral": {
       "id": "cortador-de-verduras-en-espiral",
       "name": "Cortador De Verduras En Espiral",
       "description": "Excelente producto: Cortador De Verduras En Espiral. Calidad garantizada.",
@@ -2655,9 +3059,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 125900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:24.535Z"
     },
-    {
+    "default_lubricante-de-guayas": {
       "id": "lubricante-de-guayas",
       "name": "Lubricante De Guayas",
       "description": "Excelente producto: Lubricante De Guayas. Calidad garantizada.",
@@ -2668,9 +3074,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 101900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:24.744Z"
     },
-    {
+    "default_mopa-lavado-de-coche-microfibra": {
       "id": "mopa-lavado-de-coche-microfibra",
       "name": "Mopa Lavado De Coche Microfibra",
       "description": "Excelente producto: Mopa Lavado De Coche Microfibra. Calidad garantizada.",
@@ -2681,9 +3089,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 80900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:24.943Z"
     },
-    {
+    "default_candado-de-huella": {
       "id": "candado-de-huella",
       "name": "Candado De Huella",
       "description": "Excelente producto: Candado De Huella. Calidad garantizada.",
@@ -2694,9 +3104,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 112900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:25.160Z"
     },
-    {
+    "default_comedor-interactivo-mascota": {
       "id": "comedor-interactivo-mascota",
       "name": "Comedor Interactivo Mascota",
       "description": "Excelente producto: Comedor Interactivo Mascota. Calidad garantizada.",
@@ -2707,9 +3119,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 93900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:25.373Z"
     },
-    {
+    "default_tapete-de-agua-bebe-65-x-65": {
       "id": "tapete-de-agua-bebe-65-x-65",
       "name": "Tapete De Agua Bebe 65 X 65",
       "description": "Excelente producto: Tapete De Agua Bebe 65 X 65. Calidad garantizada.",
@@ -2720,9 +3134,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 80900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:25.607Z"
     },
-    {
+    "default_sarten-electrico-3-puestos": {
       "id": "sarten-electrico-3-puestos",
       "name": "Sarten Electrico 3 Puestos",
       "description": "Excelente producto: Sarten Electrico 3 Puestos. Calidad garantizada.",
@@ -2733,9 +3149,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 131900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:25.860Z"
     },
-    {
+    "default_reloj-tk9": {
       "id": "reloj-tk9",
       "name": "Reloj Tk9",
       "description": "Excelente producto: Reloj Tk9. Calidad garantizada.",
@@ -2746,9 +3164,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 159900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:26.096Z"
     },
-    {
+    "default_sarten-animalitos-7-compartimientos": {
       "id": "sarten-animalitos-7-compartimientos",
       "name": "Sarten Animalitos 7 Compartimientos",
       "description": "Excelente producto: Sarten Animalitos 7 Compartimientos. Calidad garantizada.",
@@ -2759,9 +3179,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 103900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:26.311Z"
     },
-    {
+    "default_luces-led-para-piso": {
       "id": "luces-led-para-piso",
       "name": "Luces Led Para Piso",
       "description": "Excelente producto: Luces Led Para Piso. Calidad garantizada.",
@@ -2772,9 +3194,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 101900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:26.547Z"
     },
-    {
+    "default_humdificador-led-7": {
       "id": "humdificador-led-7",
       "name": "Humdificador Led 7",
       "description": "Excelente producto: Humdificador Led 7. Calidad garantizada.",
@@ -2785,9 +3209,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 77900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:26.764Z"
     },
-    {
+    "default_ashwagandha-relaxing-mental-physical": {
       "id": "ashwagandha-relaxing-mental-physical",
       "name": "Ashwagandha Relaxing Mental Physical",
       "description": "Excelente producto: Ashwagandha Relaxing Mental Physical. Calidad garantizada.",
@@ -2798,9 +3224,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 93900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:26.983Z"
     },
-    {
+    "default_linterna-solar": {
       "id": "linterna-solar",
       "name": "Linterna Solar",
       "description": "Excelente producto: Linterna Solar. Calidad garantizada.",
@@ -2811,9 +3239,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 81900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:27.250Z"
     },
-    {
+    "default_conectores-electricos": {
       "id": "conectores-electricos",
       "name": "Conectores Electricos",
       "description": "Excelente producto: Conectores Electricos. Calidad garantizada.",
@@ -2824,9 +3254,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 89900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:27.462Z"
     },
-    {
+    "default_lonchera-en-acero-color-blanco": {
       "id": "lonchera-en-acero-color-blanco",
       "name": "Lonchera En Acero Color Blanco",
       "description": "Excelente producto: Lonchera En Acero Color Blanco. Calidad garantizada.",
@@ -2837,9 +3269,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 116900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:27.674Z"
     },
-    {
+    "default_maleta-escolar-812": {
       "id": "maleta-escolar-812",
       "name": "Maleta Escolar 812",
       "description": "Excelente producto: Maleta Escolar 812. Calidad garantizada.",
@@ -2850,9 +3284,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 91900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:27.875Z"
     },
-    {
+    "default_multimetro-jctop": {
       "id": "multimetro-jctop",
       "name": "Multimetro Jctop",
       "description": "Excelente producto: Multimetro Jctop. Calidad garantizada.",
@@ -2863,9 +3299,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 123900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:28.093Z"
     },
-    {
+    "default_pistola-mini-1": {
       "id": "pistola-mini-1",
       "name": "Pistola Mini 1",
       "description": "Excelente producto: Pistola Mini 1. Calidad garantizada.",
@@ -2876,9 +3314,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 143900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:28.318Z"
     },
-    {
+    "default_intimate-rose": {
       "id": "intimate-rose",
       "name": "Intimate Rose",
       "description": "Excelente producto: Intimate Rose. Calidad garantizada.",
@@ -2889,9 +3329,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 93900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:28.522Z"
     },
-    {
+    "default_organizador-de-tocador-cy079": {
       "id": "organizador-de-tocador-cy079",
       "name": "Organizador De Tocador Cy079",
       "description": "Excelente producto: Organizador De Tocador Cy079. Calidad garantizada.",
@@ -2902,9 +3344,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 97900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:28.759Z"
     },
-    {
+    "default_baston-trusky-pegable": {
       "id": "baston-trusky-pegable",
       "name": "Baston Trusky Pegable",
       "description": "Excelente producto: Baston Trusky Pegable. Calidad garantizada.",
@@ -2915,9 +3359,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 93900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:28.991Z"
     },
-    {
+    "default_muneca-fail-fix": {
       "id": "muneca-fail-fix",
       "name": "Muneca Fail Fix",
       "description": "Excelente producto: Muneca Fail Fix. Calidad garantizada.",
@@ -2928,9 +3374,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 95900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:29.194Z"
     },
-    {
+    "default_lions-mane": {
       "id": "lions-mane",
       "name": "Lions Mane",
       "description": "Excelente producto: Lions Mane. Calidad garantizada.",
@@ -2941,9 +3389,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 89900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:29.418Z"
     },
-    {
+    "default_rizadora-para-el-cabello-keratina": {
       "id": "rizadora-para-el-cabello-keratina",
       "name": "Rizadora Para El Cabello Keratina",
       "description": "Excelente producto: Rizadora Para El Cabello Keratina. Calidad garantizada.",
@@ -2954,9 +3404,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 99900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:29.637Z"
     },
-    {
+    "default_organizador-sanitario-2-niveles": {
       "id": "organizador-sanitario-2-niveles",
       "name": "Organizador Sanitario 2 Niveles",
       "description": "Excelente producto: Organizador Sanitario 2 Niveles. Calidad garantizada.",
@@ -2967,9 +3419,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 84900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:29.898Z"
     },
-    {
+    "default_tensiometro-manual": {
       "id": "tensiometro-manual",
       "name": "Tensiometro Manual",
       "description": "Excelente producto: Tensiometro Manual. Calidad garantizada.",
@@ -2980,9 +3434,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 96900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:30.105Z"
     },
-    {
+    "default_citramag-sachet-x-15-und": {
       "id": "citramag-sachet-x-15-und",
       "name": "Citramag Sachet X 15 Und",
       "description": "Excelente producto: Citramag Sachet X 15 Und. Calidad garantizada.",
@@ -2993,9 +3449,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 86900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:30.323Z"
     },
-    {
+    "default_extreme-detox": {
       "id": "extreme-detox",
       "name": "Extreme Detox",
       "description": "Excelente producto: Extreme Detox. Calidad garantizada.",
@@ -3006,9 +3464,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 91900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:30.544Z"
     },
-    {
+    "default_set-de-cucharas-medidoras": {
       "id": "set-de-cucharas-medidoras",
       "name": "Set De Cucharas Medidoras",
       "description": "Excelente producto: Set De Cucharas Medidoras. Calidad garantizada.",
@@ -3019,9 +3479,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 84900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:30.763Z"
     },
-    {
+    "default_deos": {
       "id": "deos",
       "name": "Deos",
       "description": "Excelente producto: Deos. Calidad garantizada.",
@@ -3032,9 +3494,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 85900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:30.981Z"
     },
-    {
+    "default_rebanador-3-en-1-manual": {
       "id": "rebanador-3-en-1-manual",
       "name": "Rebanador 3 En 1 Manual",
       "description": "Excelente producto: Rebanador 3 En 1 Manual. Calidad garantizada.",
@@ -3045,9 +3509,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 77900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:31.187Z"
     },
-    {
+    "default_cosmetiquera-24216": {
       "id": "cosmetiquera-24216",
       "name": "Cosmetiquera 24216",
       "description": "Excelente producto: Cosmetiquera 24216. Calidad garantizada.",
@@ -3058,9 +3524,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 80900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:31.402Z"
     },
-    {
+    "default_bolso-stich": {
       "id": "bolso-stich",
       "name": "Bolso Stich",
       "description": "Excelente producto: Bolso Stich. Calidad garantizada.",
@@ -3071,9 +3539,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 91900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:31.625Z"
     },
-    {
+    "default_biotina": {
       "id": "biotina",
       "name": "Biotina",
       "description": "Excelente producto: Biotina. Calidad garantizada.",
@@ -3084,9 +3554,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 92900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:31.843Z"
     },
-    {
+    "default_tendedero-retractil-cuerda": {
       "id": "tendedero-retractil-cuerda",
       "name": "Tendedero Retractil Cuerda",
       "description": "Excelente producto: Tendedero Retractil Cuerda. Calidad garantizada.",
@@ -3097,9 +3569,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 83900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:32.106Z"
     },
-    {
+    "default_diadema-rizadora-de-cabello": {
       "id": "diadema-rizadora-de-cabello",
       "name": "Diadema Rizadora De Cabello",
       "description": "Excelente producto: Diadema Rizadora De Cabello. Calidad garantizada.",
@@ -3110,9 +3584,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 78900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:32.328Z"
     },
-    {
+    "default_lentes-de-contacto-halloween": {
       "id": "lentes-de-contacto-halloween",
       "name": "Lentes De Contacto Halloween",
       "description": "Excelente producto: Lentes De Contacto Halloween. Calidad garantizada.",
@@ -3123,9 +3599,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 82900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:32.544Z"
     },
-    {
+    "default_juego-de-atrapar-palos-para-ninos-y-adul": {
       "id": "juego-de-atrapar-palos-para-ninos-y-adul",
       "name": "Juego De Atrapar Palos Para Ninos Y Adul",
       "description": "Excelente producto: Juego De Atrapar Palos Para Ninos Y Adul. Calidad garantizada.",
@@ -3136,9 +3614,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 106900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:32.768Z"
     },
-    {
+    "default_pistola-para-pintar": {
       "id": "pistola-para-pintar",
       "name": "Pistola Para Pintar",
       "description": "Excelente producto: Pistola Para Pintar. Calidad garantizada.",
@@ -3149,9 +3629,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 170900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:33.039Z"
     },
-    {
+    "default_bascula-electronica-balanza-digital": {
       "id": "bascula-electronica-balanza-digital",
       "name": "Bascula Electronica Balanza Digital",
       "description": "Excelente producto: Bascula Electronica Balanza Digital. Calidad garantizada.",
@@ -3162,9 +3644,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 159900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:33.250Z"
     },
-    {
+    "default_shilajit-jalea-x-125-ml": {
       "id": "shilajit-jalea-x-125-ml",
       "name": "Shilajit Jalea X 125 Ml",
       "description": "Excelente producto: Shilajit Jalea X 125 Ml. Calidad garantizada.",
@@ -3175,9 +3659,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 98900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:33.483Z"
     },
-    {
+    "default_te-matcha": {
       "id": "te-matcha",
       "name": "Te Matcha",
       "description": "Excelente producto: Te Matcha. Calidad garantizada.",
@@ -3188,9 +3674,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 88900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:33.687Z"
     },
-    {
+    "default_lonchera-termica-2-niveles-contenedor": {
       "id": "lonchera-termica-2-niveles-contenedor",
       "name": "Lonchera Termica 2 Niveles Contenedor",
       "description": "Excelente producto: Lonchera Termica 2 Niveles Contenedor. Calidad garantizada.",
@@ -3201,9 +3689,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 93900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:33.942Z"
     },
-    {
+    "default_secador-bp5500": {
       "id": "secador-bp5500",
       "name": "Secador Bp5500",
       "description": "Excelente producto: Secador Bp5500. Calidad garantizada.",
@@ -3214,9 +3704,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 117900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:34.163Z"
     },
-    {
+    "default_pop-it-astronauta": {
       "id": "pop-it-astronauta",
       "name": "Pop It Astronauta",
       "description": "Excelente producto: Pop It Astronauta. Calidad garantizada.",
@@ -3227,9 +3719,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 84900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:34.365Z"
     },
-    {
+    "default_tripode-k07": {
       "id": "tripode-k07",
       "name": "Tripode K07",
       "description": "Excelente producto: Tripode K07. Calidad garantizada.",
@@ -3240,9 +3734,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 82900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:34.581Z"
     },
-    {
+    "default_audifonoss-db6-disney": {
       "id": "audifonoss-db6-disney",
       "name": "Audifonoss Db6 Disney",
       "description": "Excelente producto: Audifonoss Db6 Disney. Calidad garantizada.",
@@ -3253,9 +3749,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 93900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:34.800Z"
     },
-    {
+    "default_soporte-cargador-celular-automovil": {
       "id": "soporte-cargador-celular-automovil",
       "name": "Soporte Cargador Celular Automovil",
       "description": "Excelente producto: Soporte Cargador Celular Automovil. Calidad garantizada.",
@@ -3266,9 +3764,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 77900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:35.004Z"
     },
-    {
+    "default_lampara-electrica": {
       "id": "lampara-electrica",
       "name": "Lampara Electrica",
       "description": "Excelente producto: Lampara Electrica. Calidad garantizada.",
@@ -3279,9 +3779,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 106900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:35.218Z"
     },
-    {
+    "default_pinza-3-tubos-sirena": {
       "id": "pinza-3-tubos-sirena",
       "name": "Pinza 3 Tubos Sirena",
       "description": "Excelente producto: Pinza 3 Tubos Sirena. Calidad garantizada.",
@@ -3292,9 +3794,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 92900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:35.443Z"
     },
-    {
+    "default_juguete-set-de-ballesta": {
       "id": "juguete-set-de-ballesta",
       "name": "Juguete Set De Ballesta",
       "description": "Excelente producto: Juguete Set De Ballesta. Calidad garantizada.",
@@ -3305,9 +3809,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 92900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:35.681Z"
     },
-    {
+    "default_parlante-remax": {
       "id": "parlante-remax",
       "name": "Parlante Remax",
       "description": "Excelente producto: Parlante Remax. Calidad garantizada.",
@@ -3318,9 +3824,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 151900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:35.904Z"
     },
-    {
+    "default_juguete-para-gatos": {
       "id": "juguete-para-gatos",
       "name": "Juguete Para Gatos",
       "description": "Excelente producto: Juguete Para Gatos. Calidad garantizada.",
@@ -3331,9 +3839,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 110900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:36.147Z"
     },
-    {
+    "default_capa-impermeable-xxxl": {
       "id": "capa-impermeable-xxxl",
       "name": "Capa Impermeable Xxxl",
       "description": "Excelente producto: Capa Impermeable Xxxl. Calidad garantizada.",
@@ -3344,9 +3854,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 122900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:36.355Z"
     },
-    {
+    "default_pop-it-iron-man": {
       "id": "pop-it-iron-man",
       "name": "Pop It Iron Man",
       "description": "Excelente producto: Pop It Iron Man. Calidad garantizada.",
@@ -3357,9 +3869,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 80900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:36.561Z"
     },
-    {
+    "default_trapero-de-palo-autoexprimible": {
       "id": "trapero-de-palo-autoexprimible",
       "name": "Trapero De Palo Autoexprimible",
       "description": "Excelente producto: Trapero De Palo Autoexprimible. Calidad garantizada.",
@@ -3370,9 +3884,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 88900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:36.784Z"
     },
-    {
+    "default_base-televisor-2f": {
       "id": "base-televisor-2f",
       "name": "Base Televisor 2f",
       "description": "Excelente producto: Base Televisor 2f. Calidad garantizada.",
@@ -3383,9 +3899,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 88900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:36.989Z"
     },
-    {
+    "default_purificador-de-ambiente": {
       "id": "purificador-de-ambiente",
       "name": "Purificador De Ambiente",
       "description": "Excelente producto: Purificador De Ambiente. Calidad garantizada.",
@@ -3396,9 +3914,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 112900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:37.201Z"
     },
-    {
+    "default_ventosa-12060": {
       "id": "ventosa-12060",
       "name": "Ventosa 12060",
       "description": "Excelente producto: Ventosa 12060. Calidad garantizada.",
@@ -3409,9 +3929,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 127900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:37.403Z"
     },
-    {
+    "default_combo-relojaudifonosbalacagam-boyk13": {
       "id": "combo-relojaudifonosbalacagam-boyk13",
       "name": "Combo Relojaudifonosbalacagam Boyk13",
       "description": "Excelente producto: Combo Relojaudifonosbalacagam Boyk13. Calidad garantizada.",
@@ -3422,9 +3944,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 143900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:37.639Z"
     },
-    {
+    "default_organizador-de-loza-doble-tapa-65-cm": {
       "id": "organizador-de-loza-doble-tapa-65-cm",
       "name": "Organizador De Loza Doble Tapa 65 Cm",
       "description": "Excelente producto: Organizador De Loza Doble Tapa 65 Cm. Calidad garantizada.",
@@ -3435,9 +3959,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 175900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:37.874Z"
     },
-    {
+    "default_teclado-numerico-andowl": {
       "id": "teclado-numerico-andowl",
       "name": "Teclado Numerico Andowl",
       "description": "Excelente producto: Teclado Numerico Andowl. Calidad garantizada.",
@@ -3448,9 +3974,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 85900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:38.085Z"
     },
-    {
+    "default_peine-capilar": {
       "id": "peine-capilar",
       "name": "Peine Capilar",
       "description": "Excelente producto: Peine Capilar. Calidad garantizada.",
@@ -3461,9 +3989,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 141900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:38.315Z"
     },
-    {
+    "default_combo-3-en-1-aguacate": {
       "id": "combo-3-en-1-aguacate",
       "name": "Combo 3 En 1 Aguacate",
       "description": "Excelente producto: Combo 3 En 1 Aguacate. Calidad garantizada.",
@@ -3474,9 +4004,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 154900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:38.556Z"
     },
-    {
+    "default_extractor-porlvo-sencillo": {
       "id": "extractor-porlvo-sencillo",
       "name": "Extractor Porlvo Sencillo",
       "description": "Excelente producto: Extractor Porlvo Sencillo. Calidad garantizada.",
@@ -3487,9 +4019,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 114900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:38.769Z"
     },
-    {
+    "default_audifonos-m60": {
       "id": "audifonos-m60",
       "name": "Audifonos M60",
       "description": "Excelente producto: Audifonos M60. Calidad garantizada.",
@@ -3500,9 +4034,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 118900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:38.990Z"
     },
-    {
+    "default_escurridor-gabinete-doble": {
       "id": "escurridor-gabinete-doble",
       "name": "Escurridor Gabinete Doble",
       "description": "Excelente producto: Escurridor Gabinete Doble. Calidad garantizada.",
@@ -3513,9 +4049,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 196900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:39.196Z"
     },
-    {
+    "default_cinturon-para-bebes": {
       "id": "cinturon-para-bebes",
       "name": "Cinturon Para Bebes",
       "description": "Excelente producto: Cinturon Para Bebes. Calidad garantizada.",
@@ -3526,9 +4064,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 85900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:39.468Z"
     },
-    {
+    "default_parlante-go4": {
       "id": "parlante-go4",
       "name": "Parlante Go4",
       "description": "Excelente producto: Parlante Go4. Calidad garantizada.",
@@ -3539,9 +4079,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 93900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:39.667Z"
     },
-    {
+    "default_dispensador-magnetico-5-en-1-para-never": {
       "id": "dispensador-magnetico-5-en-1-para-never",
       "name": "Dispensador Magnetico 5 En 1 Para Never",
       "description": "Excelente producto: Dispensador Magnetico 5 En 1 Para Never. Calidad garantizada.",
@@ -3552,9 +4094,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 101900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:39.891Z"
     },
-    {
+    "default_cable-magneto-sky-dolphin-2-4a-universal": {
       "id": "cable-magneto-sky-dolphin-2-4a-universal",
       "name": "Cable Magneto Sky Dolphin 2.4a Universal",
       "description": "Excelente producto: Cable Magneto Sky Dolphin 2.4a Universal. Calidad garantizada.",
@@ -3565,9 +4109,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 77900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:40.114Z"
     },
-    {
+    "default_juego-set-de-cuchillos-lujo-6-piezas": {
       "id": "juego-set-de-cuchillos-lujo-6-piezas",
       "name": "Juego Set De Cuchillos Lujo 6 Piezas",
       "description": "Excelente producto: Juego Set De Cuchillos Lujo 6 Piezas. Calidad garantizada.",
@@ -3578,9 +4124,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 82900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:40.347Z"
     },
-    {
+    "default_parlante-y-microfono-inalambrico-xmx66": {
       "id": "parlante-y-microfono-inalambrico-xmx66",
       "name": "Parlante Y Microfono Inalambrico Xmx66",
       "description": "Excelente producto: Parlante Y Microfono Inalambrico Xmx66. Calidad garantizada.",
@@ -3591,9 +4139,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 110900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:40.588Z"
     },
-    {
+    "default_energy-focus": {
       "id": "energy-focus",
       "name": "Energy Focus",
       "description": "Excelente producto: Energy Focus. Calidad garantizada.",
@@ -3604,9 +4154,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 89900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:40.810Z"
     },
-    {
+    "default_papel-de-cocina-adhesivo": {
       "id": "papel-de-cocina-adhesivo",
       "name": "Papel De Cocina Adhesivo",
       "description": "Excelente producto: Papel De Cocina Adhesivo. Calidad garantizada.",
@@ -3617,9 +4169,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 85900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:41.026Z"
     },
-    {
+    "default_cortador-manual-portatil-azulejos": {
       "id": "cortador-manual-portatil-azulejos",
       "name": "Cortador Manual Portatil Azulejos",
       "description": "Excelente producto: Cortador Manual Portatil Azulejos. Calidad garantizada.",
@@ -3630,9 +4184,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 101900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:41.227Z"
     },
-    {
+    "default_cargador-bebes": {
       "id": "cargador-bebes",
       "name": "Cargador Bebes",
       "description": "Excelente producto: Cargador Bebes. Calidad garantizada.",
@@ -3643,9 +4199,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 80900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:41.455Z"
     },
-    {
+    "default_intercomunicador-krm5": {
       "id": "intercomunicador-krm5",
       "name": "Intercomunicador Krm5",
       "description": "Excelente producto: Intercomunicador Krm5. Calidad garantizada.",
@@ -3656,9 +4214,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 154900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:41.683Z"
     },
-    {
+    "default_citrato-de-magnesio-500g": {
       "id": "citrato-de-magnesio-500g",
       "name": "Citrato De Magnesio 500g",
       "description": "Excelente producto: Citrato De Magnesio 500g. Calidad garantizada.",
@@ -3669,9 +4229,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 87900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:41.891Z"
     },
-    {
+    "default_cabina-parlante-6-5-pulgadas-nxy7": {
       "id": "cabina-parlante-6-5-pulgadas-nxy7",
       "name": "Cabina Parlante 6.5 Pulgadas Nxy7",
       "description": "Excelente producto: Cabina Parlante 6.5 Pulgadas Nxy7. Calidad garantizada.",
@@ -3682,9 +4244,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 131900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:42.126Z"
     },
-    {
+    "default_oximetro-para-dedo-con-pantalla-led": {
       "id": "oximetro-para-dedo-con-pantalla-led",
       "name": "Oximetro Para Dedo Con Pantalla Led",
       "description": "Excelente producto: Oximetro Para Dedo Con Pantalla Led. Calidad garantizada.",
@@ -3695,9 +4259,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 90900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:42.325Z"
     },
-    {
+    "default_emoji-block": {
       "id": "emoji-block",
       "name": "Emoji Block",
       "description": "Excelente producto: Emoji Block. Calidad garantizada.",
@@ -3708,9 +4274,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 86900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:42.580Z"
     },
-    {
+    "default_cubo": {
       "id": "cubo",
       "name": "Cubo",
       "description": "Excelente producto: Cubo. Calidad garantizada.",
@@ -3721,9 +4289,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 74900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:42.803Z"
     },
-    {
+    "default_lector-interactivo-educativo-ingleespan": {
       "id": "lector-interactivo-educativo-ingleespan",
       "name": "Lector Interactivo Educativo Ingleespan",
       "description": "Excelente producto: Lector Interactivo Educativo Ingleespan. Calidad garantizada.",
@@ -3734,9 +4304,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 95900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:43.034Z"
     },
-    {
+    "default_organizador-de-cocina-condimentero": {
       "id": "organizador-de-cocina-condimentero",
       "name": "Organizador De Cocina Condimentero",
       "description": "Excelente producto: Organizador De Cocina Condimentero. Calidad garantizada.",
@@ -3747,9 +4319,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 79900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:43.289Z"
     },
-    {
+    "default_maleta-amazon-con-organizador-zapatos": {
       "id": "maleta-amazon-con-organizador-zapatos",
       "name": "Maleta Amazon Con Organizador Zapatos",
       "description": "Excelente producto: Maleta Amazon Con Organizador Zapatos. Calidad garantizada.",
@@ -3760,9 +4334,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 114900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:43.494Z"
     },
-    {
+    "default_luces-navidad-estrellas-3-metros": {
       "id": "luces-navidad-estrellas-3-metros",
       "name": "Luces Navidad Estrellas 3 Metros",
       "description": "Excelente producto: Luces Navidad Estrellas 3 Metros. Calidad garantizada.",
@@ -3773,9 +4349,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 100900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:43.700Z"
     },
-    {
+    "default_inflador-portatil-llz668": {
       "id": "inflador-portatil-llz668",
       "name": "Inflador Portatil Llz668",
       "description": "Excelente producto: Inflador Portatil Llz668. Calidad garantizada.",
@@ -3786,9 +4364,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 159900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:43.904Z"
     },
-    {
+    "default_plastilina-moldeable": {
       "id": "plastilina-moldeable",
       "name": "Plastilina Moldeable",
       "description": "Excelente producto: Plastilina Moldeable. Calidad garantizada.",
@@ -3799,9 +4379,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 80900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:44.140Z"
     },
-    {
+    "default_termo-st-flores": {
       "id": "termo-st-flores",
       "name": "Termo St Flores",
       "description": "Excelente producto: Termo St Flores. Calidad garantizada.",
@@ -3812,9 +4394,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 112900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:44.341Z"
     },
-    {
+    "default_kit-llave-con-t-con-capas": {
       "id": "kit-llave-con-t-con-capas",
       "name": "Kit Llave Con T Con Capas",
       "description": "Excelente producto: Kit Llave Con T Con Capas. Calidad garantizada.",
@@ -3825,9 +4409,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 96900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:44.561Z"
     },
-    {
+    "default_brocha-magica-maquillaje": {
       "id": "brocha-magica-maquillaje",
       "name": "Brocha Magica Maquillaje",
       "description": "Excelente producto: Brocha Magica Maquillaje. Calidad garantizada.",
@@ -3838,9 +4424,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 76900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:44.784Z"
     },
-    {
+    "default_kit-de-accesorios-de-bano": {
       "id": "kit-de-accesorios-de-bano",
       "name": "Kit De Accesorios De Bano",
       "description": "Excelente producto: Kit De Accesorios De Bano. Calidad garantizada.",
@@ -3851,9 +4439,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 138900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:45.006Z"
     },
-    {
+    "default_compresor-de-aire-ciclone": {
       "id": "compresor-de-aire-ciclone",
       "name": "Compresor De Aire Ciclone",
       "description": "Excelente producto: Compresor De Aire Ciclone. Calidad garantizada.",
@@ -3864,9 +4454,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 112900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:45.216Z"
     },
-    {
+    "default_plancha-cabello-avocado-3d": {
       "id": "plancha-cabello-avocado-3d",
       "name": "Plancha Cabello Avocado 3d",
       "description": "Excelente producto: Plancha Cabello Avocado 3d. Calidad garantizada.",
@@ -3877,9 +4469,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 97900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:45.441Z"
     },
-    {
+    "default_calentador-de-ambiente": {
       "id": "calentador-de-ambiente",
       "name": "Calentador De Ambiente",
       "description": "Excelente producto: Calentador De Ambiente. Calidad garantizada.",
@@ -3890,9 +4484,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 95900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:45.687Z"
     },
-    {
+    "default_repuestos-de-impresora-termica-mini": {
       "id": "repuestos-de-impresora-termica-mini",
       "name": "Repuestos De Impresora Termica Mini",
       "description": "Excelente producto: Repuestos De Impresora Termica Mini. Calidad garantizada.",
@@ -3903,9 +4499,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 78900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:45.889Z"
     },
-    {
+    "default_carro-control": {
       "id": "carro-control",
       "name": "Carro Control",
       "description": "Excelente producto: Carro Control. Calidad garantizada.",
@@ -3916,9 +4514,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 122900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:46.085Z"
     },
-    {
+    "default_mopas-trapero": {
       "id": "mopas-trapero",
       "name": "Mopas Trapero",
       "description": "Excelente producto: Mopas Trapero. Calidad garantizada.",
@@ -3929,9 +4529,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 75900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:46.305Z"
     },
-    {
+    "default_casco-bebe": {
       "id": "casco-bebe",
       "name": "Casco Bebe",
       "description": "Excelente producto: Casco Bebe. Calidad garantizada.",
@@ -3942,9 +4544,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 107900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:46.524Z"
     },
-    {
+    "default_shaver-vgr-331": {
       "id": "shaver-vgr-331",
       "name": "Shaver Vgr 331",
       "description": "Excelente producto: Shaver Vgr 331. Calidad garantizada.",
@@ -3955,9 +4559,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 101900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:46.747Z"
     },
-    {
+    "default_shake-take": {
       "id": "shake-take",
       "name": "Shake Take",
       "description": "Excelente producto: Shake Take. Calidad garantizada.",
@@ -3968,9 +4574,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 101900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:46.953Z"
     },
-    {
+    "default_yerba-magic-x-60-capsulas": {
       "id": "yerba-magic-x-60-capsulas",
       "name": "Yerba Magic X 60 Capsulas",
       "description": "Excelente producto: Yerba Magic X 60 Capsulas. Calidad garantizada.",
@@ -3981,9 +4589,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 87900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:47.174Z"
     },
-    {
+    "default_tapon-protector-bajo-puerta-antiinsectos": {
       "id": "tapon-protector-bajo-puerta-antiinsectos",
       "name": "Tapon Protector Bajo Puerta Antiinsectos",
       "description": "Excelente producto: Tapon Protector Bajo Puerta Antiinsectos. Calidad garantizada.",
@@ -3994,9 +4604,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 80900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:47.399Z"
     },
-    {
+    "default_mugs-480-ml": {
       "id": "mugs-480-ml",
       "name": "Mugs 480 Ml",
       "description": "Excelente producto: Mugs 480 Ml. Calidad garantizada.",
@@ -4007,9 +4619,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 93900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:47.651Z"
     },
-    {
+    "default_irrigador-dental-a18": {
       "id": "irrigador-dental-a18",
       "name": "Irrigador Dental A18",
       "description": "Excelente producto: Irrigador Dental A18. Calidad garantizada.",
@@ -4020,9 +4634,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 93900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:47.907Z"
     },
-    {
+    "default_zapatero-plastico-5-niveles": {
       "id": "zapatero-plastico-5-niveles",
       "name": "Zapatero Plastico 5 Niveles",
       "description": "Excelente producto: Zapatero Plastico 5 Niveles. Calidad garantizada.",
@@ -4033,9 +4649,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 97900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:48.111Z"
     },
-    {
+    "default_luz-led-para-celular-o-laptop-recargable": {
       "id": "luz-led-para-celular-o-laptop-recargable",
       "name": "Luz Led Para Celular O Laptop Recargable",
       "description": "Excelente producto: Luz Led Para Celular O Laptop Recargable. Calidad garantizada.",
@@ -4046,9 +4664,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 96900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:48.321Z"
     },
-    {
+    "default_maleta-para-mascotas": {
       "id": "maleta-para-mascotas",
       "name": "Maleta Para Mascotas",
       "description": "Excelente producto: Maleta Para Mascotas. Calidad garantizada.",
@@ -4059,9 +4679,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 106900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:48.537Z"
     },
-    {
+    "default_diadema-inside-out": {
       "id": "diadema-inside-out",
       "name": "Diadema Inside Out",
       "description": "Excelente producto: Diadema Inside Out. Calidad garantizada.",
@@ -4072,9 +4694,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 101900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:48.763Z"
     },
-    {
+    "default_velas-24-pcs": {
       "id": "velas-24-pcs",
       "name": "Velas 24 Pcs",
       "description": "Excelente producto: Velas 24 Pcs. Calidad garantizada.",
@@ -4085,9 +4709,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 97900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:49.074Z"
     },
-    {
+    "default_perchero-pegable": {
       "id": "perchero-pegable",
       "name": "Perchero Pegable",
       "description": "Excelente producto: Perchero Pegable. Calidad garantizada.",
@@ -4098,9 +4724,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 96900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:49.284Z"
     },
-    {
+    "default_luz-magnetica-dormitorio": {
       "id": "luz-magnetica-dormitorio",
       "name": "Luz Magnetica Dormitorio",
       "description": "Excelente producto: Luz Magnetica Dormitorio. Calidad garantizada.",
@@ -4111,9 +4739,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 81900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:49.489Z"
     },
-    {
+    "default_bubuzela-tricolor": {
       "id": "bubuzela-tricolor",
       "name": "Bubuzela Tricolor",
       "description": "Excelente producto: Bubuzela Tricolor. Calidad garantizada.",
@@ -4124,9 +4754,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 72900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:49.726Z"
     },
-    {
+    "default_ejercitador-multi": {
       "id": "ejercitador-multi",
       "name": "Ejercitador Multi",
       "description": "Excelente producto: Ejercitador Multi. Calidad garantizada.",
@@ -4137,9 +4769,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 84900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:49.939Z"
     },
-    {
+    "default_shaver-vgr-399": {
       "id": "shaver-vgr-399",
       "name": "Shaver Vgr 399",
       "description": "Excelente producto: Shaver Vgr 399. Calidad garantizada.",
@@ -4150,9 +4784,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 141900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:50.150Z"
     },
-    {
+    "default_carro-inflador": {
       "id": "carro-inflador",
       "name": "Carro Inflador",
       "description": "Excelente producto: Carro Inflador. Calidad garantizada.",
@@ -4163,9 +4799,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 106900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:50.405Z"
     },
-    {
+    "default_set-juego-de-bingo-familiar": {
       "id": "set-juego-de-bingo-familiar",
       "name": "Set Juego De Bingo Familiar",
       "description": "Excelente producto: Set Juego De Bingo Familiar. Calidad garantizada.",
@@ -4176,9 +4814,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 114900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:50.620Z"
     },
-    {
+    "default_bolsa-de-colicos-capibara-muneco": {
       "id": "bolsa-de-colicos-capibara-muneco",
       "name": "Bolsa De Colicos Capibara Muneco",
       "description": "Excelente producto: Bolsa De Colicos Capibara Muneco. Calidad garantizada.",
@@ -4189,9 +4829,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 96900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:50.819Z"
     },
-    {
+    "default_compresor-inalambrico-carsun": {
       "id": "compresor-inalambrico-carsun",
       "name": "Compresor Inalambrico Carsun",
       "description": "Excelente producto: Compresor Inalambrico Carsun. Calidad garantizada.",
@@ -4202,9 +4844,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 124900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:51.024Z"
     },
-    {
+    "default_dispensador-de-agua-y-comida-mascota": {
       "id": "dispensador-de-agua-y-comida-mascota",
       "name": "Dispensador De Agua Y Comida Mascota",
       "description": "Excelente producto: Dispensador De Agua Y Comida Mascota. Calidad garantizada.",
@@ -4215,9 +4859,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 92900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:51.253Z"
     },
-    {
+    "default_cortador-de-papa": {
       "id": "cortador-de-papa",
       "name": "Cortador De Papa",
       "description": "Excelente producto: Cortador De Papa. Calidad garantizada.",
@@ -4228,9 +4874,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 91900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:51.516Z"
     },
-    {
+    "default_pistola-de-clavos": {
       "id": "pistola-de-clavos",
       "name": "Pistola De Clavos",
       "description": "Excelente producto: Pistola De Clavos. Calidad garantizada.",
@@ -4241,9 +4889,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 118900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:51.733Z"
     },
-    {
+    "default_machacador-de-ajos": {
       "id": "machacador-de-ajos",
       "name": "Machacador De Ajos",
       "description": "Excelente producto: Machacador De Ajos. Calidad garantizada.",
@@ -4254,9 +4904,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 75900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:51.951Z"
     },
-    {
+    "default_medias-pantalon-termicos": {
       "id": "medias-pantalon-termicos",
       "name": "Medias Pantalon Termicos",
       "description": "Excelente producto: Medias Pantalon Termicos. Calidad garantizada.",
@@ -4267,9 +4919,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 80900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:52.172Z"
     },
-    {
+    "default_molinillo-electrico-multifuncional-150w": {
       "id": "molinillo-electrico-multifuncional-150w",
       "name": "Molinillo Electrico Multifuncional 150w",
       "description": "Excelente producto: Molinillo Electrico Multifuncional 150w. Calidad garantizada.",
@@ -4280,9 +4934,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 106900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:52.380Z"
     },
-    {
+    "default_carrito-de-mercado-plegable": {
       "id": "carrito-de-mercado-plegable",
       "name": "Carrito De Mercado Plegable",
       "description": "Excelente producto: Carrito De Mercado Plegable. Calidad garantizada.",
@@ -4293,9 +4949,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 150900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:52.595Z"
     },
-    {
+    "default_organizador-de-bano-3-niveles": {
       "id": "organizador-de-bano-3-niveles",
       "name": "Organizador De Bano 3 Niveles",
       "description": "Excelente producto: Organizador De Bano 3 Niveles. Calidad garantizada.",
@@ -4306,9 +4964,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 94900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:52.831Z"
     },
-    {
+    "default_organizador-utensilios-y-cuchillos": {
       "id": "organizador-utensilios-y-cuchillos",
       "name": "Organizador Utensilios Y Cuchillos",
       "description": "Excelente producto: Organizador Utensilios Y Cuchillos. Calidad garantizada.",
@@ -4319,9 +4979,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 85900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:53.061Z"
     },
-    {
+    "default_altavoz-parlante-bocina-bluetooth-luces": {
       "id": "altavoz-parlante-bocina-bluetooth-luces",
       "name": "Altavoz Parlante Bocina Bluetooth Luces",
       "description": "Excelente producto: Altavoz Parlante Bocina Bluetooth Luces. Calidad garantizada.",
@@ -4332,9 +4994,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 105900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:53.299Z"
     },
-    {
+    "default_mesa-madera-portatil-para-cama": {
       "id": "mesa-madera-portatil-para-cama",
       "name": "Mesa Madera Portatil Para Cama",
       "description": "Excelente producto: Mesa Madera Portatil Para Cama. Calidad garantizada.",
@@ -4345,9 +5009,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 99900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:53.499Z"
     },
-    {
+    "default_carro-f1-stunt-control-remoto": {
       "id": "carro-f1-stunt-control-remoto",
       "name": "Carro F1 Stunt Control Remoto",
       "description": "Excelente producto: Carro F1 Stunt Control Remoto. Calidad garantizada.",
@@ -4358,9 +5024,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 101900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:53.713Z"
     },
-    {
+    "default_jeringa-dosificadora": {
       "id": "jeringa-dosificadora",
       "name": "Jeringa Dosificadora",
       "description": "Excelente producto: Jeringa Dosificadora. Calidad garantizada.",
@@ -4371,9 +5039,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 77900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:53.909Z"
     },
-    {
+    "default_compresor-portatilref-201": {
       "id": "compresor-portatilref-201",
       "name": "Compresor Portatilref 201",
       "description": "Excelente producto: Compresor Portatilref 201. Calidad garantizada.",
@@ -4384,9 +5054,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 96900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:54.141Z"
     },
-    {
+    "default_tensor-de-mano-grip": {
       "id": "tensor-de-mano-grip",
       "name": "Tensor De Mano Grip",
       "description": "Excelente producto: Tensor De Mano Grip. Calidad garantizada.",
@@ -4397,9 +5069,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 82900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:54.378Z"
     },
-    {
+    "default_perchero-yh99185a": {
       "id": "perchero-yh99185a",
       "name": "Perchero Yh99185a",
       "description": "Excelente producto: Perchero Yh99185a. Calidad garantizada.",
@@ -4410,9 +5084,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 111900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:54.576Z"
     },
-    {
+    "default_cepillo-dental-electrico": {
       "id": "cepillo-dental-electrico",
       "name": "Cepillo Dental Electrico",
       "description": "Excelente producto: Cepillo Dental Electrico. Calidad garantizada.",
@@ -4423,9 +5099,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 80900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:54.790Z"
     },
-    {
+    "default_ducha-portatil-recargable": {
       "id": "ducha-portatil-recargable",
       "name": "Ducha Portatil Recargable",
       "description": "Excelente producto: Ducha Portatil Recargable. Calidad garantizada.",
@@ -4436,9 +5114,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 104900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:55.013Z"
     },
-    {
+    "default_colageno-hidrolizado-marino": {
       "id": "colageno-hidrolizado-marino",
       "name": "Colageno Hidrolizado Marino",
       "description": "Excelente producto: Colageno Hidrolizado Marino. Calidad garantizada.",
@@ -4449,9 +5129,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 85900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:55.230Z"
     },
-    {
+    "default_juego-de-cubiertos-eco-x-24-plateado": {
       "id": "juego-de-cubiertos-eco-x-24-plateado",
       "name": "Juego De Cubiertos Eco X 24 Plateado",
       "description": "Excelente producto: Juego De Cubiertos Eco X 24 Plateado. Calidad garantizada.",
@@ -4462,9 +5144,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 117900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:55.444Z"
     },
-    {
+    "default_aspesor-electrico-recargable": {
       "id": "aspesor-electrico-recargable",
       "name": "Aspesor Electrico Recargable",
       "description": "Excelente producto: Aspesor Electrico Recargable. Calidad garantizada.",
@@ -4475,9 +5159,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 93900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:55.678Z"
     },
-    {
+    "default_masajeador-cojin-carro": {
       "id": "masajeador-cojin-carro",
       "name": "Masajeador Cojin Carro",
       "description": "Excelente producto: Masajeador Cojin Carro. Calidad garantizada.",
@@ -4488,9 +5174,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 99900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:55.941Z"
     },
-    {
+    "default_plancha-pro-nova-keratina": {
       "id": "plancha-pro-nova-keratina",
       "name": "Plancha Pro Nova Keratina",
       "description": "Excelente producto: Plancha Pro Nova Keratina. Calidad garantizada.",
@@ -4501,9 +5189,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 99900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:56.138Z"
     },
-    {
+    "default_antena-tdt-oice-5-mt": {
       "id": "antena-tdt-oice-5-mt",
       "name": "Antena Tdt Oice 5 Mt",
       "description": "Excelente producto: Antena Tdt Oice 5 Mt. Calidad garantizada.",
@@ -4514,9 +5204,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 79900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:56.332Z"
     },
-    {
+    "default_combo-de-audifonos-y-atari": {
       "id": "combo-de-audifonos-y-atari",
       "name": "Combo De Audifonos Y Atari",
       "description": "Excelente producto: Combo De Audifonos Y Atari. Calidad garantizada.",
@@ -4527,9 +5219,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 101900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:56.555Z"
     },
-    {
+    "default_reloj-135-suit": {
       "id": "reloj-135-suit",
       "name": "Reloj 135 Suit",
       "description": "Excelente producto: Reloj 135 Suit. Calidad garantizada.",
@@ -4540,9 +5234,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 152900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:56.762Z"
     },
-    {
+    "default_cepillo-alisador": {
       "id": "cepillo-alisador",
       "name": "Cepillo Alisador",
       "description": "Excelente producto: Cepillo Alisador. Calidad garantizada.",
@@ -4553,9 +5249,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 84900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:56.964Z"
     },
-    {
+    "default_cepillo-desenredador": {
       "id": "cepillo-desenredador",
       "name": "Cepillo Desenredador",
       "description": "Excelente producto: Cepillo Desenredador. Calidad garantizada.",
@@ -4566,9 +5264,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 75900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:57.190Z"
     },
-    {
+    "default_colagenvit": {
       "id": "colagenvit",
       "name": "Colagenvit",
       "description": "Excelente producto: Colagenvit. Calidad garantizada.",
@@ -4579,9 +5279,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 87900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:57.427Z"
     },
-    {
+    "default_accesorio-pulidora": {
       "id": "accesorio-pulidora",
       "name": "Accesorio Pulidora",
       "description": "Excelente producto: Accesorio Pulidora. Calidad garantizada.",
@@ -4592,9 +5294,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 112900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:57.678Z"
     },
-    {
+    "default_organizador-herramientas": {
       "id": "organizador-herramientas",
       "name": "Organizador Herramientas",
       "description": "Excelente producto: Organizador Herramientas. Calidad garantizada.",
@@ -4605,9 +5309,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 164900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:57.887Z"
     },
-    {
+    "default_speaker-bocina-soporte-tg129c": {
       "id": "speaker-bocina-soporte-tg129c",
       "name": "Speaker Bocina Soporte Tg129c",
       "description": "Excelente producto: Speaker Bocina Soporte Tg129c. Calidad garantizada.",
@@ -4618,9 +5324,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 96900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:58.129Z"
     },
-    {
+    "default_bichota-x16-sachets": {
       "id": "bichota-x16-sachets",
       "name": "Bichota X16 Sachets",
       "description": "Excelente producto: Bichota X16 Sachets. Calidad garantizada.",
@@ -4631,9 +5339,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 86900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:58.335Z"
     },
-    {
+    "default_mini-maquina-donera-x-3": {
       "id": "mini-maquina-donera-x-3",
       "name": "Mini Maquina Donera X 3",
       "description": "Excelente producto: Mini Maquina Donera X 3. Calidad garantizada.",
@@ -4644,9 +5354,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 91900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:58.559Z"
     },
-    {
+    "default_lemme-colostrum": {
       "id": "lemme-colostrum",
       "name": "Lemme Colostrum",
       "description": "Excelente producto: Lemme Colostrum. Calidad garantizada.",
@@ -4657,9 +5369,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 88900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:58.787Z"
     },
-    {
+    "default_camisetas-mundial": {
       "id": "camisetas-mundial",
       "name": "Camisetas Mundial",
       "description": "Excelente producto: Camisetas Mundial. Calidad garantizada.",
@@ -4670,9 +5384,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 101900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:58.980Z"
     },
-    {
+    "default_walkie-talki-kits-pilas": {
       "id": "walkie-talki-kits-pilas",
       "name": "Walkie Talki Kits Pilas",
       "description": "Excelente producto: Walkie Talki Kits Pilas. Calidad garantizada.",
@@ -4683,9 +5399,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 83900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:59.203Z"
     },
-    {
+    "default_rebanador-de-carne": {
       "id": "rebanador-de-carne",
       "name": "Rebanador De Carne",
       "description": "Excelente producto: Rebanador De Carne. Calidad garantizada.",
@@ -4696,9 +5414,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 122900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:59.438Z"
     },
-    {
+    "default_set-de-marcadores-x-60-piezas": {
       "id": "set-de-marcadores-x-60-piezas",
       "name": "Set De Marcadores X 60 Piezas",
       "description": "Excelente producto: Set De Marcadores X 60 Piezas. Calidad garantizada.",
@@ -4709,9 +5429,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 83900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:59.662Z"
     },
-    {
+    "default_comedero-de-mascotas-elevado": {
       "id": "comedero-de-mascotas-elevado",
       "name": "Comedero De Mascotas Elevado",
       "description": "Excelente producto: Comedero De Mascotas Elevado. Calidad garantizada.",
@@ -4722,9 +5444,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 110900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:14:59.863Z"
     },
-    {
+    "default_magnesium-complex-8-elementos": {
       "id": "magnesium-complex-8-elementos",
       "name": "Magnesium Complex 8 Elementos",
       "description": "Excelente producto: Magnesium Complex 8 Elementos. Calidad garantizada.",
@@ -4735,9 +5459,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 90900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:15:00.105Z"
     },
-    {
+    "default_rascador-de-sofa": {
       "id": "rascador-de-sofa",
       "name": "Rascador De Sofa",
       "description": "Excelente producto: Rascador De Sofa. Calidad garantizada.",
@@ -4748,9 +5474,11 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 91900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:15:00.312Z"
     },
-    {
+    "default_maleta-infantil-diseno-animales": {
       "id": "maleta-infantil-diseno-animales",
       "name": "Maleta Infantil Diseno Animales",
       "description": "Excelente producto: Maleta Infantil Diseno Animales. Calidad garantizada.",
@@ -4761,7 +5489,27 @@
       "currency": "COP",
       "provider": "Dropi",
       "price": 106900,
-      "freight": 15000
+      "freight": 15000,
+      "storeId": "default",
+      "updatedAt": "2026-07-09T15:15:00.531Z"
     }
-  ]
+  },
+  "config": {
+    "system": {
+      "orderConfirmTemplateSid": "HX9732e06d4bc355e41765ba490dbcd983",
+      "updatedAt": "2026-07-09T12:44:49.111Z"
+    }
+  },
+  "stores": {
+    "jan-vanegas-hq": {
+      "name": "Jan Vanegas - Sales Architecture",
+      "phone": "whatsapp:+15072233213",
+      "paisaStyle": true,
+      "recoveryEnabled": true,
+      "dropiApiKey": "DROPI_MOCK_KEY_12345",
+      "emailEnabled": true,
+      "createdAt": "2026-07-09T15:15:00.788Z",
+      "updatedAt": "2026-07-09T15:15:00.788Z"
+    }
+  }
 }

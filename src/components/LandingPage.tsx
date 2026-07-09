@@ -29,7 +29,7 @@ const TRENDING_PRODUCTS = [
     description: "Módem router wifi portátil 4G/5G LTE recargable de alta velocidad. Conecta hasta 10 dispositivos simultáneamente sin enredos en cualquier parte de Colombia.",
     price: 196900,
     originalPrice: 280000,
-    imageUrl: "https://d39ru7awumhhs2.cloudfront.net/colombia/products/2118726/1774718497Photoroom_20260328_121845.JPG",
+    imageUrl: "/src/assets/images/WIFIPORTATIL.png",
     rating: 4.9,
     reviews: 142,
     stock: 12
@@ -41,7 +41,7 @@ const TRENDING_PRODUCTS = [
     description: "Cámara de seguridad para vehículos con grabación continua en resolución HD. Registra todo tu camino de forma continua protegiendo tus recorridos.",
     price: 123900,
     originalPrice: 199000,
-    imageUrl: "https://images.unsplash.com/photo-1508962914676-134849a727f0?auto=format&fit=crop&q=80&w=800",
+    imageUrl: "/src/assets/images/CAMARA DUAL.png",
     rating: 4.9,
     reviews: 97,
     stock: 16
@@ -53,7 +53,7 @@ const TRENDING_PRODUCTS = [
     description: "Intercomunicador Bluetooth Y10 para cascos de moto con luces RGB, reducción de ruido de alta fidelidad y manos libres totalmente impermeable.",
     price: 139900,
     originalPrice: 199000,
-    imageUrl: "https://d39ru7awumhhs2.cloudfront.net/colombia/products/2144351/17786277011001247160.webp",
+    imageUrl: "/src/assets/images/INTERCOMUNICADOR.png",
     rating: 4.8,
     reviews: 98,
     stock: 15
@@ -65,7 +65,7 @@ const TRENDING_PRODUCTS = [
     description: "Soporte inteligente de alta velocidad para rejilla del auto que carga tu celular por inducción magnética mientras conduces de forma segura.",
     price: 118900,
     originalPrice: 160000,
-    imageUrl: "https://images.unsplash.com/photo-1620054707682-1ced56da59d9?auto=format&fit=crop&q=80&w=800",
+    imageUrl: "/src/assets/images/CARGADOR MAGNETICO.png",
     rating: 4.8,
     reviews: 83,
     stock: 14
@@ -77,7 +77,7 @@ const TRENDING_PRODUCTS = [
     description: "Pijama carpa de alta calidad e impermeable para motocicleta con protección UV. Protege contra la lluvia ácida, sol inclemente, polvo y rayones.",
     price: 80900,
     originalPrice: 110000,
-    imageUrl: "https://http2.mlstatic.com/D_NQ_NP_821920-MCO49102931293_022022-O.webp",
+    imageUrl: "/src/assets/images/FUNDA PARA MOTO.png",
     rating: 4.8,
     reviews: 109,
     stock: 19
@@ -89,7 +89,7 @@ const TRENDING_PRODUCTS = [
     description: "Destornillador eléctrico recargable inalámbrico de diseño compacto con juego completo de puntas de acero y cable de carga USB.",
     price: 78900,
     originalPrice: 149000,
-    imageUrl: "https://d39ru7awumhhs2.cloudfront.net/colombia/products/1523617/17364886701.jpg",
+    imageUrl: "/src/assets/images/ATORNILLADOR INALAMBRICO.png",
     rating: 4.4,
     reviews: 86,
     stock: 9
@@ -101,7 +101,7 @@ const TRENDING_PRODUCTS = [
     description: "Traba de alta seguridad para el volante de tu vehículo que se ancla directamente al broche del cinturón de seguridad. Fabricado con cable de acero trenzado ultra resistente y forro de lona protectora que evita rayones.",
     price: 79900,
     originalPrice: 99000,
-    imageUrl: "/src/assets/images/volante_seguro_pro_1783607779811.jpg",
+    imageUrl: "/src/assets/images/SEGURO PARA VOLANTE.png",
     rating: 4.3,
     reviews: 118,
     stock: 7
@@ -113,7 +113,7 @@ const TRENDING_PRODUCTS = [
     description: "Cargador inteligente de batería de 12V con reparación de pulso para autos y motos. Cuenta con pantalla LCD que muestra voltaje, corriente y nivel de carga. Sistema inteligente de parada automática para evitar sobrecargas.",
     price: 94900,
     originalPrice: 120000,
-    imageUrl: "/src/assets/images/cargador_bateria_carro_1783608580900.jpg",
+    imageUrl: "/src/assets/images/INICIADOR DE VEHICULOS.png",
     rating: 4.2,
     reviews: 94,
     stock: 499
@@ -125,7 +125,7 @@ const TRENDING_PRODUCTS = [
     description: "Incluye Quita rayones, Acondicionador de partes negras y Renovador de farolas de alta potencia. Recupera la estética original de tu vehículo en solo 3 pasos.",
     price: 89900,
     originalPrice: 130000,
-    imageUrl: "https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?auto=format&fit=crop&q=80&w=800",
+    imageUrl: "/src/assets/images/KIT RENOVACION VEHICULO .png",
     rating: 4.2,
     reviews: 112,
     stock: 20
@@ -137,7 +137,7 @@ const TRENDING_PRODUCTS = [
     description: "Lámpara solar Ever Brite con sensor inteligente de movimiento, panel de 0.44W de alta eficiencia, batería de litio de 600 mAh y luces LED ultra brillantes.",
     price: 85900,
     originalPrice: 110000,
-    imageUrl: "https://d39ru7awumhhs2.cloudfront.net/colombia/products/562913/17801683841711227232LAMPARA%20INDUCCION.%20MARCA_%20EVER%20BRITE,%20PANEL%20SOLAR%20.44W,%20%20BATERIA%20DE%20LITIUM%20600%20mAH,%20LED%204X6000K%200.8W%20FK23D-48.7-dropicup.png",
+    imageUrl: "/src/assets/images/LAMPARA LED.png",
     rating: 4.1,
     reviews: 112,
     stock: 24
@@ -149,7 +149,7 @@ const TRENDING_PRODUCTS = [
     description: "Candado de seguridad antirrobo ultra resistente con alarma integrada de 110dB que se activa ante el primer intento de golpe, vibración o forcejeo.",
     price: 72900,
     originalPrice: 95000,
-    imageUrl: "https://d39ru7awumhhs2.cloudfront.net/colombia/products/2012644/1764617070CANDADO%20ALARMA.png",
+    imageUrl: "/src/assets/images/CANDADO ALARMA.jpeg",
     rating: 4.1,
     reviews: 73,
     stock: 18
@@ -158,10 +158,10 @@ const TRENDING_PRODUCTS = [
     id: "compresor-portatil-digital",
     name: "Compresor Portátil Vehículos Digital Car",
     category: "autos",
-    description: "Compresor inteligente inalámbrico con pantalla digital y apagado automático inteligente al llegar a la presión programada. Ideal para llantas y balones.",
+    description: "Compresor inteligente inalámbrico con pantalla digital and apagado automático inteligente al llegar a la presión programada. Ideal para llantas y balones.",
     price: 159900,
     originalPrice: 250000,
-    imageUrl: "https://d39ru7awumhhs2.cloudfront.net/colombia/products/1747538/1744056531Post%20de%20Instagram%20nuevo%20producto%20Minimalista%20Beige%20Marr%C3%B3n%20Blanco%20%20(27).png",
+    imageUrl: "/src/assets/images/COMPRESOR.jpeg",
     rating: 4.9,
     reviews: 155,
     stock: 6
@@ -173,7 +173,7 @@ const TRENDING_PRODUCTS = [
     description: "Potente hidrolavadora de agua inalámbrica de alta presión ideal para lavar vehículos, motocicletas y ventanas de forma portátil sin enchufe eléctrico.",
     price: 112900,
     originalPrice: 180000,
-    imageUrl: "https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?auto=format&fit=crop&q=80&w=800",
+    imageUrl: "/src/assets/images/HIDROLAVADORA INALAMBRICA.jpeg",
     rating: 4.9,
     reviews: 134,
     stock: 11
@@ -185,7 +185,7 @@ const TRENDING_PRODUCTS = [
     description: "Aspiradora de mano premium con diseño compacto y succión de alta potencia para remover suciedad de cojinería, rejillas y esquinas difíciles.",
     price: 75900,
     originalPrice: 120000,
-    imageUrl: "https://images.unsplash.com/photo-1563161402-8b11e247b654?auto=format&fit=crop&q=80&w=800",
+    imageUrl: "/src/assets/images/MINIASPIRADORA.jpeg",
     rating: 4.8,
     reviews: 55,
     stock: 20
@@ -197,7 +197,7 @@ const TRENDING_PRODUCTS = [
     description: "Kit completo de reparación casera para remover abolladuras y golpes en la lámina del auto sin comprometer la pintura original.",
     price: 80900,
     originalPrice: 120000,
-    imageUrl: "https://images.unsplash.com/photo-1617400325113-ac054363daeb?auto=format&fit=crop&q=80&w=800",
+    imageUrl: "/src/assets/images/KIT SACAGOLPES.png",
     rating: 4.4,
     reviews: 121,
     stock: 20
