@@ -1,6 +1,34 @@
 {
   "products": [
     {
+      "imageUrl": "/src/assets/images/cargador_bateria_carro_1783608580900.jpg",
+      "provider": "Dropi",
+      "currency": "COP",
+      "cost": 38000,
+      "id": "cargador-bateria-inteligente",
+      "category": "autos",
+      "description": "Cargador inteligente de batería de 12V con reparación de pulso para autos y motos. Cuenta con pantalla LCD que muestra voltaje, corriente y nivel de carga. Sistema inteligente de parada automática para evitar sobrecargas.",
+      "videoUrl": "",
+      "name": "Cargador Iniciador De Bateria Para Carro",
+      "price": 94900,
+      "stock": 499,
+      "freight": 15000
+    },
+    {
+      "imageUrl": "/src/assets/images/volante_seguro_pro_1783607779811.jpg",
+      "provider": "Dropi",
+      "currency": "COP",
+      "cost": 36000,
+      "id": "volante-seguro-pro",
+      "category": "autos",
+      "description": "Traba de alta seguridad para el volante de tu vehículo que se ancla directamente al broche del cinturón de seguridad. Fabricado con cable de acero trenzado ultra resistente y forro de lona protectora que evita rayones.",
+      "videoUrl": "",
+      "name": "Volante Seguro Pro",
+      "price": 79900,
+      "stock": 20,
+      "freight": 15000
+    },
+    {
       "imageUrl": "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&q=80&w=800",
       "provider": "Dropi",
       "currency": "COP",

@@ -51,7 +51,7 @@ import {
   db, 
   auth, 
   storage, 
-  handleFirestoreError,
+  handleSupabaseError,
   collection, 
   onSnapshot, 
   query, 
@@ -576,7 +576,7 @@ function JanAdmin() {
       await updateDoc(doc(db, "products", docId), { stock: Math.max(0, newStock) });
     } catch (err) {
       console.error("Error updating stock:", err);
-      handleFirestoreError(err, "update", `products/${docId}`);
+      handleSupabaseError(err, "update", `products/${docId}`);
     }
   };
 
@@ -585,7 +585,7 @@ function JanAdmin() {
       await updateDoc(doc(db, "orders", orderId), { status });
     } catch (err) {
       console.error("Error updating status:", err);
-      handleFirestoreError(err, "update", `orders/${orderId}`);
+      handleSupabaseError(err, "update", `orders/${orderId}`);
     }
   };
 
@@ -1939,7 +1939,16 @@ function OrdersTab({ orders, onUpdateStatus, userStore }: { orders: Order[], onU
                     <td className="p-4 text-neutral-500">
                       {safeFormat(o.createdAt, 'dd MMM, HH:mm')}
                     </td>
-                    <td className="p-4 font-bold text-white uppercase">{o.customerName}</td>
+                    <td className="p-4 font-bold text-white uppercase">
+                      <div className="flex flex-col gap-1">
+                        <span>{o.customerName}</span>
+                        {(o as any).origin === 'landing' && (
+                          <span className="text-[8px] bg-amber-500/10 text-amber-400 border border-amber-500/20 font-black px-1.5 py-0.5 rounded uppercase tracking-widest w-fit">
+                            Viene de Landing ⚡
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="p-4">
                       <div className="flex items-center gap-2">
                          <Phone size={10} className="text-dark-green" />
@@ -3299,6 +3308,7 @@ function ConfigTab({ user, userStore, userStores, setUserStore, setUserStores, w
 }
 
 import Storefront from "./components/Storefront";
+import LandingPage from "./components/LandingPage";
 
 // Global App component with Routing
 export default function App() {
@@ -3307,6 +3317,7 @@ export default function App() {
       <Routes>
         <Route path="/tienda/:slug" element={<Storefront />} />
         <Route path="/catalog" element={<Catalog />} />
+        <Route path="/landing" element={<LandingPage />} />
         <Route path="/" element={<JanAdmin />} />
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />

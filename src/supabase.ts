@@ -262,10 +262,10 @@ export async function signOut(authObj: any): Promise<void> {
 
 
 // -------------------------------------------------------------
-// 🗄️ DATABASE LAYER: FIRESTORE-COMPATIBLE WRAPPER
+// 🗄️ DATABASE LAYER: SUPABASE-COMPATIBLE WRAPPER
 // -------------------------------------------------------------
 
-// Firestore database representation
+// Supabase database representation
 export const db = {
   type: "supabase-proxy"
 };
@@ -319,7 +319,7 @@ export async function uploadBytes(refObj: any, file: File | Blob): Promise<any> 
   });
 }
 
-// Query structure helpers to emulate firestore API
+// Query structure helpers to emulate database query API
 export class QueryConstraint {
   constructor(public type: string, public field: string, public op: string, public value: any) {}
 }
@@ -522,6 +522,6 @@ export function onSnapshot(queryObj: any, onNext: (snapshot: any) => void, onErr
 }
 
 // Handle errors gracefully without crashing
-export function handleFirestoreError(error: unknown, operationType: string, path: string | null) {
+export function handleSupabaseError(error: unknown, operationType: string, path: string | null) {
   console.error(`[Supabase Proxy Error] Operation: ${operationType}, Path: ${path}`, error);
 }

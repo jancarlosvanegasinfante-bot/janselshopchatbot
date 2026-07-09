@@ -63,7 +63,7 @@ function saveLocalDb() {
 loadLocalDb();
 
 // -------------------------------------------------------------
-// 🗃️ FIRESTORE-COMPATIBLE API ADAPTER FOR BACKEND
+// 🗄️ SUPABASE-COMPATIBLE API ADAPTER FOR BACKEND
 // -------------------------------------------------------------
 
 export const db = { type: "supabase-proxy" };
@@ -210,7 +210,7 @@ export async function dbGetDocs(collectionName: string, constraints: any[] = [])
     }
   }
 
-  // Filter in-memory (matches Firestore logic perfectly)
+  // Filter in-memory (matches Supabase proxy logic perfectly)
   for (const c of constraints) {
     if (c.type === "where") {
       const { field, op, value } = c;
@@ -254,7 +254,7 @@ export async function dbGetDocs(collectionName: string, constraints: any[] = [])
   return list;
 }
 
-// Firestore compatible functions for server.ts
+// Supabase compatible functions for server.ts
 export async function getDoc(docRef: any) {
   const result = await dbGetDoc(docRef.collection, docRef.id);
   return {
@@ -355,7 +355,7 @@ function checkGlobalQuota(): boolean {
   return false;
 }
 
-function handleFirestoreError(e: any): never {
+function handleSupabaseError(e: any): never {
   throw e;
 }
 
@@ -834,7 +834,39 @@ async function processInferenceOnServer(activityId: string, data: any) {
       return;
     }
 
-    const compactProductsString = products.map(p => {
+    // Hybrid Smart Context Filter: Select only Top 15 featured products and those matching user keywords
+    // to prevent prompt truncation issues and speed up inference significantly!
+    let filteredProductsForPrompt: any[] = [];
+    
+    const topKeywords = [
+      "modem", "retrovisor", "intercomunicador", "soporte de carga", "funda", 
+      "destornillador", "frontal", "linterna", "camping", "ever brite", 
+      "candado", "compresor", "hidrolavadora", "aspiradora", "cargador"
+    ];
+    
+    const topProducts = products.filter(p => {
+      const nameLower = (p.name || "").toLowerCase();
+      return topKeywords.some(keyword => nameLower.includes(keyword));
+    }).slice(0, 15);
+    
+    if (topProducts.length < 15) {
+      const remaining = products.filter(p => !topProducts.some(tp => tp.id === p.id));
+      topProducts.push(...remaining.slice(0, 15 - topProducts.length));
+    }
+    
+    const msgWords = safeMessage.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+    const matchedProducts = products.filter(p => {
+      const nameLower = (p.name || "").toLowerCase();
+      return msgWords.some(word => nameLower.includes(word));
+    }).slice(0, 10);
+    
+    const combinedSet = new Map<string, any>();
+    topProducts.forEach(p => combinedSet.set(p.id, p));
+    matchedProducts.forEach(p => combinedSet.set(p.id, p));
+    
+    filteredProductsForPrompt = Array.from(combinedSet.values());
+    
+    const compactProductsString = filteredProductsForPrompt.map(p => {
       const desc = p.description ? (p.description.length > 80 ? p.description.substring(0, 80) + "..." : p.description) : "";
       return `- ${p.name} ($${p.price}) [id: ${p.id}]${p.category ? ` [Cat: ${p.category}]` : ""}${desc ? ` - ${desc}` : ""}`;
     }).join("\n");
@@ -849,7 +881,7 @@ ${history}
 
 MENSAJE ACTUAL: ${safeMessage}${imageParts.length > 0 ? " (El cliente también envió una imagen que adjunto para tu análisis)" : ""}
 
-INVENTARIO ACTUAL:
+INVENTARIO ACTUAL (Vista curada de los más vendidos y productos relevantes para esta consulta. Tenemos más de 360 productos en total, si piden algo diferente pregúntale a tu jefe o usa "notificar_admin"):
 ${compactProductsString}
 
 ⚠️ REGLA DE SALIDA ULTRA-ESTRICTA (OBLIGATORIA):
@@ -1232,7 +1264,7 @@ Jan respondió: "${jsonResponse.mensaje}"`;
 
   } catch (err: any) {
     console.error(`[Server AI][Error] Falló procesamiento en Railway:`, err.message);
-    try { handleFirestoreError(err); } catch (e) {}
+    try { handleSupabaseError(err); } catch (e) {}
     if (!checkGlobalQuota()) {
       await updateDoc(doc(db, "activities", activityId), { 
         status: "error", 
@@ -1291,7 +1323,7 @@ async function checkTwilioStatus(): Promise<boolean> {
 // ==============================================
 // Se auto-provisiona UNA sola vez el Content Template en Twilio (no requiere
 // tocar la consola de Twilio a mano). El ContentSid resultante se guarda en
-// Firestore (config/system) para no volver a crearlo en cada arranque.
+// Supabase (config/system) para no volver a crearlo en cada arranque.
 const CONFIRM_YES_ID = "JAN_CONFIRM_YES";
 const CONFIRM_NO_ID = "JAN_CONFIRM_NO";
 
@@ -1639,7 +1671,53 @@ async function sendCategoryFeaturedProducts(to: string, from: string, category: 
   }
 }
 
-// Crea el pedido en Firestore, sincroniza con Shopify/Dropi si aplica, y notifica a los admins.
+async function startCheckoutFlow(from: string, cleanFrom: string, to: string, assignedStoreId: string, initialProduct: string = "") {
+  try {
+    const customerProfileId = `${assignedStoreId}_${cleanFrom}`;
+    const step = initialProduct ? "nombre" : "producto";
+    const checkoutData = {
+      producto: initialProduct,
+      nombre: "",
+      telefono: "",
+      ciudad: "",
+      direccion: "",
+      referencia: "",
+      valor: 0
+    };
+
+    if (initialProduct) {
+      const products = await loadProductsForStore(assignedStoreId);
+      const checkProd = initialProduct.toLowerCase();
+      const match = products.find((p: any) =>
+        (p.name && p.name.toLowerCase().includes(checkProd)) ||
+        (p.name && checkProd.includes(p.name.toLowerCase()))
+      );
+      if (match && match.price) {
+        checkoutData.valor = match.price;
+        checkoutData.producto = match.name;
+      }
+    }
+
+    await setDoc(doc(db, "customers", customerProfileId), {
+      checkoutStep: step,
+      checkoutData: checkoutData,
+      etapa: "negociando",
+      lastInteractionAt: serverTimestamp()
+    }, { merge: true });
+
+    if (!initialProduct) {
+      await sendWhatsApp(from, `¡Excelente decisión! 🛒 Vamos a registrar tu pedido de una, sin demoras y súper profesional.\n\nContame: ¿Qué producto(s) de nuestro catálogo deseas ordenar hoy? 🔎 (Escríbelo por acá 👇)`, undefined, undefined, to);
+    } else {
+      await sendWhatsApp(from, `¡Excelente decisión! 🛒 Vamos a registrar tu pedido para *${checkoutData.producto || initialProduct}* súper rápido.\n\nPor favor dime tu *Nombre y Apellido completo* para la guía de despacho de tu pedido: 📝`, undefined, undefined, to);
+    }
+    return true;
+  } catch (e: any) {
+    console.error(`[startCheckoutFlow] Error initializing:`, e.message);
+    return false;
+  }
+}
+
+// Crea el pedido en Supabase, sincroniza con Shopify/Dropi si aplica, y notifica a los admins.
 // Extraída como función reutilizable: se llama tanto cuando el cliente confirma por botón
 // como en el fallback directo si no se pudieron mandar los botones.
 async function finalizeOrder(
@@ -1721,7 +1799,7 @@ async function finalizeOrder(
   }
 }
 
-// Carga el catálogo de productos de una tienda (con fallback a JSON local si Firestore falla).
+// Carga el catálogo de productos de una tienda (con fallback a JSON local si Supabase falla).
 // Extraída para reutilizarla tanto en el flujo normal de IA como en la confirmación por botón.
 async function loadProductsForStore(assignedStoreId: string): Promise<any[]> {
   let products: any[] = [];
@@ -1733,7 +1811,7 @@ async function loadProductsForStore(assignedStoreId: string): Promise<any[]> {
     }
     products = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }));
   } catch (e) {
-    console.error("Firebase quota or read error, using local JSON:", e);
+    console.error("Supabase read error, using local JSON:", e);
   }
 
   if (products.length === 0) {
@@ -2385,6 +2463,132 @@ async function startServer() {
     });
   });
 
+  app.post("/api/public/landing-order", express.json(), async (req, res) => {
+    try {
+      const { 
+        storeId, 
+        customerName, 
+        customerPhone, 
+        address, 
+        addressIndicator, 
+        city, 
+        productName, 
+        productId, 
+        quantity, 
+        totalPrice, 
+        notes 
+      } = req.body;
+
+      const targetStoreId = storeId || "default";
+
+      // 1. Fetch store config
+      let storeConfig: any = {};
+      try {
+        const storeSnap = await getDoc(doc(db, "stores", targetStoreId));
+        if (storeSnap.exists()) {
+          storeConfig = storeSnap.data();
+        }
+      } catch (err) {
+        console.error("[Landing Order] Error loading store config:", err);
+      }
+
+      // 2. Formulate order info
+      const orderInfo: any = {
+        storeId: targetStoreId,
+        customerName: customerName || "No especificado",
+        customerPhone: customerPhone || "No especificado",
+        productName: productName || "No especificado",
+        productId: productId || "manual",
+        quantity: Number(quantity) || 1,
+        totalPrice: Number(totalPrice) || 0,
+        address: address || "No especificada",
+        city: city || "No especificada",
+        addressIndicator: addressIndicator || "N/A",
+        notes: notes || "Pedido desde la Landing Page",
+        origin: "landing",
+        status: "pendiente",
+        shopifyStatus: "no_enviado",
+        dropiStatus: "no_enviado",
+        createdAt: serverTimestamp()
+      };
+
+      // 3. Save order to DB
+      const orderRef = await addDoc(collection(db, "orders"), orderInfo);
+      const newOrderId = orderRef.id;
+      orderInfo.id = newOrderId;
+      console.log(`[Landing Order] Saved landing order successfully with ID: ${newOrderId}`);
+
+      // 4. Handle Shopify Auto Sync
+      if (storeConfig?.shopifyAutoSync && storeConfig?.shopifyDomain && storeConfig?.shopifyAccessToken) {
+        console.log("[Landing Order] Shopify Auto Sync activo. Sincronizando pedido...");
+        try {
+          await pushOrderToShopify(newOrderId, orderInfo, storeConfig, db);
+          console.log("[Landing Order] Pedido sincronizado con Shopify automáticamente.");
+        } catch (shopErr: any) {
+          console.error("[Landing Order] Error sincronizando con Shopify automáticamente:", shopErr.message);
+          await updateDoc(doc(db, "orders", newOrderId), {
+            shopifyStatus: "error",
+            shopifyError: shopErr.message
+          });
+        }
+      }
+
+      // 5. Handle Dropi Auto Sync
+      if (storeConfig?.dropiAutoSync && storeConfig?.dropiApiKey) {
+        console.log("[Landing Order] Dropi Auto Sync activo. Sincronizando pedido...");
+        try {
+          await pushOrderToDropi(newOrderId, orderInfo, storeConfig, db);
+          console.log("[Landing Order] Pedido sincronizado con Dropi automáticamente.");
+        } catch (dropErr: any) {
+          console.error("[Landing Order] Error sincronizando con Dropi automáticamente:", dropErr.message);
+          await updateDoc(doc(db, "orders", newOrderId), {
+            dropiStatus: "error",
+            dropiError: dropErr.message
+          });
+        }
+      }
+
+      // 6. Formulate exciting Admin WhatsApp Notification
+      const customMessage = `🚀 *¡NUEVO PEDIDO DESDE LA LANDING!* 🚀
+Jan acaba de recibir una compra directa por formulario de Landing Page.
+
+👤 *Cliente:* ${orderInfo.customerName}
+📞 *Teléfono:* ${orderInfo.customerPhone}
+📦 *Producto:* ${orderInfo.productName} (x${orderInfo.quantity})
+📍 *Destino:* ${orderInfo.city}
+🏠 *Dirección:* ${orderInfo.address}
+🗺️ *Ref:* ${orderInfo.addressIndicator || 'N/A'}
+💰 *Total:* $${(orderInfo.totalPrice || 0).toLocaleString()} COP *(Paga al recibir)*
+
+_El pedido ya se guardó y está listo en tu tablero._`;
+
+      // Modify the standard notification phone if config exists
+      const adminNumbersRaw = process.env.ADMIN_WHATSAPP_NUMBERS || "";
+      let adminNumbers = adminNumbersRaw.split(",").filter(n => n.trim().length > 0);
+      if (storeConfig?.notificationPhone) {
+        adminNumbers = [storeConfig.notificationPhone];
+      }
+
+      for (const num of adminNumbers) {
+        try {
+          const formattedNum = num.startsWith("whatsapp:") ? num : `whatsapp:${num}`;
+          const botNum = process.env.TWILIO_FROM_NUMBER || "+14155238886";
+          const formattedBotNum = botNum.startsWith("whatsapp:") ? botNum : `whatsapp:${botNum}`;
+          await sendWhatsApp(formattedNum, customMessage, undefined, undefined, formattedBotNum);
+          console.log(`[Landing Order Notify] Admin ${formattedNum} notified successfully.`);
+        } catch (notifyErr: any) {
+          console.error(`[Landing Order Notify] Failed to notify ${num}:`, notifyErr.message);
+        }
+      }
+
+      // 7. Return success
+      res.status(200).json({ success: true, order: orderInfo });
+    } catch (err: any) {
+      console.error("[Landing Order Error] Failed to create order:", err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
   // --- SHOPIFY AND DROPI INTEGRATION ROUTES ---
 
   app.post("/api/integration/shopify/push-order", async (req, res) => {
@@ -2939,6 +3143,340 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
       const activityRef = await addDoc(collection(db, "activities"), activityData);
       console.log(`[Activity] Registered: ${activityRef.id}. Bot receiving: ${to}`);
 
+      // Deterministic message processing & Interceptors (bypasses LLM for maximum performance & reliability)
+      const cleanMsg = (finalMessage || "").toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim();
+
+      const customerProfileId = `${assignedStoreId}_${cleanFrom}`;
+      const cxSnap = await getDoc(doc(db, "customers", customerProfileId));
+      const customerData = cxSnap.exists() ? cxSnap.data() : null;
+
+      // ==============================================
+      // 1. ACTIVE CHECKOUT STATE MACHINE (DETERMINISTIC)
+      // ==============================================
+      if (customerData && customerData.checkoutStep && from.startsWith("whatsapp:")) {
+        const currentStep = customerData.checkoutStep;
+        const checkoutData = customerData.checkoutData || {};
+
+        console.log(`[Checkout State Machine] Client ${cleanFrom} in step: ${currentStep}. Msg: ${finalMessage}`);
+
+        // Allow cancel or back
+        if (["cancelar", "cancelar pedido", "cancelar compra", "salir", "atras"].some(k => cleanMsg === k || cleanMsg.includes(k))) {
+          await setDoc(doc(db, "customers", customerProfileId), {
+            checkoutStep: null,
+            checkoutData: null,
+            etapa: "interesado"
+          }, { merge: true });
+          await sendWhatsApp(from, `¡Listo, parce! Cancelamos tu proceso de compra. 🙂 ¿En qué más te puedo colaborar hoy?`, undefined, activityRef.id, to);
+          await new Promise(resolve => setTimeout(resolve, 800));
+          await sendMainMenu(from, to);
+          return res.status(200).send("");
+        }
+
+        if (currentStep === "producto") {
+          checkoutData.producto = finalMessage;
+          
+          let matchedPrice = 0;
+          const products = await loadProductsForStore(assignedStoreId);
+          const match = products.find((p: any) =>
+            (p.name && p.name.toLowerCase().includes(finalMessage.toLowerCase())) ||
+            (p.name && finalMessage.toLowerCase().includes(p.name.toLowerCase()))
+          );
+          if (match && match.price) {
+            matchedPrice = match.price;
+            checkoutData.producto = match.name;
+          }
+          checkoutData.valor = matchedPrice;
+
+          await setDoc(doc(db, "customers", customerProfileId), {
+            checkoutStep: "nombre",
+            checkoutData: checkoutData
+          }, { merge: true });
+
+          await sendWhatsApp(from, `¡Perfecto! Vamos a registrar tu pedido para: *${checkoutData.producto}*. 📦\n\nAhora, por favor dime tu *Nombre y Apellido completo* para la guía de envío de tu pedido: 📝`, undefined, activityRef.id, to);
+          return res.status(200).send("");
+        }
+
+        if (currentStep === "nombre") {
+          checkoutData.nombre = finalMessage;
+
+          await setDoc(doc(db, "customers", customerProfileId), {
+            checkoutStep: "telefono",
+            checkoutData: checkoutData
+          }, { merge: true });
+
+          await sendWhatsApp(from, `¡Mucho gusto, *${finalMessage}*! 🤝 ¿A qué *número de teléfono* te puede contactar la transportadora si hay alguna novedad? \n\n✍️ Escríbelo, o responde con la palabra *mismo* para usar tu número de WhatsApp actual (${cleanFrom}) 📞`, undefined, activityRef.id, to);
+          return res.status(200).send("");
+        }
+
+        if (currentStep === "telefono") {
+          let phoneVal = finalMessage.trim();
+          if (["mismo", "el mismo", "este mismo", "este"].some(k => cleanMsg.includes(k))) {
+            phoneVal = cleanFrom;
+          }
+          checkoutData.telefono = phoneVal;
+
+          await setDoc(doc(db, "customers", customerProfileId), {
+            checkoutStep: "ciudad",
+            checkoutData: checkoutData
+          }, { merge: true });
+
+          await sendWhatsApp(from, `¡Listo! Quedó registrado el número *${phoneVal}*. \n\nAhora contame: ¿A qué *ciudad, municipio o corregimiento* y de qué *departamento* enviamos tu pedido? (Acuérdate de que el envío es GRATIS a toda Colombia) 🇨🇴`, undefined, activityRef.id, to);
+          return res.status(200).send("");
+        }
+
+        if (currentStep === "ciudad") {
+          checkoutData.ciudad = finalMessage;
+
+          await setDoc(doc(db, "customers", customerProfileId), {
+            checkoutStep: "direccion",
+            checkoutData: checkoutData
+          }, { merge: true });
+
+          await sendWhatsApp(from, `¡Entendido! ¿Cuál es tu *dirección exacta de entrega*? (Por favor incluye calle, carrera, número de casa, apartamento, torre o barrio para que no haya demoras) 🏠`, undefined, activityRef.id, to);
+          return res.status(200).send("");
+        }
+
+        if (currentStep === "direccion") {
+          checkoutData.direccion = finalMessage;
+
+          await setDoc(doc(db, "customers", customerProfileId), {
+            checkoutStep: "referencia",
+            checkoutData: checkoutData
+          }, { merge: true });
+
+          await sendWhatsApp(from, `¡Súper! Para que la transportadora entregue volando y sin enredos, ¿tienes alguna *indicación o referencia adicional*? \n\n📍 (Ej: "casa de rejas blancas", "frente al parque", "entregar en portería", o escribe *ninguna* si no aplica) 👇`, undefined, activityRef.id, to);
+          return res.status(200).send("");
+        }
+
+        if (currentStep === "referencia") {
+          checkoutData.referencia = finalMessage;
+
+          if (!checkoutData.valor || checkoutData.valor <= 0) {
+            const products = await loadProductsForStore(assignedStoreId);
+            const checkProd = (checkoutData.producto || "").toLowerCase();
+            const match = products.find((p: any) =>
+              (p.name && p.name.toLowerCase().includes(checkProd)) ||
+              (p.name && checkProd.includes(p.name.toLowerCase()))
+            );
+            if (match && match.price) checkoutData.valor = match.price;
+          }
+
+          await setDoc(doc(db, "customers", customerProfileId), {
+            checkoutStep: "confirmacion",
+            checkoutData: checkoutData,
+            pendingConfirmation: {
+              jsonResponse: {
+                accion: "confirmar_pedido",
+                producto: checkoutData.producto,
+                datos_pedido: {
+                  nombre: checkoutData.nombre,
+                  telefono: checkoutData.telefono,
+                  ciudad: checkoutData.ciudad,
+                  direccion: checkoutData.direccion,
+                  referencia: checkoutData.referencia,
+                  valor: checkoutData.valor,
+                  notas: `Pedido capturado por flujo determinístico de Checkout.`
+                }
+              },
+              storeId: assignedStoreId,
+              createdAt: serverTimestamp()
+            }
+          }, { merge: true });
+
+          const fakeJsonResponse = {
+            producto: checkoutData.producto,
+            datos_pedido: {
+              valor: checkoutData.valor,
+              direccion: checkoutData.direccion,
+              ciudad: checkoutData.ciudad
+            }
+          };
+
+          const summaryText = `🚨 *RESUMEN DE TU PEDIDO* 🚨\n\n📦 *Producto:* ${checkoutData.producto}\n💵 *Total a Pagar:* $${Number(checkoutData.valor || 0).toLocaleString("es-CO")} *(Pagas al recibir)*\n👤 *Nombre:* ${checkoutData.nombre}\n📞 *Teléfono:* ${checkoutData.telefono}\n🇨🇴 *Destino:* ${checkoutData.ciudad}\n🏠 *Dirección:* ${checkoutData.direccion}\n📍 *Referencia:* ${checkoutData.referencia}\n\n🔥 *¡El envío es 100% GRATIS!*`;
+          await sendWhatsApp(from, summaryText, undefined, activityRef.id, to);
+
+          await new Promise(resolve => setTimeout(resolve, 1200));
+
+          const buttonsSent = await sendOrderConfirmationButtons(from, to, fakeJsonResponse);
+          if (!buttonsSent) {
+            await sendWhatsApp(from, `¿Confirmas que todos tus datos están correctos para proceder con el despacho? Escribe *SÍ* para confirmar o *NO* para corregir.`, undefined, activityRef.id, to);
+          }
+
+          return res.status(200).send("");
+        }
+
+        if (currentStep === "confirmacion") {
+          const normConfirm = cleanMsg.replace(/[^a-z]/g, "");
+          if (["si", "sii", "sigo", "correcto", "confirmar", "confirmo", "deuna", "dale", "yes"].some(k => normConfirm === k || normConfirm.startsWith(k))) {
+            const pending = customerData.pendingConfirmation;
+            if (pending && pending.jsonResponse) {
+              let storeConfig: any = {};
+              const storeSnap = await getDoc(doc(db, "stores", assignedStoreId));
+              if (storeSnap.exists()) storeConfig = storeSnap.data();
+              const products = await loadProductsForStore(assignedStoreId);
+
+              await finalizeOrder(pending.jsonResponse, storeConfig, customerData, cleanFrom, assignedStoreId, products, db);
+              await setDoc(doc(db, "customers", customerProfileId), { 
+                pendingConfirmation: null, 
+                checkoutStep: null, 
+                checkoutData: null,
+                etapa: "finalizado"
+              }, { merge: true });
+              
+              await sendWhatsApp(from, "¡Listo! 🎉 Tu pedido quedó confirmado, ya te lo estamos alistando para despacho hoy mismo. ¡Muchísimas gracias por confiar en Jan Sel Shop! 👋", undefined, activityRef.id, to);
+            } else {
+              await sendWhatsApp(from, "No encontramos ningún pedido pendiente de confirmación. 😊 ¿En qué más te puedo colaborar?", undefined, activityRef.id, to);
+            }
+            return res.status(200).send("");
+          } else if (["no", "cancelar", "cambiar", "corregir", "incorrecto"].some(k => normConfirm === k || normConfirm.startsWith(k))) {
+            await setDoc(doc(db, "customers", customerProfileId), { 
+              pendingConfirmation: null, 
+              checkoutStep: null, 
+              checkoutData: null,
+              etapa: "interesado"
+            }, { merge: true });
+            await sendWhatsApp(from, "Tranqui, no he confirmado nada todavía 🙂 Dime qué deseas cambiar o qué producto estás buscando y lo ajustamos.", undefined, activityRef.id, to);
+            return res.status(200).send("");
+          }
+        }
+      }
+
+      // ==============================================
+      // 2. BUY INTENT DETECTOR & CHECKOUT START (DETERMINISTIC)
+      // ==============================================
+      const isBuyIntent = [
+        "quiero comprar", "comprar", "hacer pedido", "hacer el pedido", "ordenar", 
+        "me interesa comprar", "hacer un pedido", "quiero pedir", "quiero ordenar", 
+        "hacer la compra", "pedir", "compra"
+      ].some(k => cleanMsg.includes(k)) || 
+      (cleanMsg.startsWith("quiero ") && (cleanMsg.includes("el ") || cleanMsg.includes("la ") || cleanMsg.includes("un ") || cleanMsg.includes("una ")) && !cleanMsg.includes("saber") && !cleanMsg.includes("preguntar") && !cleanMsg.includes("info") && !cleanMsg.includes("foto"));
+
+      if (isBuyIntent && from.startsWith("whatsapp:")) {
+        let matchedProduct = "";
+        const productKeywords = [
+          { kw: "modem", name: "Módem Wifi Portátil Pro" },
+          { kw: "retrovisor", name: "Espejo Retrovisor Cámara Dual" },
+          { kw: "intercomunicador", name: "Intercomunicador Y10" },
+          { kw: "soporte", name: "Soporte de Carga Magnética" },
+          { kw: "funda", name: "Funda Protectora para Moto" },
+          { kw: "destornillador", name: "Destornillador Atornillador Eléctrico" },
+          { kw: "frontal", name: "Linterna Frontal" },
+          { kw: "linterna", name: "Linterna Multipropósito" },
+          { kw: "camping", name: "Bombillo para Camping Recargable" },
+          { kw: "ever brite", name: "Lámpara LED Sensor Ever Brite" },
+          { kw: "candado", name: "Candado con Alarma" },
+          { kw: "compresor", name: "Compresor / Inflador" },
+          { kw: "hidrolavadora", name: "Hidrolavadora inalámbrica" },
+          { kw: "aspiradora", name: "Aspiradora para carro" },
+          { kw: "cargador", name: "Cargador/Accesorio para celular" }
+        ];
+        for (const pk of productKeywords) {
+          if (cleanMsg.includes(pk.kw)) {
+            matchedProduct = pk.name;
+            break;
+          }
+        }
+        
+        console.log(`[WhatsApp Checkout Trigger] Buying intent detected. Product: ${matchedProduct || "none"}. Starting checkout flow...`);
+        await startCheckoutFlow(from, cleanFrom, to, assignedStoreId, matchedProduct);
+        return res.status(200).send("");
+      }
+
+      // ==============================================
+      // 3. CATALOG REQUEST INTERCEPTOR (DETERMINISTIC)
+      // ==============================================
+      const isCatalogRequest = [
+        "que productos tienen",
+        "que productos tienes",
+        "que productos venden",
+        "que producto tiene",
+        "que productos hay",
+        "catalogo",
+        "ver catalogo",
+        "ver productos",
+        "portafolio",
+        "lista de productos",
+        "inventario",
+        "que venden",
+        "que vende",
+        "que tiene",
+        "que tienen",
+        "productos destacados",
+        "mejores productos",
+        "top 15",
+        "que vendes",
+        "mostrar catalogo",
+        "enviar catalogo",
+        "mandar catalogo",
+        "lista de precios"
+      ].some(k => cleanMsg.includes(k)) || 
+      (cleanMsg.includes("producto") && (cleanMsg.includes("que") || cleanMsg.includes("cual") || cleanMsg.includes("ver") || cleanMsg.includes("mostrar") || cleanMsg.includes("tienen") || cleanMsg.includes("tienes")));
+
+      if (isCatalogRequest && from.startsWith("whatsapp:")) {
+        console.log(`[WhatsApp Interceptor] Catalog request detected from ${from}. Replying deterministically with Top 15...`);
+        
+        const TOP_15_CATALOG_MESSAGE = `¡Qué más parce! 👋 Te doy la bienvenida a *Jan Sel Shop*! 💎\n\nTe cuento que aquí tenemos un catálogo gigante con *más de 360 productos espectaculares* para vos. ¡Cualquier cosa que busques o te imagines, te la conseguimos de una! 🚀\n\nY acordate de lo mejor:\n🔥 *ENVÍO GRATIS A TODA COLOMBIA* 🇨🇴\n🚛 *PAGO CONTRA ENTREGA* (Pagas solo cuando recibes en la puerta de tu casa)\n\nPara que no te compliques, aquí tienes nuestro *TOP 15 de Joyas Más Vendidas y Recomendadas* por nuestros clientes en todo el país:\n\n1. 🥇 *Módem Wifi Portátil Pro* 📶\n   💵 Hoy en solo: *$119.900* (Antes ~~165.000~~)\n2. 🥈 *Espejo Retrovisor Cámara Dual* 🚗\n   💵 Hoy en solo: *$139.900* (Antes ~~195.000~~)\n3. 🥉 *Intercomunicador Y10 para Moto* 🏍️\n   💵 Hoy en solo: *$149.900* (Antes ~~210.000~~)\n4. ⚡ *Soporte de Carga Magnética Vehicular* 📱\n   💵 Hoy en solo: *$59.900* (Antes ~~85.000~~)\n5. 🏍️ *Funda Protectora Premium para Moto* 🌧️\n   💵 Hoy en solo: *$49.900* (Antes ~~75.000~~)\n6. 🪛 *Destornillador Atornillador Eléctrico* 🛠️\n   💵 Hoy en solo: *$69.900* (Antes ~~100.000~~)\n7. 🔦 *Linterna Frontal Recargable de Cabeza* 👷\n   💵 Hoy en solo: *$39.900* (Antes ~~60.000~~)\n8. 🔦 *Linterna Multipropósito de Alta Potencia* ⚡\n   💵 Hoy en solo: *$44.900* (Antes ~~65.000~~)\n9. 🏕️ *Bombillo para Camping Recargable* 💡\n   💵 Hoy en solo: *$34.900* (Antes ~~50.000~~)\n10. 💡 *Lámpara LED con Sensor Solar Ever Brite* ☀️\n    💵 Hoy en solo: *$49.900* (Antes ~~70.000~~)\n11. 🔐 *Candado Inteligente con Alarma 110dB* 🚨\n    💵 Hoy en solo: *$54.900* (Antes ~~80.000~~)\n12. 💨 *Compresor / Inflador Digital Portátil* 🚲\n    💵 Hoy en solo: *$109.900* (Antes ~~155.000~~)\n13. 🚿 *Hidrolavadora Inalámbrica Recargable* 💦\n    💵 Hoy en solo: *$129.900* (Antes ~~185.000~~)\n14. 🧹 *Aspiradora Portátil de Alta Succión* 🏎️\n    💵 Hoy en solo: *$59.900* (Antes ~~90.000~~)\n15. 🔌 *Cargador Súper Rápido Dual para Carro* ⚡\n    💵 Hoy en solo: *$29.900* (Antes ~~45.000~~)\n\n⚠️ *¡Últimas unidades disponibles con esta oferta de locura!*`;
+
+        const TOP_15_CATALOG_MESSAGE_2 = `👀 *¡Revisa el catálogo interactivo y toca el botón que necesites!*\n\nAquí abajo te dejo nuestras categorías más vendidas para que navegues de una. Si estás buscando algún otro artículo específico (marca, modelo, tipo de producto), ¡escribilo acá mismo en el chat y yo de inmediato te confirmo disponibilidad y precio! 🛒👇`;
+
+        await sendWhatsApp(from, TOP_15_CATALOG_MESSAGE, undefined, activityRef.id, to);
+        await new Promise(resolve => setTimeout(resolve, 1200));
+        await sendWhatsApp(from, TOP_15_CATALOG_MESSAGE_2, undefined, activityRef.id, to);
+        await new Promise(resolve => setTimeout(resolve, 1200));
+        await sendCategoriesMenu(from, to);
+
+        await updateDoc(doc(db, "activities", activityRef.id), {
+          status: "respondido",
+          response: TOP_15_CATALOG_MESSAGE + "\n\n" + TOP_15_CATALOG_MESSAGE_2,
+          respondedAt: serverTimestamp()
+        });
+
+        await setDoc(doc(db, "customers", customerProfileId), {
+          etapa: "explorando_catalogo",
+          intencion: "ver_catalogo",
+          score: 25,
+          lastInteractionAt: serverTimestamp()
+        }, { merge: true });
+
+        return res.status(200).send("");
+      }
+
+      // ==============================================
+      // 4. GREETING / WELCOME INTERCEPTOR (DETERMINISTIC)
+      // ==============================================
+      const greetingWords = [
+        "hola", "buenas", "buenos dias", "buenas tardes", "buenas noches", 
+        "que tal", "alo", "buen dia", "saludos", "epale", "parce", "oe", "que mas"
+      ];
+      const isGreeting = (cleanMsg.length <= 15 && greetingWords.some(w => cleanMsg === w || cleanMsg.startsWith(w))) ||
+                         (cleanMsg.length <= 25 && (cleanMsg === "hola buenas" || cleanMsg === "hola buenos dias" || cleanMsg === "hola buen dia"));
+
+      if (isGreeting && from.startsWith("whatsapp:")) {
+        console.log(`[WhatsApp Greeting Interceptor] Greeting detected from ${from}. Replying deterministically...`);
+        
+        const WELCOME_MESSAGE = `¡Qué más parce! 👋 Te doy la bienvenida a *Jan Sel Shop*! 💎\n\n¿Cómo vas? Contame en qué te puedo colaborar hoy o qué estás buscando de nuestro catálogo. ¡Aquí abajo te dejo unas opciones rápidas para empezar de una! 👇`;
+        
+        await sendWhatsApp(from, WELCOME_MESSAGE, undefined, activityRef.id, to);
+        await new Promise(resolve => setTimeout(resolve, 1200));
+        await sendMainMenu(from, to);
+
+        await updateDoc(doc(db, "activities", activityRef.id), {
+          status: "respondido",
+          response: WELCOME_MESSAGE,
+          respondedAt: serverTimestamp()
+        });
+        
+        await setDoc(doc(db, "customers", customerProfileId), {
+          etapa: "interesado",
+          lastInteractionAt: serverTimestamp()
+        }, { merge: true });
+        
+        return res.status(200).send("");
+      }
+
       // TRIGGER SERVER-SIDE INFERENCE IMMEDIATELY
       processInferenceOnServer(activityRef.id, { ...activityData, mediaItems, NumMedia: numMedia }).catch(e => {
         console.error(`[Server Inference] Fatal error during async execution:`, e.message);
@@ -3153,7 +3691,7 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
         try {
           await updateDoc(docSnap.ref, { status: "processing", updatedAt: serverTimestamp() });
         } catch (e: any) {
-          handleFirestoreError(e); // This will trigger global breaker
+          handleSupabaseError(e); // This will trigger global breaker
           console.error(`[Follow-up] Failed to lock doc (Quota?). Skipping ${phone}`, e.message);
           continue; 
         }
