@@ -1,31 +1,37 @@
 import React, { useState, useEffect, useRef } from "react";
-import { 
-  ShoppingBag, 
-  CheckCircle, 
-  Truck, 
-  ShieldCheck, 
-  Clock, 
-  ChevronRight, 
-  Star, 
-  MessageCircle, 
+import {
+  ShoppingBag,
+  CheckCircle,
+  Truck,
+  ShieldCheck,
+  Clock,
+  Star,
+  MessageCircle,
   ArrowRight,
   Phone,
   MapPin,
   Lock,
   Sparkles,
-  AlertCircle,
-  HelpCircle,
   ShoppingCart,
   Trash2,
   Plus,
   Minus,
-  CreditCard
+  CreditCard,
+  ChevronDown,
+  Zap,
+  Package,
+  BadgeCheck,
+  Users,
+  Gift,
+  TrendingUp,
+  AlertTriangle,
+  X
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { getProxiedImageUrl } from "../lib/utils";
 import toast from "react-hot-toast";
 
-// 15 trending products with real images and standard values
+// ─── Products ────────────────────────────────────────────────────────────────
 const TRENDING_PRODUCTS = [
   {
     id: "modem-wifi-portatil",
@@ -37,7 +43,8 @@ const TRENDING_PRODUCTS = [
     imageUrl: "/src/assets/images/WIFIPORTATIL.png",
     rating: 4.9,
     reviews: 142,
-    stock: 12
+    stock: 12,
+    badge: "⚡ TOP VENTAS",
   },
   {
     id: "camara-dvr-25",
@@ -49,7 +56,8 @@ const TRENDING_PRODUCTS = [
     imageUrl: "/src/assets/images/CAMARA DUAL.png",
     rating: 4.9,
     reviews: 97,
-    stock: 16
+    stock: 16,
+    badge: "🔥 MÁS PEDIDO",
   },
   {
     id: "inter-comunicador-y10",
@@ -61,7 +69,8 @@ const TRENDING_PRODUCTS = [
     imageUrl: "/src/assets/images/INTERCOMUNICADOR.png",
     rating: 4.8,
     reviews: 98,
-    stock: 15
+    stock: 15,
+    badge: "🏍️ PARA MOTOS",
   },
   {
     id: "holder-cargador-inalambr",
@@ -73,7 +82,8 @@ const TRENDING_PRODUCTS = [
     imageUrl: "/src/assets/images/CARGADOR MAGNETICO.png",
     rating: 4.8,
     reviews: 83,
-    stock: 14
+    stock: 14,
+    badge: "⚡ RECARGA RÁPIDA",
   },
   {
     id: "funda-protectora-para-moto",
@@ -85,7 +95,8 @@ const TRENDING_PRODUCTS = [
     imageUrl: "/src/assets/images/FUNDA PARA MOTO.png",
     rating: 4.8,
     reviews: 109,
-    stock: 19
+    stock: 19,
+    badge: "🌧️ IMPERMEABLE",
   },
   {
     id: "destornillador-atornillador-electrico",
@@ -97,31 +108,34 @@ const TRENDING_PRODUCTS = [
     imageUrl: "/src/assets/images/ATORNILLADOR INALAMBRICO.png",
     rating: 4.4,
     reviews: 86,
-    stock: 9
+    stock: 9,
+    badge: "🔧 HERRAMIENTA PRO",
   },
   {
     id: "volante-seguro-pro",
     name: "Volante Seguro Pro",
     category: "autos",
-    description: "Traba de alta seguridad para el volante de tu vehículo que se ancla directamente al broche del cinturón de seguridad. Fabricado con cable de acero trenzado ultra resistente y forro de lona protectora que evita rayones.",
+    description: "Traba de alta seguridad para el volante de tu vehículo que se ancla directamente al broche del cinturón de seguridad. Fabricado con cable de acero trenzado ultra resistente.",
     price: 79900,
     originalPrice: 99000,
     imageUrl: "/src/assets/images/SEGURO PARA VOLANTE.png",
     rating: 4.3,
     reviews: 118,
-    stock: 7
+    stock: 7,
+    badge: "🔐 ANTIRROBO",
   },
   {
     id: "cargador-bateria-inteligente",
     name: "Cargador Iniciador De Bateria Para Carro",
     category: "autos",
-    description: "Cargador inteligente de batería de 12V con reparación de pulso para autos y motos. Cuenta con pantalla LCD que muestra voltaje, corriente y nivel de carga. Sistema inteligente de parada automática para evitar sobrecargas.",
+    description: "Cargador inteligente de batería de 12V con reparación de pulso para autos y motos. Pantalla LCD que muestra voltaje, corriente y nivel de carga.",
     price: 94900,
     originalPrice: 120000,
     imageUrl: "/src/assets/images/INICIADOR DE VEHICULOS.png",
     rating: 4.2,
     reviews: 94,
-    stock: 499
+    stock: 499,
+    badge: "🚗 PARA VEHÍCULOS",
   },
   {
     id: "kit-renovacion-veh",
@@ -133,7 +147,8 @@ const TRENDING_PRODUCTS = [
     imageUrl: "/src/assets/images/KIT RENOVACION VEHICULO .png",
     rating: 4.2,
     reviews: 112,
-    stock: 20
+    stock: 20,
+    badge: "✨ RENOVACIÓN TOTAL",
   },
   {
     id: "lampara-led-sensor",
@@ -145,7 +160,8 @@ const TRENDING_PRODUCTS = [
     imageUrl: "/src/assets/images/LAMPARA LED.png",
     rating: 4.1,
     reviews: 112,
-    stock: 24
+    stock: 24,
+    badge: "☀️ ENERGÍA SOLAR",
   },
   {
     id: "candado-alarma-grande",
@@ -157,19 +173,21 @@ const TRENDING_PRODUCTS = [
     imageUrl: "/src/assets/images/CANDADO ALARMA.jpeg",
     rating: 4.1,
     reviews: 73,
-    stock: 18
+    stock: 18,
+    badge: "🔔 ALARMA 110dB",
   },
   {
     id: "compresor-portatil-digital",
     name: "Compresor Portátil Vehículos Digital Car",
     category: "autos",
-    description: "Compresor inteligente inalámbrico con pantalla digital and apagado automático inteligente al llegar a la presión programada. Ideal para llantas y balones.",
+    description: "Compresor inteligente inalámbrico con pantalla digital y apagado automático inteligente al llegar a la presión programada. Ideal para llantas y balones.",
     price: 159900,
     originalPrice: 250000,
     imageUrl: "/src/assets/images/COMPRESOR.jpeg",
     rating: 4.9,
     reviews: 155,
-    stock: 6
+    stock: 6,
+    badge: "💨 BESTSELLER",
   },
   {
     id: "hidro-lavadora-48v",
@@ -181,7 +199,8 @@ const TRENDING_PRODUCTS = [
     imageUrl: "/src/assets/images/HIDROLAVADORA INALAMBRICA.jpeg",
     rating: 4.9,
     reviews: 134,
-    stock: 11
+    stock: 11,
+    badge: "💧 ALTA PRESIÓN",
   },
   {
     id: "mini-aspiradora-port",
@@ -193,7 +212,8 @@ const TRENDING_PRODUCTS = [
     imageUrl: "/src/assets/images/MINIASPIRADORA.jpeg",
     rating: 4.8,
     reviews: 55,
-    stock: 20
+    stock: 20,
+    badge: "✨ GOLD EDITION",
   },
   {
     id: "saca-golpes-herramie",
@@ -205,117 +225,192 @@ const TRENDING_PRODUCTS = [
     imageUrl: "/src/assets/images/KIT SACAGOLPES.png",
     rating: 4.4,
     reviews: 121,
-    stock: 20
-  }
+    stock: 20,
+    badge: "🛠️ FÁCIL USO",
+  },
 ];
 
+const CATEGORIES = ["Todos", "Tecnología", "Motos", "Hogar", "Autos", "Herramientas"];
+
+const TESTIMONIALS = [
+  {
+    name: "Carlos M.",
+    city: "Cali",
+    avatar: "CM",
+    color: "from-blue-500 to-indigo-600",
+    rating: 5,
+    text: "Pedí el módem portátil y me llegó súper rápido. Pagué contraentrega al mensajero. Espectacular el servicio, todo original y bien empacado. 100% recomendado.",
+    product: "Módem Wifi Portátil Pro",
+    date: "Hace 3 días",
+  },
+  {
+    name: "Diana P.",
+    city: "Bogotá",
+    avatar: "DP",
+    color: "from-pink-500 to-rose-600",
+    rating: 5,
+    text: "Aproveché el 8% de descuento por pagar anticipado con Nequi. El despacho fue prioritario y me ahorré un buen dinero. Todo llegó perfecto.",
+    product: "Compresor Digital Car",
+    date: "Hace 1 semana",
+  },
+  {
+    name: "Mateo R.",
+    city: "Medellín",
+    avatar: "MR",
+    color: "from-emerald-500 to-teal-600",
+    rating: 5,
+    text: "El intercomunicador funciona de maravilla en carretera. Se escucha súper claro incluso a alta velocidad. Compra excelente, llegó en 2 días.",
+    product: "Inter Comunicador Y10",
+    date: "Hace 5 días",
+  },
+  {
+    name: "Yolanda S.",
+    city: "Bucaramanga",
+    avatar: "YS",
+    color: "from-amber-500 to-orange-600",
+    rating: 5,
+    text: "La hidrolavadora es increíble, lavé el carro sin electricidad y quedó impecable. Lo del envío gratis es un punto más. Definitivamente vuelvo a comprar.",
+    product: "Hidro Lavadora Inalámbrica 48v",
+    date: "Hace 2 días",
+  },
+  {
+    name: "Andrés F.",
+    city: "Barranquilla",
+    avatar: "AF",
+    color: "from-purple-500 to-violet-600",
+    rating: 5,
+    text: "Compré el kit saca golpes para un rayón en la carrocería. Funcionó perfecto y la pintura quedó intacta. Increíble producto, muy fácil de usar.",
+    product: "Kit Saca Golpes DIY",
+    date: "Hace 4 días",
+  },
+];
+
+const FAQ_ITEMS = [
+  {
+    q: "¿Cómo hago mi pedido?",
+    a: "Es muy sencillo: elige tus productos, agrégalos al carrito, completa tu formulario con nombre, celular, ciudad y dirección, y ¡listo! También puedes pedirlo directamente por WhatsApp.",
+  },
+  {
+    q: "¿Cuánto tarda el envío?",
+    a: "Tu pedido llega en 2 a 4 días hábiles en todo Colombia. Trabajamos con Servientrega, Envía, Coordinadora e Interrapidísimo para garantizar entregas rápidas.",
+  },
+  {
+    q: "¿Cómo funciona el pago contraentrega?",
+    a: "Recibes tu paquete en la dirección que indicaste y le pagas en efectivo al mensajero al momento de la entrega. ¡Sin riesgos, sin anticipos, sin complicaciones!",
+  },
+  {
+    q: "¿Cómo obtengo el descuento del 8%?",
+    a: "Elige 'Pago Anticipado' al hacer tu pedido. Luego recibirás las instrucciones para transferir por Nequi, Daviplata o Bancolombia y el 8% se aplica automáticamente.",
+  },
+  {
+    q: "¿Qué pasa si mi producto llega dañado?",
+    a: "Todos nuestros envíos están asegurados. Si tu producto llega con algún defecto de fábrica, contáctanos por WhatsApp y lo resolvemos de inmediato con cambio o reembolso.",
+  },
+  {
+    q: "¿Puedo comprar varios productos con un solo pedido?",
+    a: "¡Claro! Agrega todos los productos que quieras al carrito. Si compras 2 productos tienes 10% de descuento extra, y si llevas 3 o más productos te damos el 15% de descuento.",
+  },
+];
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function LandingPage() {
-  // Pre-populate with first product (Módem Wifi) to keep the initial form looking complete, but customizable!
   const [cart, setCart] = useState<{ product: typeof TRENDING_PRODUCTS[0]; quantity: number }[]>([
-    { product: TRENDING_PRODUCTS[0], quantity: 1 }
+    { product: TRENDING_PRODUCTS[0], quantity: 1 },
   ]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"contraentrega" | "anticipado">("contraentrega");
   const [checkoutMode, setCheckoutMode] = useState<"formulario" | "whatsapp">("formulario");
-  
   const [formData, setFormData] = useState({
     customerName: "",
     customerPhone: "",
     city: "",
     address: "",
     addressIndicator: "",
-    notes: ""
+    notes: "",
   });
   const [submitting, setSubmitting] = useState(false);
   const [orderCompleted, setOrderCompleted] = useState<any>(null);
   const [officialBotNumber, setOfficialBotNumber] = useState("");
   const [activeTab, setActiveTab] = useState<string>("Todos");
-
-  // Gatillos mentales: Countdown timer for urgency
-  const [timeLeft, setTimeLeft] = useState(582); // 9 minutes 42 seconds in seconds
-  // Gatillos mentales: Live purchase popup for social proof
+  const [timeLeft, setTimeLeft] = useState(582);
   const [livePurchase, setLivePurchase] = useState<any>(null);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [testimonialIdx, setTestimonialIdx] = useState(0);
+  const [ordersToday] = useState(Math.floor(Math.random() * 40) + 30);
+  const [heroViewers] = useState(Math.floor(Math.random() * 30) + 45);
 
   const formRef = useRef<HTMLDivElement>(null);
 
+  // ── Effects ──────────────────────────────────────────────────────────────────
   useEffect(() => {
-    // Fetch twilio/whatsapp config
     fetch("/api/public/config")
-      .then(res => res.json())
-      .then(data => {
-        if (data.whatsappNumber) setOfficialBotNumber(data.whatsappNumber);
-      })
-      .catch(err => console.error("Error fetching bot config", err));
+      .then((res) => res.json())
+      .then((data) => { if (data.whatsappNumber) setOfficialBotNumber(data.whatsappNumber); })
+      .catch(() => {});
 
-    // Urgency countdown interval
     const timerInterval = setInterval(() => {
-      setTimeLeft(prev => (prev <= 1 ? 600 : prev - 1));
+      setTimeLeft((prev) => (prev <= 1 ? 600 : prev - 1));
     }, 1000);
 
-    // Social proof: purchase alert triggers
     const purchases = [
       { name: "Juan Carlos V.", city: "Cali", product: "Módem Wifi Portátil Pro", time: "hace 2 min" },
-      { name: "Diana Patricia P.", city: "Bogotá", product: "Mini Aspiradora Portátil", time: "hace 5 min" },
+      { name: "Diana Patricia P.", city: "Bogotá", product: "Mini Aspiradora Gold", time: "hace 5 min" },
       { name: "Mateo R.", city: "Medellín", product: "Inter Comunicador Y10", time: "hace 1 min", method: "pago anticipado" },
-      { name: "Andrés Felipe G.", city: "Barranquilla", product: "Cargador Iniciador De Bateria", time: "hace 4 min" },
-      { name: "Yolanda S.", city: "Bucaramanga", product: "Compresor Portátil Vehículos Digital", time: "hace 3 min" },
+      { name: "Andrés Felipe G.", city: "Barranquilla", product: "Cargador Iniciador Batería", time: "hace 4 min" },
+      { name: "Yolanda S.", city: "Bucaramanga", product: "Compresor Portátil Digital", time: "hace 3 min" },
       { name: "Carlos Arturo T.", city: "Pereira", product: "Volante Seguro Pro", time: "hace 6 min" },
-      { name: "Laura M.", city: "Cartagena", product: "Hidro Lavadora Inalámbrica 48v", time: "hace 8 min" }
+      { name: "Laura M.", city: "Cartagena", product: "Hidro Lavadora Inalámbrica", time: "hace 8 min" },
+      { name: "Felipe O.", city: "Manizales", product: "Kit Saca Golpes DIY", time: "hace 2 min" },
     ];
 
-    const showNextNotification = () => {
+    const showNotification = () => {
       const rand = purchases[Math.floor(Math.random() * purchases.length)];
       setLivePurchase(rand);
-      setTimeout(() => {
-        setLivePurchase(null);
-      }, 5500);
+      setTimeout(() => setLivePurchase(null), 5500);
     };
 
-    const initialTimeout = setTimeout(showNextNotification, 3000);
-    const notificationInterval = setInterval(showNextNotification, 18000);
+    const initialTimeout = setTimeout(showNotification, 3500);
+    const notificationInterval = setInterval(showNotification, 18000);
+
+    // Testimonial auto-advance
+    const testimonialTimer = setInterval(() => {
+      setTestimonialIdx((prev) => (prev + 1) % TESTIMONIALS.length);
+    }, 5000);
 
     return () => {
       clearInterval(timerInterval);
       clearTimeout(initialTimeout);
       clearInterval(notificationInterval);
+      clearInterval(testimonialTimer);
     };
   }, []);
 
-  // Cart operations
+  // ── Cart Operations ───────────────────────────────────────────────────────────
   const addToCart = (product: typeof TRENDING_PRODUCTS[0], silent = false) => {
-    setCart(prev => {
-      const existingIndex = prev.findIndex(item => item.product.id === product.id);
+    setCart((prev) => {
+      const existingIndex = prev.findIndex((item) => item.product.id === product.id);
       if (existingIndex > -1) {
         const nextCart = [...prev];
-        nextCart[existingIndex] = {
-          ...nextCart[existingIndex],
-          quantity: nextCart[existingIndex].quantity + 1
-        };
-        if (!silent) toast.success(`¡Cantidad aumentada para ${product.name}! 🛒`);
+        nextCart[existingIndex] = { ...nextCart[existingIndex], quantity: nextCart[existingIndex].quantity + 1 };
+        if (!silent) toast.success(`¡Cantidad aumentada! 🛒`);
         return nextCart;
       }
-      if (!silent) toast.success(`¡${product.name} agregado al carrito! 🛒`);
+      if (!silent) toast.success(`¡${product.name} agregado! 🛒`);
       return [...prev, { product, quantity: 1 }];
     });
-    if (!silent) {
-      setIsCartOpen(true);
-    }
+    if (!silent) setIsCartOpen(true);
   };
 
   const removeFromCart = (productId: string) => {
-    setCart(prev => prev.filter(item => item.product.id !== productId));
-    toast.success("Producto removido del carrito");
+    setCart((prev) => prev.filter((item) => item.product.id !== productId));
+    toast.success("Producto removido");
   };
 
   const updateCartQuantity = (productId: string, newQty: number) => {
-    if (newQty <= 0) {
-      removeFromCart(productId);
-      return;
-    }
-    setCart(prev => prev.map(item => item.product.id === productId ? { ...item, quantity: newQty } : item));
+    if (newQty <= 0) { removeFromCart(productId); return; }
+    setCart((prev) => prev.map((item) => item.product.id === productId ? { ...item, quantity: newQty } : item));
   };
 
-  // Convert seconds to mm:ss format
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
@@ -324,127 +419,70 @@ export default function LandingPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Advanced calculation based on total items in cart
   const calculateTotals = () => {
-    const subtotal = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
-    const originalSubtotal = cart.reduce((sum, item) => sum + (item.product.originalPrice * item.quantity), 0);
+    const subtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+    const originalSubtotal = cart.reduce((sum, item) => sum + item.product.originalPrice * item.quantity, 0);
     const totalQty = cart.reduce((sum, item) => sum + item.quantity, 0);
-
-    // Quantity discounts
     let quantityDiscount = 0;
-    if (totalQty === 2) {
-      quantityDiscount = Math.round(subtotal * 0.10); // 10% discount on total cart
-    } else if (totalQty >= 3) {
-      quantityDiscount = Math.round(subtotal * 0.15); // 15% discount on total cart
-    }
-
+    if (totalQty === 2) quantityDiscount = Math.round(subtotal * 0.1);
+    else if (totalQty >= 3) quantityDiscount = Math.round(subtotal * 0.15);
     const intermediateTotal = subtotal - quantityDiscount;
-
-    // Prepayment discount (8% off the intermediate total)
     let prepaymentDiscount = 0;
-    if (paymentMethod === "anticipado") {
-      prepaymentDiscount = Math.round(intermediateTotal * 0.08);
-    }
-
+    if (paymentMethod === "anticipado") prepaymentDiscount = Math.round(intermediateTotal * 0.08);
     const finalTotal = intermediateTotal - prepaymentDiscount;
-
-    return {
-      subtotal,
-      originalSubtotal,
-      totalQty,
-      quantityDiscount,
-      prepaymentDiscount,
-      finalTotal,
-      savings: (originalSubtotal - finalTotal)
-    };
+    return { subtotal, originalSubtotal, totalQty, quantityDiscount, prepaymentDiscount, finalTotal, savings: originalSubtotal - finalTotal };
   };
 
   const { subtotal, totalQty, quantityDiscount, prepaymentDiscount, finalTotal, savings } = calculateTotals();
 
-  // Scroll to checkout form smoothly
   const handleProceedToForm = () => {
     setIsCartOpen(false);
     setCheckoutMode("formulario");
-    setTimeout(() => {
-      formRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 150);
+    setTimeout(() => { formRef.current?.scrollIntoView({ behavior: "smooth" }); }, 150);
   };
 
-  // Catalog item direct checkout: adds to cart and scrolls to form instantly
   const handleInstantBuy = (product: typeof TRENDING_PRODUCTS[0]) => {
-    // Ensure the product is in the cart
-    setCart(prev => {
-      const existing = prev.find(item => item.product.id === product.id);
+    setCart((prev) => {
+      const existing = prev.find((item) => item.product.id === product.id);
       if (existing) return prev;
       return [...prev, { product, quantity: 1 }];
     });
     setCheckoutMode("formulario");
-    toast.success(`Configurando tu despacho para ${product.name} 📦`, { icon: "⚡" });
-    setTimeout(() => {
-      formRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
+    toast.success(`¡Configura tu despacho para ${product.name}! 📦`, { icon: "⚡" });
+    setTimeout(() => { formRef.current?.scrollIntoView({ behavior: "smooth" }); }, 100);
   };
 
-  // WhatsApp Order formulation
   const handleWhatsAppOrder = (directPaymentMode?: "contraentrega" | "anticipado") => {
-    if (cart.length === 0) {
-      return toast.error("El carrito está vacío. Agrega algún producto para pedir.");
-    }
+    if (cart.length === 0) return toast.error("El carrito está vacío.");
     const selectedMode = directPaymentMode || paymentMethod;
-    const itemsText = cart.map(item => `• *${item.product.name}* (x${item.quantity}) - $${item.product.price.toLocaleString()} COP c/u`).join("\n");
-    
-    const discountText = quantityDiscount > 0 ? `\n🎁 *Descuento Especial (${totalQty === 2 ? "10%" : "15%"}):* -$${quantityDiscount.toLocaleString()} COP` : "";
-    const prepayText = selectedMode === "anticipado" ? `\n🌟 *Descuento Pago Anticipado (8%):* -$${prepaymentDiscount.toLocaleString()} COP` : "";
-    
-    const modeLabel = selectedMode === "anticipado" 
-      ? "🔴 *Pago Anticipado (Nequi / Daviplata / Bancolombia) - ¡Descuento de 8% aplicado!*" 
+    const itemsText = cart.map((item) => `• *${item.product.name}* (x${item.quantity}) - $${item.product.price.toLocaleString()} COP c/u`).join("\n");
+    const discountText = quantityDiscount > 0 ? `\n🎁 *Descuento (${totalQty === 2 ? "10%" : "15%"}):* -$${quantityDiscount.toLocaleString()} COP` : "";
+    const prepayText = selectedMode === "anticipado" ? `\n🌟 *Descuento Anticipado (8%):* -$${prepaymentDiscount.toLocaleString()} COP` : "";
+    const modeLabel = selectedMode === "anticipado"
+      ? "🔴 *Pago Anticipado (Nequi / Daviplata / Bancolombia) - ¡8% aplicado!*"
       : "🟢 *Pago Contraentrega (Pagas al recibir en efectivo)*";
-
-    const msg = `¡Hola Jan Sel Shop! 👋 Quiero realizar el siguiente pedido directo desde la Landing Page:\n\n` +
-                `🛒 *RESUMEN DEL CARRITO:*\n${itemsText}\n\n` +
-                `⚙️ *DESGLOSE DE COSTO:*\n` +
-                `• *Subtotal:* $${subtotal.toLocaleString()} COP` +
-                `${discountText}` +
-                `${prepayText}\n` +
-                `🚚 *Envío:* ¡COMPLETAMENTE GRATIS! 🇨🇴\n` +
-                `💰 *TOTAL NETO A PAGAR:* $${finalTotal.toLocaleString()} COP\n\n` +
-                `💳 *MÉTODO DE PAGO:* ${modeLabel}\n\n` +
-                `👤 *DATOS DE DESPACHO INMEDIATO:*\n` +
-                `• *Nombre:* ${formData.customerName || "Aún no especificado"}\n` +
-                `• *Celular:* ${formData.customerPhone || "Aún no especificado"}\n` +
-                `• *Ciudad/Municipio:* ${formData.city || "Aún no especificado"}\n` +
-                `• *Dirección Exacta:* ${formData.address || "Aún no especificado"}\n` +
-                `• *Indicaciones:* ${formData.addressIndicator || "Ninguna"}\n\n` +
-                `¡Por favor agendar mi despacho hoy mismo! Quedo muy atento. 🚀`;
-
+    const msg = `¡Hola Jan Sel Shop! 👋 Quiero realizar el siguiente pedido desde la Landing Page:\n\n🛒 *CARRITO:*\n${itemsText}\n\n⚙️ *DESGLOSE:*\n• *Subtotal:* $${subtotal.toLocaleString()} COP${discountText}${prepayText}\n🚚 *Envío:* ¡COMPLETAMENTE GRATIS! 🇨🇴\n💰 *TOTAL:* $${finalTotal.toLocaleString()} COP\n\n💳 *PAGO:* ${modeLabel}\n\n👤 *DATOS:*\n• *Nombre:* ${formData.customerName || "Por confirmar"}\n• *Celular:* ${formData.customerPhone || "Por confirmar"}\n• *Ciudad:* ${formData.city || "Por confirmar"}\n• *Dirección:* ${formData.address || "Por confirmar"}\n• *Indicaciones:* ${formData.addressIndicator || "Ninguna"}\n\n¡Por favor agendar mi despacho hoy! 🚀`;
     const phone = officialBotNumber || "14155238886";
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
-  // Form submission (Database saving + Twilio Admin notify)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (cart.length === 0) {
-      return toast.error("El carrito está vacío. Por favor agrega algún artículo arriba.");
-    }
+    if (cart.length === 0) return toast.error("El carrito está vacío.");
     if (!formData.customerName.trim()) return toast.error("Por favor dinos tu nombre");
-    if (!formData.customerPhone.trim() || formData.customerPhone.length < 7) return toast.error("Ingresa un número de celular válido");
-    if (!formData.city.trim()) return toast.error("Escribe tu Ciudad o Municipio de destino");
-    if (!formData.address.trim()) return toast.error("Escribe tu dirección de entrega exacta");
-
+    if (!formData.customerPhone.trim() || formData.customerPhone.length < 7) return toast.error("Ingresa un celular válido");
+    if (!formData.city.trim()) return toast.error("Escribe tu ciudad");
+    if (!formData.address.trim()) return toast.error("Escribe tu dirección exacta");
     setSubmitting(true);
     try {
-      // Build scannable unified representation for Shopify / Dropi and Database
-      const unifiedProductName = cart.map(item => `${item.product.name} (x${item.quantity})`).join(" + ");
+      const unifiedProductName = cart.map((item) => `${item.product.name} (x${item.quantity})`).join(" + ");
       const firstProductId = cart[0]?.product.id || "multi-cart";
       const totalQuantities = cart.reduce((sum, item) => sum + item.quantity, 0);
-
-      const itemsDetailStr = cart.map(item => `- ${item.product.name} x${item.quantity} ($${item.product.price.toLocaleString()} c/u)`).join("\n");
-      const paymentLabel = paymentMethod === "anticipado" ? "Pago Anticipado con 8% de Descuento Extra" : "Pago Contraentrega al Recibir";
-      
+      const itemsDetailStr = cart.map((item) => `- ${item.product.name} x${item.quantity} ($${item.product.price.toLocaleString()} c/u)`).join("\n");
+      const paymentLabel = paymentMethod === "anticipado" ? "Pago Anticipado con 8% de Descuento" : "Pago Contraentrega al Recibir";
       const payload = {
         storeId: "default",
         customerName: formData.customerName,
@@ -456,298 +494,495 @@ export default function LandingPage() {
         productId: firstProductId,
         quantity: totalQuantities,
         totalPrice: finalTotal,
-        notes: `Método de Pago: ${paymentLabel}\n\nPRODUCTOS:\n${itemsDetailStr}\n\nNotas adicionales: ${formData.notes || "Pedido de la Landing Page"}`
+        notes: `Método de Pago: ${paymentLabel}\n\nPRODUCTOS:\n${itemsDetailStr}\n\nNotas: ${formData.notes || "Pedido de la Landing Page"}`,
       };
-
       const res = await fetch("/api/public/landing-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
-
       const data = await res.json();
       if (data.success) {
-        setOrderCompleted({
-          ...data.order,
-          cartItems: [...cart],
-          paymentMethodMode: paymentMethod
-        });
-        toast.success("¡Pedido registrado de inmediato! 🎉");
-        setCart([]); // Clear cart upon success
+        setOrderCompleted({ ...data.order, cartItems: [...cart], paymentMethodMode: paymentMethod });
+        toast.success("¡Pedido registrado! 🎉");
+        setCart([]);
       } else {
-        toast.error("Error al procesar: " + data.error);
+        toast.error("Error: " + data.error);
       }
     } catch (err: any) {
-      console.error(err);
       toast.error("Error de red: " + err.message);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const categories = ["Todos", "Tecnología", "Motos", "Hogar", "Autos", "Herramientas"];
-  const filteredProducts = activeTab === "Todos" 
-    ? TRENDING_PRODUCTS 
-    : TRENDING_PRODUCTS.filter(p => p.category.toLowerCase() === activeTab.toLowerCase());
+  const filteredProducts = activeTab === "Todos"
+    ? TRENDING_PRODUCTS
+    : TRENDING_PRODUCTS.filter((p) => p.category.toLowerCase() === activeTab.toLowerCase());
 
+  // ── Render ────────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-950 text-white font-sans overflow-x-hidden selection:bg-amber-400 selection:text-black pb-12">
-      
-      {/* Gatillo Mental 1: Urgency Timer top bar */}
-      <div className="sticky top-0 z-50 bg-gradient-to-r from-amber-500 via-orange-600 to-amber-500 text-center text-xs font-black uppercase tracking-wider py-2.5 px-4 flex items-center justify-center gap-2 text-black shadow-lg">
-        <Sparkles size={14} className="animate-spin text-black" />
-        <span>⚡ SÚPER PROMO: ¡Últimas unidades con ENVÍO GRATIS a Colombia! Oferta especial vence en:</span>
-        <span className="bg-black text-amber-400 font-mono px-2 py-0.5 rounded text-xs font-black tracking-widest">{formatTime(timeLeft)}</span>
+    <div className="min-h-screen bg-[#070810] text-white font-sans overflow-x-hidden selection:bg-amber-400 selection:text-black">
+
+      {/* ════════════════════════════════════════════
+          BARRA DE URGENCIA PREMIUM (STICKY TOP)
+      ════════════════════════════════════════════ */}
+      <div className="sticky top-0 z-50 overflow-hidden">
+        <div className="bg-gradient-to-r from-amber-600 via-orange-500 to-amber-600 text-black animate-gradient-shift">
+          <div className="flex items-center justify-center gap-3 py-2.5 px-4 text-center">
+            <span className="text-xs font-black tracking-wide flex items-center gap-1.5 flex-wrap justify-center">
+              <Zap size={13} className="shrink-0" />
+              <span>⚡ OFERTA LIMITADA — Envío GRATIS + Descuentos por cantidad. Vence en:</span>
+              <span className="bg-black/20 text-white font-mono px-2 py-0.5 rounded-md text-xs font-black tracking-widest border border-black/20">
+                {formatTime(timeLeft)}
+              </span>
+              <span className="hidden sm:inline">— ¡No pierdas esta oportunidad única! 🔥</span>
+            </span>
+          </div>
+        </div>
       </div>
 
-      {/* Modern Header */}
-      <header className="bg-slate-950/80 backdrop-blur-xl border-b border-slate-900/80 z-40 relative">
-        <div className="max-w-6xl mx-auto px-4 h-24 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img 
-              src="/src/assets/images/logo.jpg" 
-              alt="Jansel Shop Logo" 
-              className="w-16 h-16 object-contain rounded-xl shadow-[0_0_20px_rgba(0,180,255,0.4)] hover:scale-105 transition-transform"
-              onError={(e) => {
-                e.currentTarget.src = "/src/assets/images/logo.png";
-                e.currentTarget.onerror = null; // Prevent infinite loop if both fail
-              }}
-            />
-            <div className="hidden sm:block">
-              <h1 className="font-black text-xl tracking-tight leading-none bg-gradient-to-r from-white via-blue-200 to-blue-400 bg-clip-text text-transparent">JANSEL SHOP</h1>
-              <span className="text-[10px] text-blue-500 tracking-widest uppercase font-mono">Tendencias de Colombia</span>
+      {/* ════════════════════════════════════════════
+          HEADER PREMIUM
+      ════════════════════════════════════════════ */}
+      <header className="bg-[#070810]/90 backdrop-blur-2xl border-b border-white/5 z-40 relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between gap-4">
+          {/* Logo */}
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="relative">
+              <div className="absolute inset-0 rounded-2xl bg-amber-400/20 blur-md animate-pulse" />
+              <img
+                src="/src/assets/images/logo.jpeg"
+                alt="Jansel Shop Logo"
+                className="relative w-12 h-12 object-contain rounded-2xl border border-amber-400/20 shadow-lg"
+                onError={(e) => { e.currentTarget.style.display = "none"; }}
+              />
+            </div>
+            <div>
+              <h1 className="font-black text-lg tracking-tight leading-none text-gradient-gold">JANSEL SHOP</h1>
+              <span className="text-[9px] text-slate-500 tracking-widest uppercase font-mono">Colombia · Tienda Oficial</span>
             </div>
           </div>
-          
-          <div className="flex items-center gap-4">
-            {/* Header Shopping Cart Trigger */}
+
+          {/* Trust badges desktop */}
+          <div className="hidden lg:flex items-center gap-6 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+            <div className="flex items-center gap-1.5">
+              <Truck size={13} className="text-amber-400" />
+              <span>Envío Gratis</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <ShieldCheck size={13} className="text-emerald-400" />
+              <span>Pago Seguro</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Package size={13} className="text-blue-400" />
+              <span>Despacho Hoy</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <BadgeCheck size={13} className="text-purple-400" />
+              <span>Garantía 30 días</span>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-3 shrink-0">
             <button
               onClick={() => setIsCartOpen(true)}
-              className="relative p-3 rounded-2xl bg-slate-900 border border-slate-800 hover:border-amber-400 text-white hover:text-amber-400 transition-all cursor-pointer flex items-center gap-2 group"
+              className="relative p-3 rounded-2xl glass-card hover:border-amber-400/40 text-white hover:text-amber-400 transition-all cursor-pointer flex items-center gap-2 group"
             >
               <ShoppingCart size={18} className="group-hover:scale-110 transition-transform" />
-              <span className="text-xs font-bold hidden sm:inline">Mi Carrito</span>
+              <span className="text-xs font-bold hidden sm:inline">Carrito</span>
               {cart.length > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-amber-400 text-black font-black text-[10px] flex items-center justify-center animate-bounce">
-                  {cart.reduce((sum, item) => sum + item.quantity, 0)}
+                  {totalQty}
                 </span>
               )}
             </button>
-
-            <button 
+            <button
               onClick={() => handleWhatsAppOrder()}
-              className="hidden md:flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-xs tracking-wider uppercase transition-all duration-300 shadow-md cursor-pointer"
+              className="hidden md:flex items-center gap-2 px-5 py-2.5 rounded-2xl btn-cta-whatsapp text-white font-extrabold text-xs tracking-wider uppercase cursor-pointer"
             >
               <MessageCircle size={14} fill="currentColor" />
-              Preguntar en WhatsApp
+              WhatsApp
             </button>
           </div>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="relative py-16 px-4">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-amber-500/10 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-10 left-10 w-[300px] h-[300px] bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none" />
-        
-        <div className="max-w-4xl mx-auto text-center space-y-8 relative z-10">
-          <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 px-4 py-1.5 rounded-full text-amber-400 text-xs font-bold uppercase tracking-widest">
-            <Sparkles size={12} className="animate-pulse" />
-            COMPRAS 100% SEGURAS EN TODA COLOMBIA
+      {/* ════════════════════════════════════════════
+          HERO SECTION — DISEÑO EXPERTO
+      ════════════════════════════════════════════ */}
+      <section className="relative py-20 sm:py-28 px-4 overflow-hidden">
+        {/* Animated background orbs */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[700px] rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(251,191,36,0.08) 0%, transparent 70%)" }} />
+        <div className="absolute top-20 left-10 w-[400px] h-[400px] rounded-full blur-[100px] pointer-events-none animate-aurora"
+          style={{ background: "rgba(99,102,241,0.07)" }} />
+        <div className="absolute bottom-10 right-10 w-[350px] h-[350px] rounded-full blur-[100px] pointer-events-none animate-aurora"
+          style={{ background: "rgba(251,191,36,0.06)", animationDelay: "-3s" }} />
+
+        <div className="max-w-5xl mx-auto text-center space-y-8 relative z-10">
+
+          {/* Live badge */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="inline-flex items-center gap-2.5 glass-card-amber px-5 py-2 rounded-full"
+          >
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping-large absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+            </span>
+            <span className="text-amber-300 text-xs font-black uppercase tracking-widest">
+              🔴 EN VIVO — {heroViewers} personas comprando ahora
+            </span>
+          </motion.div>
+
+          {/* Main headline */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="space-y-4"
+          >
+            <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.05]">
+              <span className="text-white">Los</span>{" "}
+              <span className="text-gradient-gold">15 Productos</span>
+              <br />
+              <span className="text-white">Más Deseados</span>{" "}
+              <span className="relative inline-block">
+                <span className="text-gradient-fire">de Colombia</span>
+                <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-gradient-to-r from-amber-400 to-orange-500 rounded-full" />
+              </span>
+            </h2>
+            <p className="text-slate-300 text-base sm:text-lg md:text-xl max-w-3xl mx-auto leading-relaxed font-light">
+              Compra con total seguridad y{" "}
+              <span className="text-white font-bold">paga cuando recibas tu pedido.</span>{" "}
+              Agrega productos a tu carrito y disfruta{" "}
+              <span className="text-amber-400 font-bold underline decoration-amber-400/50">envío 100% gratis</span>{" "}
+              con descuentos automáticos por cantidad.
+            </p>
+          </motion.div>
+
+          {/* Hero CTA buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+            className="flex flex-col sm:flex-row items-center justify-center gap-4"
+          >
+            <button
+              onClick={() => { document.getElementById("catalogo")?.scrollIntoView({ behavior: "smooth" }); }}
+              className="btn-cta-primary text-black font-black text-sm tracking-wider uppercase px-8 py-4 rounded-2xl flex items-center gap-3 cursor-pointer w-full sm:w-auto justify-center"
+            >
+              <Zap size={18} />
+              Ver Productos Ahora
+              <ArrowRight size={16} />
+            </button>
+            <button
+              onClick={() => handleWhatsAppOrder()}
+              className="btn-cta-whatsapp text-white font-black text-sm tracking-wider uppercase px-8 py-4 rounded-2xl flex items-center gap-3 cursor-pointer w-full sm:w-auto justify-center"
+            >
+              <MessageCircle size={18} fill="currentColor" />
+              Pedir por WhatsApp
+            </button>
+          </motion.div>
+
+          {/* Micro trust badges */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="flex flex-wrap items-center justify-center gap-3 pt-2"
+          >
+            {[
+              { icon: "⭐", text: "4.9/5 · +500 reseñas" },
+              { icon: "🚚", text: "Envío Gratis Nacional" },
+              { icon: "🔒", text: "Pago 100% Seguro" },
+              { icon: "📦", text: "Despacho el mismo día" },
+            ].map((b) => (
+              <div key={b.text} className="flex items-center gap-1.5 glass-card px-3.5 py-1.5 rounded-full text-[11px] font-bold text-slate-300">
+                <span>{b.icon}</span>
+                <span>{b.text}</span>
+              </div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Marquee de marcas/garantías */}
+      <div className="border-y border-white/5 bg-white/[0.02] py-4 overflow-hidden">
+        <div className="marquee-container">
+          <div className="animate-marquee inline-flex gap-12 px-8">
+            {[...Array(2)].map((_, outerIdx) => (
+              <React.Fragment key={outerIdx}>
+                {["🚚 Servientrega", "📦 Envía", "⚡ Coordinadora", "🔒 Interrapidísimo", "✅ +500 Clientes", "🇨🇴 100% Colombia", "💳 Nequi & Daviplata", "🛡️ Garantía 30 días"].map((item) => (
+                  <span key={item} className="text-slate-500 text-xs font-bold uppercase tracking-widest whitespace-nowrap">{item}</span>
+                ))}
+              </React.Fragment>
+            ))}
           </div>
+        </div>
+      </div>
 
-          <h2 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight leading-[1.1] font-serif italic">
-            Los 15 Productos <br />
-            <span className="bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 bg-clip-text text-transparent font-sans uppercase not-italic">Más Deseados de Colombia</span>
-          </h2>
-
-          <p className="text-slate-400 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
-            Compra en un solo clic y paga contraentrega. Agrega todos los productos que desees a tu carrito para disfrutar de <span className="text-white font-black underline decoration-amber-400">envío totalmente gratuito y súper descuentos automáticos</span> por cantidad. ¡Despachamos hoy!
-          </p>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs text-slate-300 font-bold bg-slate-900/40 backdrop-blur-md border border-slate-900 p-6 rounded-3xl max-w-3xl mx-auto">
-            <div className="flex flex-col items-center gap-2 p-2">
-              <Truck className="text-amber-400" size={20} />
-              <span>Envío Gratis Nacional</span>
-            </div>
-            <div className="flex flex-col items-center gap-2 p-2 border-l border-slate-900">
-              <ShieldCheck className="text-amber-400" size={20} />
-              <span>Pago Contraentrega</span>
-            </div>
-            <div className="flex flex-col items-center gap-2 p-2 border-l border-slate-900">
-              <Sparkles className="text-amber-400" size={20} />
-              <span>8% Pago Anticipado</span>
-            </div>
-            <div className="flex flex-col items-center gap-2 p-2 border-l border-slate-900">
-              <Clock className="text-amber-400" size={20} />
-              <span>Garantía Inmediata</span>
-            </div>
+      {/* ════════════════════════════════════════════
+          PROPUESTA DE VALOR — 4 PILLARES
+      ════════════════════════════════════════════ */}
+      <section className="py-16 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              {
+                icon: <Truck size={28} className="text-amber-400" />,
+                bg: "from-amber-500/10 to-transparent",
+                border: "border-amber-500/20",
+                title: "Envío Gratis",
+                subtitle: "A toda Colombia",
+                desc: "Sin importar tu ciudad o municipio, el envío es completamente GRATIS.",
+              },
+              {
+                icon: <ShieldCheck size={28} className="text-emerald-400" />,
+                bg: "from-emerald-500/10 to-transparent",
+                border: "border-emerald-500/20",
+                title: "Pago Seguro",
+                subtitle: "Contraentrega",
+                desc: "Pagas en efectivo cuando el mensajero llega a tu puerta. Cero riesgo.",
+              },
+              {
+                icon: <Gift size={28} className="text-purple-400" />,
+                bg: "from-purple-500/10 to-transparent",
+                border: "border-purple-500/20",
+                title: "Descuentos",
+                subtitle: "Hasta 15% extra",
+                desc: "2 productos = 10% off. 3 o más = 15% off. ¡Automático y al instante!",
+              },
+              {
+                icon: <Package size={28} className="text-blue-400" />,
+                bg: "from-blue-500/10 to-transparent",
+                border: "border-blue-500/20",
+                title: "Despacho Hoy",
+                subtitle: "2-4 días hábiles",
+                desc: "Pedidos antes de las 3pm salen el mismo día. Tracking en tiempo real.",
+              },
+            ].map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className={`bg-gradient-to-b ${item.bg} border ${item.border} rounded-3xl p-6 space-y-3 hover:scale-[1.02] transition-transform`}
+              >
+                <div className="w-14 h-14 rounded-2xl glass-card flex items-center justify-center">
+                  {item.icon}
+                </div>
+                <div>
+                  <h3 className="font-black text-white text-base leading-tight">{item.title}</h3>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{item.subtitle}</span>
+                </div>
+                <p className="text-xs text-slate-400 leading-relaxed">{item.desc}</p>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Main Catalog Grid */}
-      <section className="py-8 px-4 max-w-6xl mx-auto">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-10 border-b border-slate-900 pb-6">
+      {/* ════════════════════════════════════════════
+          CATÁLOGO — TARJETAS MEJORADAS
+      ════════════════════════════════════════════ */}
+      <section id="catalogo" className="py-12 px-4 max-w-7xl mx-auto">
+        {/* Header del catálogo */}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-10">
           <div>
-            <span className="text-[10px] font-mono tracking-widest text-amber-400 uppercase">Selección Premium de Tendencias</span>
-            <h3 className="text-2xl font-black uppercase tracking-tight flex items-center gap-2">
-              <ShoppingBag className="text-amber-400" />
+            <span className="text-[10px] font-mono tracking-[0.25em] text-amber-400 uppercase">✦ Selección Premium</span>
+            <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight mt-1 flex items-center gap-3">
+              <ShoppingBag className="text-amber-400" size={28} />
               Nuestros 15 Más Vendidos
-            </h3>
+            </h2>
+            <p className="text-slate-500 text-xs mt-1.5">
+              🔴 {ordersToday} pedidos despachados hoy · Stock limitado
+            </p>
           </div>
-          
-          {/* Categories Tabs */}
-          <div className="flex flex-wrap gap-2">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveTab(cat)}
-                className={`px-4 py-2.5 rounded-xl text-xs font-extrabold tracking-wider uppercase transition-all cursor-pointer ${
-                  activeTab === cat 
-                    ? "bg-amber-400 text-black shadow-lg shadow-amber-400/20 scale-105" 
-                    : "bg-slate-900 text-slate-400 hover:text-white border border-slate-850 hover:bg-slate-850"
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
+
+          {/* Discount banner */}
+          {totalQty >= 1 && totalQty < 2 && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="glass-card-amber px-5 py-3 rounded-2xl text-center hidden md:block"
+            >
+              <p className="text-amber-300 text-xs font-black">
+                🎁 Agrega 1 producto más y recibe <span className="text-white">10% OFF</span> en toda tu compra
+              </p>
+            </motion.div>
+          )}
         </div>
 
-        {/* Product Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        {/* Category tabs */}
+        <div className="flex flex-wrap gap-2 mb-8">
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setActiveTab(cat)}
+              className={`px-4 py-2 rounded-xl text-xs font-extrabold tracking-wider uppercase transition-all cursor-pointer ${
+                activeTab === cat
+                  ? "bg-amber-400 text-black shadow-lg shadow-amber-400/25 scale-105"
+                  : "glass-card text-slate-400 hover:text-white hover:border-white/10"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {/* Product grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredProducts.map((p, idx) => {
-            // Static random values for dynamic scarcity look
-            const remainingUnits = (idx * 3 + 4) % 9 + 3;
+            const stockPct = Math.min((p.stock / 20) * 100, 100);
+            const isLowStock = p.stock <= 10;
             const liveViewers = (idx * 7 + 12) % 18 + 14;
-            const cartItem = cart.find(item => item.product.id === p.id);
+            const cartItem = cart.find((item) => item.product.id === p.id);
+            const discountPct = Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100);
 
             return (
-              <motion.div 
+              <motion.div
                 key={p.id}
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: Math.min(idx * 0.05, 0.3) }}
-                className="bg-slate-900/30 rounded-3xl border border-slate-900 overflow-hidden flex flex-col group hover:border-slate-800 hover:shadow-2xl transition-all duration-300 relative"
+                transition={{ delay: Math.min(idx * 0.04, 0.25) }}
+                className="group relative flex flex-col bg-[#0d0f1a] border border-white/6 rounded-3xl overflow-hidden hover:border-amber-400/30 hover:shadow-[0_0_40px_rgba(251,191,36,0.08)] transition-all duration-300"
               >
-                {/* Image and Badges */}
-                <div className="absolute top-4 left-4 z-10 flex flex-col gap-1.5">
-                  <span className="bg-amber-400 text-black text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg shadow-md flex items-center gap-1">
-                    MÁS VENDIDO 🔥
+                {/* Badge top-left */}
+                <div className="absolute top-3 left-3 z-20 flex flex-col gap-1.5">
+                  <span className="bg-amber-400 text-black text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg shadow-md">
+                    {p.badge}
                   </span>
-                  <span className="bg-slate-950/90 backdrop-blur-md text-emerald-400 text-[8.5px] font-bold px-2 py-1 rounded-md border border-white/5 uppercase font-mono flex items-center gap-1">
-                    <Clock size={10} /> Solo quedan {remainingUnits} unidades
+                  {isLowStock && (
+                    <span className="bg-red-500/90 text-white text-[8.5px] font-black uppercase tracking-wider px-2 py-1 rounded-md flex items-center gap-1">
+                      <AlertTriangle size={8} />
+                      ¡Solo {p.stock} restantes!
+                    </span>
+                  )}
+                </div>
+
+                {/* Discount badge top-right */}
+                <div className="absolute top-3 right-3 z-20">
+                  <span className="bg-gradient-to-br from-red-500 to-orange-500 text-white text-[10px] font-black px-2.5 py-1 rounded-xl shadow-lg">
+                    -{discountPct}% OFF
                   </span>
                 </div>
 
-                <div className="aspect-[4/3] bg-slate-950 overflow-hidden relative">
-                  <img 
-                    src={getProxiedImageUrl(p.imageUrl)} 
-                    alt={p.name} 
+                {/* Product image */}
+                <div className="relative h-52 bg-gradient-to-b from-slate-900 to-[#0d0f1a] overflow-hidden">
+                  <img
+                    src={getProxiedImageUrl(p.imageUrl)}
+                    alt={p.name}
                     referrerPolicy="no-referrer"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+                    className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500 ease-out"
+                    style={{ transform: "scale(1)" }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLImageElement).style.transform = "scale(1.07)"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLImageElement).style.transform = "scale(1)"; }}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-60" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0d0f1a] via-transparent to-transparent opacity-70" />
                 </div>
 
-                {/* Details */}
-                <div className="p-6 flex-1 flex flex-col space-y-4">
-                  <div className="flex items-center justify-between text-xs text-slate-500 font-mono uppercase">
-                    <span>{p.category}</span>
-                    <div className="flex items-center gap-1 text-amber-400 font-sans font-bold">
-                      <Star size={12} fill="currentColor" />
-                      <span>{p.rating}</span>
-                      <span className="text-slate-600">({p.reviews})</span>
+                {/* Card content */}
+                <div className="p-5 flex-1 flex flex-col gap-3">
+                  {/* Category + Rating */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] text-slate-600 font-mono uppercase tracking-widest">{p.category}</span>
+                    <div className="flex items-center gap-1 text-amber-400">
+                      <Star size={11} fill="currentColor" />
+                      <span className="text-[11px] font-bold text-white">{p.rating}</span>
+                      <span className="text-[10px] text-slate-600">({p.reviews})</span>
                     </div>
                   </div>
 
-                  <div className="space-y-1.5 grow">
-                    <h4 className="font-extrabold text-lg text-white leading-tight line-clamp-1 group-hover:text-amber-300 transition-colors">
+                  {/* Name + description */}
+                  <div className="flex-1 space-y-1.5">
+                    <h3 className="font-extrabold text-white text-sm leading-snug group-hover:text-amber-300 transition-colors line-clamp-2">
                       {p.name}
-                    </h4>
-                    <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
-                      {p.description}
-                    </p>
-                    <div className="text-[10px] text-amber-400/80 font-bold flex items-center gap-1 bg-amber-400/5 py-1 px-2.5 rounded-lg border border-amber-400/10 w-fit">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
-                      {liveViewers} personas están viendo este artículo
-                    </div>
+                    </h3>
+                    <p className="text-[11px] text-slate-500 leading-relaxed line-clamp-2">{p.description}</p>
                   </div>
+
+                  {/* Live viewers */}
+                  <div className="flex items-center gap-1.5 text-[10px] text-amber-400/70 font-bold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                    <span>{liveViewers} personas viendo esto</span>
+                  </div>
+
+                  {/* Stock bar */}
+                  {isLowStock && (
+                    <div>
+                      <div className="flex justify-between text-[9px] text-slate-500 font-mono mb-1">
+                        <span>Stock disponible</span>
+                        <span className="text-red-400 font-black">{p.stock}/20 unidades</span>
+                      </div>
+                      <div className="stock-bar">
+                        <div className="stock-bar-fill" style={{ width: `${stockPct}%` }} />
+                      </div>
+                    </div>
+                  )}
 
                   {/* Price */}
-                  <div className="flex items-end justify-between border-t border-slate-900 pt-4">
+                  <div className="flex items-end justify-between pt-1 border-t border-white/5">
                     <div>
-                      <span className="block text-[9px] text-slate-500 font-mono uppercase leading-none mb-1">Precio Promocional</span>
-                      <div className="flex items-center gap-1.5">
+                      <span className="block text-[9px] text-slate-600 font-mono uppercase mb-0.5">Precio promo</span>
+                      <div className="flex items-center gap-2">
                         <span className="font-black text-2xl text-amber-400">${p.price.toLocaleString()}</span>
-                        <span className="text-xs text-slate-500 line-through">${p.originalPrice.toLocaleString()}</span>
                       </div>
+                      <span className="text-[10px] text-slate-600 line-through">${p.originalPrice.toLocaleString()}</span>
                     </div>
-                    
-                    <span className="text-[10px] text-emerald-400 font-bold tracking-widest uppercase bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/15">
-                      Ahorras {Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100)}%
-                    </span>
+                    <div className="text-right">
+                      <span className="block text-[9px] text-emerald-400 font-black uppercase">Ahorras</span>
+                      <span className="text-emerald-400 font-black text-sm">${(p.originalPrice - p.price).toLocaleString()}</span>
+                    </div>
                   </div>
 
-                  {/* Actions Block: Dynamic picker if already in cart */}
-                  <div>
-                    {cartItem ? (
-                      <div className="flex items-center gap-2 w-full pt-1">
-                        <div className="flex items-center bg-slate-950 rounded-xl border border-slate-800 overflow-hidden flex-1 justify-between h-11 px-2">
-                          <button
-                            type="button"
-                            onClick={() => updateCartQuantity(p.id, cartItem.quantity - 1)}
-                            className="p-1.5 hover:bg-slate-900 text-slate-400 hover:text-white transition-all cursor-pointer rounded-lg"
-                          >
-                            <Minus size={12} />
-                          </button>
-                          <span className="text-xs font-black font-mono text-white text-center flex-1">
-                            {cartItem.quantity} en carrito
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => updateCartQuantity(p.id, cartItem.quantity + 1)}
-                            className="p-1.5 hover:bg-slate-900 text-slate-400 hover:text-white transition-all cursor-pointer rounded-lg"
-                          >
-                            <Plus size={12} />
-                          </button>
-                        </div>
-                        <button 
-                          type="button"
-                          onClick={() => {
-                            setIsCartOpen(true);
-                            setTimeout(() => {
-                              formRef.current?.scrollIntoView({ behavior: "smooth" });
-                            }, 150);
-                          }}
-                          className="h-11 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-black text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer shadow-md"
-                        >
-                          <span>Pagar 🚀</span>
+                  {/* Actions */}
+                  {cartItem ? (
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center bg-slate-950 rounded-xl border border-white/8 overflow-hidden flex-1 justify-between h-11 px-2">
+                        <button type="button" onClick={() => updateCartQuantity(p.id, cartItem.quantity - 1)}
+                          className="p-1.5 text-slate-400 hover:text-white transition-colors cursor-pointer rounded-lg hover:bg-white/5">
+                          <Minus size={12} />
+                        </button>
+                        <span className="text-xs font-black font-mono text-white">{cartItem.quantity} en carrito</span>
+                        <button type="button" onClick={() => updateCartQuantity(p.id, cartItem.quantity + 1)}
+                          className="p-1.5 text-slate-400 hover:text-white transition-colors cursor-pointer rounded-lg hover:bg-white/5">
+                          <Plus size={12} />
                         </button>
                       </div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-2 pt-1">
-                        <button 
-                          type="button"
-                          onClick={() => addToCart(p)}
-                          className="py-3 px-3 rounded-xl bg-slate-900 hover:bg-slate-850 border border-slate-800 text-white font-extrabold text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
-                        >
-                          <ShoppingCart size={13} className="text-amber-400" />
-                          <span>Al Carrito</span>
-                        </button>
-                        
-                        <button 
-                          type="button"
-                          onClick={() => handleInstantBuy(p)}
-                          className="py-3 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-black text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1 shadow-lg shadow-amber-400/5 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
-                        >
-                          <span>Comprar Ya ⚡</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                      <button
+                        type="button"
+                        onClick={() => { setIsCartOpen(true); setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth" }), 150); }}
+                        className="h-11 px-4 rounded-xl btn-cta-primary text-black font-black text-[10px] uppercase tracking-wider flex items-center gap-1 cursor-pointer"
+                      >
+                        Pagar 🚀
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => addToCart(p)}
+                        className="py-3 rounded-xl glass-card text-white font-extrabold text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 hover:border-white/15 active:scale-95 cursor-pointer"
+                      >
+                        <ShoppingCart size={12} className="text-amber-400" />
+                        Al Carrito
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleInstantBuy(p)}
+                        className="py-3 rounded-xl btn-cta-primary text-black font-black text-[10px] uppercase tracking-wider flex items-center justify-center gap-1 cursor-pointer"
+                      >
+                        Comprar ⚡
+                      </button>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             );
@@ -755,642 +990,797 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Main Checkout Section */}
-      <section className="py-20 px-4 bg-slate-950 border-t border-slate-900" ref={formRef}>
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center space-y-4 mb-12">
-            <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-4 py-1 rounded-full text-emerald-400 text-[10px] font-black uppercase tracking-widest">
-              <CheckCircle size={10} />
-              PROCESADOR DE ORDEN SEGURO
+      {/* ════════════════════════════════════════════
+          BANNER FOMO — URGENCIA CENTRAL
+      ════════════════════════════════════════════ */}
+      <section className="py-12 px-4">
+        <div className="max-w-5xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.97 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            className="relative overflow-hidden rounded-3xl border border-amber-500/20 p-8 sm:p-12 text-center"
+            style={{ background: "linear-gradient(135deg, rgba(251,191,36,0.08) 0%, rgba(249,115,22,0.05) 50%, rgba(251,191,36,0.08) 100%)" }}
+          >
+            {/* Background glow */}
+            <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 via-orange-500/3 to-amber-500/5 animate-gradient-shift" style={{ backgroundSize: "200% 200%" }} />
+
+            <div className="relative z-10 space-y-6">
+              <div className="inline-flex items-center gap-2 bg-red-500/10 border border-red-500/20 px-4 py-1.5 rounded-full">
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                <span className="text-red-400 text-xs font-black uppercase tracking-widest">OFERTA ESPECIAL — Solo por hoy</span>
+              </div>
+
+              <h3 className="text-3xl sm:text-4xl font-black leading-tight">
+                ¿Llevas{" "}
+                <span className="text-gradient-gold">2 o más productos?</span>
+                <br />
+                ¡Descuento automático!
+              </h3>
+
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+                <div className="glass-card border-emerald-500/20 px-8 py-5 rounded-2xl text-center">
+                  <span className="block text-4xl font-black text-emerald-400">10%</span>
+                  <span className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-1">2 Productos</span>
+                </div>
+                <div className="text-slate-600 text-2xl font-black">+</div>
+                <div className="glass-card border-amber-500/20 px-8 py-5 rounded-2xl text-center animate-glow-pulse">
+                  <span className="block text-4xl font-black text-amber-400">15%</span>
+                  <span className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-1">3+ Productos</span>
+                </div>
+                <div className="text-slate-600 text-2xl font-black">+</div>
+                <div className="glass-card border-blue-500/20 px-8 py-5 rounded-2xl text-center">
+                  <span className="block text-4xl font-black text-blue-400">8%</span>
+                  <span className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-1">Pago anticipado</span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-center gap-2 text-sm text-slate-300">
+                <Zap className="text-amber-400" size={16} />
+                <span>Los descuentos se aplican <strong className="text-white">automáticamente</strong> en tu carrito. ¡Sin códigos!</span>
+              </div>
+
+              <button
+                onClick={() => { document.getElementById("catalogo")?.scrollIntoView({ behavior: "smooth" }); }}
+                className="btn-cta-primary text-black font-black text-sm uppercase tracking-wider px-10 py-4 rounded-2xl inline-flex items-center gap-3 cursor-pointer"
+              >
+                <ShoppingBag size={18} />
+                Aprovechar Descuentos
+              </button>
             </div>
-            <h3 className="text-3xl sm:text-4xl font-black tracking-tight font-serif italic">
-              📝 Formulario de Pedido Inmediato
-            </h3>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════
+          FORMULARIO DE PEDIDO — MEJORADO
+      ════════════════════════════════════════════ */}
+      <section className="py-20 px-4 relative" ref={formRef} id="formulario">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-emerald-950/5 to-transparent pointer-events-none" />
+        <div className="max-w-5xl mx-auto relative z-10">
+          {/* Section header */}
+          <div className="text-center space-y-4 mb-12">
+            <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-4 py-1.5 rounded-full text-emerald-400 text-[10px] font-black uppercase tracking-widest">
+              <CheckCircle size={12} />
+              ZONA DE PEDIDO SEGURO
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
+              📝 Completa Tu Pedido
+            </h2>
             <p className="text-slate-400 text-sm max-w-xl mx-auto">
-              Sencillo, rápido y seguro. Revisa tus artículos abajo, ingresa tus datos de entrega y recibe en la puerta de tu casa. <span className="text-amber-400 font-bold">¡Envío gratis nacional!</span>
+              Sencillo, rápido y seguro. Elige tu método de pago, revisa tu carrito e ingresa tus datos.{" "}
+              <span className="text-amber-400 font-bold">¡Despachamos hoy mismo!</span>
             </p>
+            {/* Steps */}
+            <div className="flex items-center justify-center gap-2 text-xs text-slate-500">
+              {["1. Revisa tu carrito", "→", "2. Elige tu método de pago", "→", "3. Ingresa tus datos", "→", "4. ¡Listo! 🎉"].map((s, i) => (
+                <span key={i} className={s === "→" ? "text-slate-700" : "font-bold text-slate-400"}>{s}</span>
+              ))}
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
-            
-            {/* Left side: Checkout Form and Cart review list */}
-            <div className="md:col-span-7 bg-slate-900/40 border border-slate-900 rounded-3xl p-6 sm:p-8 space-y-8 shadow-xl backdrop-blur-lg">
-              
-              {/* Cart List Inside Form */}
-              <div className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+            {/* LEFT: Form */}
+            <div className="lg:col-span-7 space-y-6">
+
+              {/* Cart review */}
+              <div className="glass-card rounded-3xl p-6 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+                  <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
                     <ShoppingCart size={14} className="text-amber-400" />
-                    1. Revisa tus Productos agregados:
-                  </h4>
-                  <span className="text-[10px] bg-slate-950 px-2.5 py-1 rounded-lg text-slate-400 font-mono border border-slate-900">
-                    Artículos: {totalQty}
+                    Paso 1 — Tu Carrito
+                  </h3>
+                  <span className="text-[10px] glass-card px-3 py-1 rounded-xl text-slate-400 font-mono border-0">
+                    {totalQty} {totalQty === 1 ? "producto" : "productos"}
                   </span>
                 </div>
 
                 {cart.length === 0 ? (
-                  <div className="bg-slate-950/60 p-8 rounded-2xl border border-dashed border-slate-900 text-center space-y-3">
-                    <ShoppingBag className="mx-auto text-slate-600 animate-pulse" size={32} />
-                    <p className="text-xs text-slate-400">Tu carrito de compras está vacío.</p>
-                    <button 
-                      onClick={() => {
-                        window.scrollTo({ top: 400, behavior: "smooth" });
-                        toast.success("¡Selecciona cualquiera de nuestros 15 artículos de arriba! 🎉");
-                      }}
-                      className="px-4 py-2 rounded-xl bg-amber-400 text-black text-[10px] font-extrabold uppercase tracking-widest cursor-pointer hover:bg-amber-300"
+                  <div className="py-10 flex flex-col items-center gap-4 text-center">
+                    <ShoppingBag className="text-slate-700 animate-pulse" size={36} />
+                    <div>
+                      <p className="text-sm font-bold text-slate-400">Tu carrito está vacío</p>
+                      <p className="text-xs text-slate-600 mt-1">Agrega productos del catálogo de arriba</p>
+                    </div>
+                    <button
+                      onClick={() => { document.getElementById("catalogo")?.scrollIntoView({ behavior: "smooth" }); }}
+                      className="px-6 py-2.5 rounded-xl btn-cta-primary text-black text-xs font-extrabold uppercase tracking-widest cursor-pointer"
                     >
-                      Explorar el Catálogo
+                      Ver Catálogo
                     </button>
                   </div>
                 ) : (
-                  <div className="space-y-3 max-h-[280px] overflow-y-auto pr-1">
+                  <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
                     {cart.map((item) => (
-                      <div key={item.product.id} className="flex items-center justify-between bg-slate-950 p-3 rounded-2xl border border-slate-900 gap-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-900 border border-slate-800 shrink-0">
-                            <img 
-                              src={getProxiedImageUrl(item.product.imageUrl)} 
-                              alt={item.product.name} 
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div className="min-w-0">
-                            <h5 className="font-extrabold text-xs text-white truncate max-w-[150px] sm:max-w-[200px]">{item.product.name}</h5>
-                            <span className="text-[10px] text-amber-400 font-mono font-bold">${item.product.price.toLocaleString()} COP</span>
-                          </div>
+                      <div key={item.product.id} className="flex items-center gap-3 bg-white/[0.03] p-3 rounded-2xl border border-white/5">
+                        <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-900 border border-white/5 shrink-0">
+                          <img src={getProxiedImageUrl(item.product.imageUrl)} alt={item.product.name} className="w-full h-full object-cover" />
                         </div>
-
-                        {/* Quantity picker + delete */}
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-extrabold text-xs text-white truncate">{item.product.name}</h4>
+                          <span className="text-[10px] text-amber-400 font-mono font-bold">${item.product.price.toLocaleString()} COP</span>
+                        </div>
                         <div className="flex items-center gap-2">
-                          <div className="flex items-center bg-slate-900 rounded-lg border border-slate-800 overflow-hidden">
-                            <button
-                              type="button"
-                              onClick={() => updateCartQuantity(item.product.id, item.quantity - 1)}
-                              className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
-                            >
-                              <Minus size={10} />
-                            </button>
+                          <div className="flex items-center bg-slate-950 rounded-lg border border-white/8 overflow-hidden">
+                            <button type="button" onClick={() => updateCartQuantity(item.product.id, item.quantity - 1)}
+                              className="p-1.5 text-slate-500 hover:text-white cursor-pointer"><Minus size={10} /></button>
                             <span className="px-2 text-xs font-black font-mono text-white">{item.quantity}</span>
-                            <button
-                              type="button"
-                              onClick={() => updateCartQuantity(item.product.id, item.quantity + 1)}
-                              className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
-                            >
-                              <Plus size={10} />
-                            </button>
+                            <button type="button" onClick={() => updateCartQuantity(item.product.id, item.quantity + 1)}
+                              className="p-1.5 text-slate-500 hover:text-white cursor-pointer"><Plus size={10} /></button>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => removeFromCart(item.product.id)}
-                            className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded-lg border border-red-500/10 transition-colors cursor-pointer"
-                          >
-                            <Trash2 size={12} />
-                          </button>
+                          <button type="button" onClick={() => removeFromCart(item.product.id)}
+                            className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg border border-red-500/10 cursor-pointer"><Trash2 size={12} /></button>
                         </div>
                       </div>
                     ))}
                   </div>
                 )}
-              </div>
 
-              {/* Dynamic Promotion Prompt (Gatillos Mentales) */}
-              {cart.length > 0 && totalQty < 2 && (
-                <div className="p-3.5 bg-indigo-500/5 border border-indigo-500/15 rounded-2xl flex items-start gap-2.5">
-                  <Sparkles size={16} className="text-indigo-400 shrink-0 mt-0.5" />
-                  <p className="text-[10.5px] text-slate-300 leading-normal">
-                    💡 <span className="text-indigo-300 font-black">¡Añade 1 producto más de cualquier categoría</span> y recibe un <span className="text-white font-extrabold underline">10% de descuento en TODA tu compra</span> de forma automática!
-                  </p>
-                </div>
-              )}
-
-              {/* Payment Methods selector with 8% Prepayment discount (Mental trigger!) */}
-              <div className="space-y-3">
-                <label className="block text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
-                  <CreditCard size={14} className="text-amber-400" />
-                  2. Método de Pago Preferido:
-                </label>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Option 1: Contraentrega */}
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod("contraentrega")}
-                    className={`p-4 rounded-2xl border text-left flex flex-col justify-between transition-all relative ${
-                      paymentMethod === "contraentrega"
-                        ? "bg-slate-900 border-amber-400 ring-2 ring-amber-400/20"
-                        : "bg-slate-950/60 border-slate-900 text-slate-400 hover:border-slate-800"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between w-full mb-2">
-                      <span className="text-xs font-black uppercase tracking-wide flex items-center gap-1 text-white">
-                        <Truck size={14} className="text-amber-400" />
-                        Pagas al Recibir
-                      </span>
-                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                        paymentMethod === "contraentrega" ? "border-amber-400 bg-amber-400" : "border-slate-800 bg-transparent"
-                      }`}>
-                        {paymentMethod === "contraentrega" && <div className="w-1.5 h-1.5 rounded-full bg-black" />}
-                      </div>
-                    </div>
-                    <p className="text-[10px] text-slate-500 leading-normal">
-                      Recibes tu paquete mediante Servientrega o Envía, y le pagas en efectivo al mensajero. Súper seguro.
+                {/* Discount prompt */}
+                {cart.length > 0 && totalQty < 2 && (
+                  <div className="p-3.5 bg-purple-500/5 border border-purple-500/15 rounded-2xl flex items-start gap-2.5">
+                    <Sparkles size={15} className="text-purple-400 shrink-0 mt-0.5" />
+                    <p className="text-[10.5px] text-slate-300">
+                      💡 <span className="text-purple-300 font-black">¡Agrega 1 producto más</span> y recibe un <span className="text-white font-extrabold underline">10% de descuento automático</span> en toda tu compra!
                     </p>
-                  </button>
-
-                  {/* Option 2: Pago Anticipado con 8% extra discount */}
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod("anticipado")}
-                    className={`p-4 rounded-2xl border text-left flex flex-col justify-between transition-all relative overflow-hidden ${
-                      paymentMethod === "anticipado"
-                        ? "bg-slate-900 border-amber-400 ring-2 ring-amber-400/20"
-                        : "bg-slate-950/60 border-slate-900 text-slate-400 hover:border-slate-800"
-                    }`}
-                  >
-                    {/* Discount badge */}
-                    <span className="absolute -top-1 -right-3 bg-gradient-to-r from-red-500 to-amber-500 text-black font-black text-[7.5px] uppercase tracking-widest px-4 py-1.5 rotate-12">
-                      ¡AHORRAS 8%! 🔥
-                    </span>
-
-                    <div className="flex items-center justify-between w-full mb-2">
-                      <span className="text-xs font-black uppercase tracking-wide flex items-center gap-1 text-white">
-                        <Sparkles size={14} className="text-amber-400" />
-                        Pago Anticipado
-                      </span>
-                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                        paymentMethod === "anticipado" ? "border-amber-400 bg-amber-400" : "border-slate-800 bg-transparent"
-                      }`}>
-                        {paymentMethod === "anticipado" && <div className="w-1.5 h-1.5 rounded-full bg-black" />}
-                      </div>
-                    </div>
-                    <p className="text-[10px] text-slate-500 leading-normal">
-                      Pagas mediante Nequi, Daviplata o Transferencia Bancaria y te aplicamos un <span className="text-emerald-400 font-extrabold font-mono">8% DE DESCUENTO EXTRA</span> directo en tu total.
-                    </p>
-                  </button>
-                </div>
-
-                {paymentMethod === "anticipado" && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="p-4 bg-gradient-to-br from-amber-400/10 to-transparent border border-amber-400/25 rounded-2xl space-y-3.5 mt-3"
-                  >
-                    <div className="flex items-center gap-2 text-amber-300 font-extrabold text-xs">
-                      <Sparkles size={14} className="animate-pulse text-amber-400" />
-                      <span>¡EXCELENTE ELECCIÓN! AHORRAS UN 8% EN TU COMPRA</span>
-                    </div>
-                    <p className="text-[10.5px] text-slate-400 leading-relaxed">
-                      Realiza tu transferencia por cualquiera de estos canales oficiales y adjunta el comprobante para habilitar tu <span className="text-white font-black">Despacho Prioritario 🚀</span>:
-                    </p>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-slate-950 p-3 rounded-xl border border-slate-900 flex flex-col justify-between">
-                        <span className="text-[10px] font-black uppercase text-[#E52F86] tracking-wider mb-1">📱 NEQUI</span>
-                        <span className="text-xs font-mono font-black text-white select-all">312 345 6789</span>
-                        <span className="text-[8px] text-slate-500 mt-1">A nombre de: Jan S. Shop</span>
-                      </div>
-                      <div className="bg-slate-950 p-3 rounded-xl border border-slate-900 flex flex-col justify-between">
-                        <span className="text-[10px] font-black uppercase text-[#421D83] tracking-wider mb-1">💳 DAVIPLATA</span>
-                        <span className="text-xs font-mono font-black text-white select-all">312 345 6789</span>
-                        <span className="text-[8px] text-slate-500 mt-1">A nombre de: Jan S. Shop</span>
-                      </div>
-                    </div>
-                    <div className="text-[9.5px] text-slate-500 leading-normal flex items-start gap-1.5 bg-slate-950/40 p-2.5 rounded-xl border border-slate-900/40">
-                      <Lock size={12} className="text-amber-400 shrink-0 mt-0.5" />
-                      <span>Una vez registres tu pedido por formulario o WhatsApp, nuestro asesor te contactará de inmediato para recibir tu comprobante. ¡Súper ágil!</span>
-                    </div>
-                  </motion.div>
+                  </div>
                 )}
               </div>
 
-              {/* Checkout Method Tab Switcher inside checkout form */}
-              <div className="flex gap-2 p-1 bg-slate-950 rounded-2xl border border-slate-900 mt-4">
-                <button
-                  type="button"
-                  onClick={() => setCheckoutMode("formulario")}
-                  className={`flex-1 py-3 px-4 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                    checkoutMode === "formulario"
-                      ? "bg-amber-400 text-black shadow-lg shadow-amber-400/10"
-                      : "text-slate-400 hover:text-white hover:bg-slate-900/50"
-                  }`}
-                >
-                  <Lock size={14} />
-                  <span>Pedido por Formulario 📝</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCheckoutMode("whatsapp")}
-                  className={`flex-1 py-3 px-4 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                    checkoutMode === "whatsapp"
-                      ? "bg-[#25D366] text-white shadow-lg shadow-emerald-500/10"
-                      : "text-slate-400 hover:text-white hover:bg-slate-900/50"
-                  }`}
-                >
-                  <MessageCircle size={14} fill="currentColor" />
-                  <span>Pedido por WhatsApp 🚀</span>
-                </button>
+              {/* Payment method */}
+              <div className="glass-card rounded-3xl p-6 space-y-4">
+                <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                  <CreditCard size={14} className="text-amber-400" />
+                  Paso 2 — Método de Pago
+                </h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Contraentrega */}
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("contraentrega")}
+                    className={`p-4 rounded-2xl border text-left flex flex-col gap-2 transition-all cursor-pointer ${
+                      paymentMethod === "contraentrega"
+                        ? "bg-slate-900 border-amber-400 ring-2 ring-amber-400/20"
+                        : "bg-white/[0.02] border-white/8 hover:border-white/15"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black text-white flex items-center gap-1.5">
+                        <Truck size={14} className="text-amber-400" /> Pagas al Recibir
+                      </span>
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${paymentMethod === "contraentrega" ? "border-amber-400 bg-amber-400" : "border-slate-700"}`}>
+                        {paymentMethod === "contraentrega" && <div className="w-1.5 h-1.5 rounded-full bg-black" />}
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-slate-500 leading-normal">Paga en efectivo al mensajero cuando recibas tu pedido. 100% seguro.</p>
+                  </button>
+
+                  {/* Pago anticipado */}
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("anticipado")}
+                    className={`p-4 rounded-2xl border text-left flex flex-col gap-2 transition-all relative overflow-hidden cursor-pointer ${
+                      paymentMethod === "anticipado"
+                        ? "bg-slate-900 border-amber-400 ring-2 ring-amber-400/20"
+                        : "bg-white/[0.02] border-white/8 hover:border-white/15"
+                    }`}
+                  >
+                    <span className="absolute -top-1 -right-4 bg-gradient-to-r from-red-500 to-amber-500 text-black font-black text-[7px] uppercase tracking-widest px-5 py-1.5 rotate-12">
+                      -8% 🔥
+                    </span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black text-white flex items-center gap-1.5">
+                        <Sparkles size={14} className="text-amber-400" /> Pago Anticipado
+                      </span>
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${paymentMethod === "anticipado" ? "border-amber-400 bg-amber-400" : "border-slate-700"}`}>
+                        {paymentMethod === "anticipado" && <div className="w-1.5 h-1.5 rounded-full bg-black" />}
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-slate-500 leading-normal">Nequi, Daviplata o Transferencia. Te aplicamos <span className="text-emerald-400 font-extrabold">8% DE DESCUENTO</span> extra.</p>
+                  </button>
+                </div>
+
+                {/* Pago anticipado details */}
+                <AnimatePresence>
+                  {paymentMethod === "anticipado" && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -8, height: 0 }}
+                      animate={{ opacity: 1, y: 0, height: "auto" }}
+                      exit={{ opacity: 0, y: -8, height: 0 }}
+                      className="glass-card-amber rounded-2xl p-4 space-y-3"
+                    >
+                      <div className="flex items-center gap-2 text-amber-300 font-extrabold text-xs">
+                        <Sparkles size={14} className="animate-pulse" />
+                        ¡EXCELENTE! Ahorras 8% en tu compra
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        {[
+                          { label: "📱 NEQUI", color: "text-[#E52F86]", number: "312 345 6789" },
+                          { label: "💳 DAVIPLATA", color: "text-[#421D83]", number: "312 345 6789" },
+                        ].map((m) => (
+                          <div key={m.label} className="bg-black/30 p-3 rounded-xl border border-white/5">
+                            <span className={`text-[10px] font-black uppercase ${m.color} tracking-wider`}>{m.label}</span>
+                            <span className="block text-xs font-mono font-black text-white mt-1 select-all">{m.number}</span>
+                            <span className="text-[8px] text-slate-500 mt-0.5">A nombre de: Jan S.</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="text-[9.5px] text-slate-500 flex items-start gap-1.5">
+                        <Lock size={11} className="text-amber-400 shrink-0 mt-0.5" />
+                        <span>Registra tu pedido y un asesor te contactará de inmediato para recibir tu comprobante.</span>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
+              {/* Checkout mode selector */}
+              <div className="flex gap-2 p-1 glass-card rounded-2xl">
+                {[
+                  { key: "formulario" as const, label: "📝 Formulario", icon: <Lock size={13} />, activeColor: "bg-amber-400 text-black shadow-lg shadow-amber-400/15" },
+                  { key: "whatsapp" as const, label: "🟢 WhatsApp", icon: <MessageCircle size={13} fill="currentColor" />, activeColor: "bg-[#25D366] text-white shadow-lg shadow-emerald-500/15" },
+                ].map((m) => (
+                  <button
+                    key={m.key}
+                    type="button"
+                    onClick={() => setCheckoutMode(m.key)}
+                    className={`flex-1 py-3 px-4 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                      checkoutMode === m.key ? m.activeColor : "text-slate-400 hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    {m.icon}
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Form or WhatsApp mode */}
               {checkoutMode === "formulario" ? (
-                <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-                  <label className="block text-xs font-black uppercase tracking-widest text-amber-400 flex items-center gap-1.5">
+                <form onSubmit={handleSubmit} className="glass-card rounded-3xl p-6 space-y-4">
+                  <h3 className="text-xs font-black uppercase tracking-widest text-amber-400 flex items-center gap-2">
                     <MapPin size={14} />
-                    3. Datos de Envío del Cliente:
-                  </label>
-                  
+                    Paso 3 — Datos de Envío
+                  </h3>
+
                   <div className="space-y-1.5">
-                    <span className="text-xs text-slate-400 font-bold">Nombre Completo:</span>
-                    <input 
-                      type="text" 
-                      name="customerName"
-                      value={formData.customerName}
-                      onChange={handleInputChange}
-                      placeholder="Ej. Juan Carlos Vanegas"
-                      required
-                      className="w-full bg-slate-950 border border-slate-900 rounded-2xl px-4 py-3.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-amber-400 placeholder:text-slate-700"
-                    />
+                    <label className="block text-xs text-slate-400 font-bold">Nombre Completo *</label>
+                    <input type="text" name="customerName" value={formData.customerName} onChange={handleInputChange} placeholder="Ej. Juan Carlos Vanegas" required
+                      className="w-full bg-black/40 border border-white/8 rounded-2xl px-4 py-3.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400/50 placeholder:text-slate-700 transition-all" />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <span className="text-xs text-slate-400 font-bold">Número de Celular:</span>
-                      <input 
-                        type="tel" 
-                        name="customerPhone"
-                        value={formData.customerPhone}
-                        onChange={handleInputChange}
-                        placeholder="Ej. 3123456789"
-                        required
-                        className="w-full bg-slate-950 border border-slate-900 rounded-2xl px-4 py-3.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-amber-400 placeholder:text-slate-700"
-                      />
+                      <label className="block text-xs text-slate-400 font-bold">Número de Celular *</label>
+                      <input type="tel" name="customerPhone" value={formData.customerPhone} onChange={handleInputChange} placeholder="Ej. 3123456789" required
+                        className="w-full bg-black/40 border border-white/8 rounded-2xl px-4 py-3.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400/50 placeholder:text-slate-700 transition-all" />
                     </div>
-
                     <div className="space-y-1.5">
-                      <span className="text-xs text-slate-400 font-bold">Ciudad / Municipio (Colombia):</span>
-                      <input 
-                        type="text" 
-                        name="city"
-                        value={formData.city}
-                        onChange={handleInputChange}
-                        placeholder="Ej. Bogotá D.C. o Medellín"
-                        required
-                        className="w-full bg-slate-950 border border-slate-900 rounded-2xl px-4 py-3.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-amber-400 placeholder:text-slate-700"
-                      />
+                      <label className="block text-xs text-slate-400 font-bold">Ciudad / Municipio *</label>
+                      <input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="Ej. Bogotá, Medellín..." required
+                        className="w-full bg-black/40 border border-white/8 rounded-2xl px-4 py-3.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400/50 placeholder:text-slate-700 transition-all" />
                     </div>
                   </div>
 
                   <div className="space-y-1.5">
-                    <span className="text-xs text-slate-400 font-bold">Dirección de Entrega Exacta:</span>
-                    <input 
-                      type="text" 
-                      name="address"
-                      value={formData.address}
-                      onChange={handleInputChange}
-                      placeholder="Ej. Calle 10 # 5-20, Apto 402, Barrio Las Flores"
-                      required
-                      className="w-full bg-slate-950 border border-slate-900 rounded-2xl px-4 py-3.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-amber-400 placeholder:text-slate-700"
-                    />
+                    <label className="block text-xs text-slate-400 font-bold">Dirección Exacta de Entrega *</label>
+                    <input type="text" name="address" value={formData.address} onChange={handleInputChange} placeholder="Ej. Calle 10 # 5-20, Apto 402, Barrio Las Flores" required
+                      className="w-full bg-black/40 border border-white/8 rounded-2xl px-4 py-3.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400/50 placeholder:text-slate-700 transition-all" />
                   </div>
 
                   <div className="space-y-1.5">
-                    <span className="text-xs text-slate-400 font-bold">Indicaciones / Referencia Adicional (Opcional):</span>
-                    <input 
-                      type="text" 
-                      name="addressIndicator"
-                      value={formData.addressIndicator}
-                      onChange={handleInputChange}
-                      placeholder="Ej. Frente al parque principal, portería blanca"
-                      className="w-full bg-slate-950 border border-slate-900 rounded-2xl px-4 py-3.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-amber-400 placeholder:text-slate-700"
-                    />
+                    <label className="block text-xs text-slate-400 font-bold">Indicaciones Adicionales (Opcional)</label>
+                    <input type="text" name="addressIndicator" value={formData.addressIndicator} onChange={handleInputChange} placeholder="Ej. Portería blanca, frente al parque"
+                      className="w-full bg-black/40 border border-white/8 rounded-2xl px-4 py-3.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50 placeholder:text-slate-700 transition-all" />
                   </div>
 
-                  {/* Submission CTAs */}
                   <div className="pt-4 space-y-3">
                     <button
                       type="submit"
                       disabled={submitting || cart.length === 0}
-                      className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-black hover:from-amber-300 hover:to-amber-500 font-black text-sm uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-3 shadow-xl shadow-amber-500/20 active:scale-98 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="w-full py-4 rounded-2xl btn-cta-primary text-black font-black text-sm uppercase tracking-wider flex items-center justify-center gap-3 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       {submitting ? (
-                        <>
-                          <div className="w-5 h-5 border-3 border-black border-t-transparent rounded-full animate-spin" />
-                          <span>Guardando Pedido Seguro...</span>
-                        </>
+                        <><div className="w-5 h-5 border-3 border-black border-t-transparent rounded-full animate-spin" /><span>Guardando Pedido...</span></>
                       ) : (
-                        <>
-                          <Lock size={16} />
-                          <span>Confirmar Pedido por Formulario 📝</span>
-                        </>
+                        <><Lock size={16} /><span>Confirmar Pedido Seguro 🔒</span></>
                       )}
                     </button>
-
                     <button
                       type="button"
                       disabled={cart.length === 0}
                       onClick={() => handleWhatsAppOrder()}
-                      className="w-full py-4 rounded-2xl bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] border border-[#25D366]/20 font-black text-sm uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-3 shadow-xl active:scale-98 cursor-pointer disabled:opacity-40"
+                      className="w-full py-4 rounded-2xl btn-cta-whatsapp text-white font-black text-sm uppercase tracking-wider flex items-center justify-center gap-3 cursor-pointer disabled:opacity-40"
                     >
                       <MessageCircle size={16} fill="currentColor" />
-                      <span>O Prefiero Pedir por WhatsApp 🚀</span>
+                      O Prefiero Pedir por WhatsApp 🚀
                     </button>
                   </div>
                 </form>
               ) : (
-                <div className="space-y-5 pt-2">
-                  <label className="block text-xs font-black uppercase tracking-widest text-[#25D366] flex items-center gap-1.5">
+                <div className="glass-card rounded-3xl p-6 space-y-5">
+                  <h3 className="text-xs font-black uppercase tracking-widest text-[#25D366] flex items-center gap-2">
                     <MessageCircle size={14} fill="currentColor" />
-                    3. Datos de tu Pedido WhatsApp:
-                  </label>
-
+                    Paso 3 — Pedido por WhatsApp
+                  </h3>
                   <div className="space-y-1.5">
-                    <span className="text-xs text-slate-400 font-bold">Tu Nombre (Opcional):</span>
-                    <input 
-                      type="text" 
-                      name="customerName"
-                      value={formData.customerName}
-                      onChange={handleInputChange}
-                      placeholder="Ej. Juan Carlos Vanegas"
-                      className="w-full bg-slate-950 border border-slate-900 rounded-2xl px-4 py-3.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-[#25D366] placeholder:text-slate-700"
-                    />
+                    <label className="block text-xs text-slate-400 font-bold">Tu Nombre (Opcional)</label>
+                    <input type="text" name="customerName" value={formData.customerName} onChange={handleInputChange} placeholder="Ej. Juan Carlos"
+                      className="w-full bg-black/40 border border-white/8 rounded-2xl px-4 py-3.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#25D366]/40 placeholder:text-slate-700" />
                   </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <span className="text-xs text-slate-400 font-bold">Número de Celular (Opcional):</span>
-                      <input 
-                        type="tel" 
-                        name="customerPhone"
-                        value={formData.customerPhone}
-                        onChange={handleInputChange}
-                        placeholder="Ej. 3123456789"
-                        className="w-full bg-slate-950 border border-slate-900 rounded-2xl px-4 py-3.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-[#25D366] placeholder:text-slate-700"
-                      />
+                      <label className="block text-xs text-slate-400 font-bold">Celular (Opcional)</label>
+                      <input type="tel" name="customerPhone" value={formData.customerPhone} onChange={handleInputChange} placeholder="3123456789"
+                        className="w-full bg-black/40 border border-white/8 rounded-2xl px-4 py-3.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#25D366]/40 placeholder:text-slate-700" />
                     </div>
-
                     <div className="space-y-1.5">
-                      <span className="text-xs text-slate-400 font-bold">Ciudad / Municipio (Opcional):</span>
-                      <input 
-                        type="text" 
-                        name="city"
-                        value={formData.city}
-                        onChange={handleInputChange}
-                        placeholder="Ej. Bogotá o Medellín"
-                        className="w-full bg-slate-950 border border-slate-900 rounded-2xl px-4 py-3.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-[#25D366] placeholder:text-slate-700"
-                      />
+                      <label className="block text-xs text-slate-400 font-bold">Ciudad (Opcional)</label>
+                      <input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="Bogotá"
+                        className="w-full bg-black/40 border border-white/8 rounded-2xl px-4 py-3.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#25D366]/40 placeholder:text-slate-700" />
                     </div>
                   </div>
-
-                  {/* WhatsApp preview box */}
-                  <div className="p-4 bg-slate-950 border border-slate-900 rounded-2xl space-y-2.5">
-                    <span className="text-[10px] font-mono tracking-widest text-[#25D366] uppercase font-bold flex items-center gap-1.5">
-                      <MessageCircle size={12} fill="currentColor" />
-                      Vista previa de tu Mensaje Express:
-                    </span>
-                    <div className="bg-slate-900/50 p-3 rounded-xl text-[11.5px] text-slate-300 font-mono leading-relaxed max-h-[160px] overflow-y-auto border border-slate-900">
-                      <p className="whitespace-pre-line text-slate-300">
-                        {`¡Hola Jan Sel Shop! 👋 Quiero realizar un pedido directo por WhatsApp:\n\n`}
-                        {cart.map(item => `• *${item.product.name}* (x${item.quantity}) - $${item.product.price.toLocaleString()} COP`).join("\n")}
-                        {`\n\n💰 *Total Neto a Pagar:* $${finalTotal.toLocaleString()} COP`}
-                        {`\n🚚 *Envío:* ¡COMPLETAMENTE GRATIS! 🇨🇴`}
-                        {`\n💳 *Método de Pago:* ${paymentMethod === "anticipado" ? "Pago Anticipado con 8% de Descuento Especial" : "Pago Contraentrega (Pagas al recibir)"}`}
-                        {formData.customerName && `\n\n👤 *Nombre:* ${formData.customerName}`}
-                        {formData.customerPhone && `\n📱 *Celular:* ${formData.customerPhone}`}
-                        {formData.city && `\n📍 *Ciudad:* ${formData.city}`}
-                      </p>
+                  <div className="bg-black/40 p-4 rounded-2xl border border-white/5 space-y-2">
+                    <span className="text-[10px] font-mono text-[#25D366] uppercase font-bold flex items-center gap-1.5"><MessageCircle size={11} fill="currentColor" /> Vista previa:</span>
+                    <div className="text-[11px] text-slate-400 font-mono leading-relaxed max-h-32 overflow-y-auto">
+                      <p>¡Hola Jan Sel! Quiero:{"\n"}</p>
+                      {cart.map(item => <p key={item.product.id}>• {item.product.name} x{item.quantity} — ${item.product.price.toLocaleString()} COP</p>)}
+                      <p className="mt-1 text-white font-black">Total: ${finalTotal.toLocaleString()} COP — Envío GRATIS 🚚</p>
                     </div>
                   </div>
-
                   <button
                     type="button"
                     disabled={cart.length === 0}
                     onClick={() => handleWhatsAppOrder()}
-                    className="w-full py-4 rounded-2xl bg-[#25D366] hover:bg-[#20ba5a] text-white font-black text-sm uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-3 shadow-xl shadow-emerald-500/20 active:scale-98 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="w-full py-4 rounded-2xl btn-cta-whatsapp text-white font-black text-sm uppercase tracking-wider flex items-center justify-center gap-3 cursor-pointer disabled:opacity-40"
                   >
                     <MessageCircle size={18} fill="currentColor" />
-                    <span>Confirmar Pedido Directo en WhatsApp 🚀</span>
+                    Enviar Pedido por WhatsApp 🚀
                   </button>
                 </div>
               )}
 
-              <p className="text-[10px] text-slate-500 text-center flex items-center justify-center gap-1 mt-2">
-                <ShieldCheck size={12} className="text-amber-400" />
-                <span>Tus datos están protegidos. Despachamos el mismo día y pagas al recibir.</span>
+              <p className="text-[10px] text-slate-600 text-center flex items-center justify-center gap-1 mt-2">
+                <ShieldCheck size={11} className="text-amber-400" />
+                Tus datos están protegidos. Despachamos el mismo día. Pagas al recibir.
               </p>
             </div>
 
-            {/* Right side: Detailed Sidebar Summary */}
-            <div className="md:col-span-5 space-y-6 sticky top-28">
-              
-              <div className="bg-slate-900/30 border border-slate-900 rounded-3xl p-6 space-y-6">
-                <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 border-b border-slate-900 pb-3">Resumen de Cuenta:</h4>
-                
-                <div className="space-y-4">
+            {/* RIGHT: Order Summary sidebar */}
+            <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-24">
+              {/* Summary box */}
+              <div className="glass-card rounded-3xl p-6 space-y-5">
+                <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 border-b border-white/5 pb-4">
+                  📋 Resumen de tu Orden
+                </h3>
+
+                <div className="space-y-3 text-xs">
                   {cart.length === 0 ? (
-                    <p className="text-xs text-slate-500 italic">No hay productos seleccionados.</p>
+                    <p className="text-slate-600 italic text-center py-4">No hay productos seleccionados.</p>
                   ) : (
-                    <div className="space-y-3">
-                      {cart.map((item) => (
-                        <div key={item.product.id} className="flex gap-3 justify-between items-center text-xs">
-                          <span className="text-slate-300 font-semibold truncate max-w-[160px]">{item.product.name} <span className="text-amber-400 font-black">x{item.quantity}</span></span>
-                          <span className="text-white font-mono">${(item.product.price * item.quantity).toLocaleString()} COP</span>
-                        </div>
-                      ))}
-                    </div>
+                    cart.map((item) => (
+                      <div key={item.product.id} className="flex justify-between items-center">
+                        <span className="text-slate-300 truncate max-w-[160px]">{item.product.name} <span className="text-amber-400 font-black">x{item.quantity}</span></span>
+                        <span className="text-white font-mono shrink-0">${(item.product.price * item.quantity).toLocaleString()}</span>
+                      </div>
+                    ))
                   )}
                 </div>
 
-                <div className="space-y-3 border-t border-slate-900 pt-4 text-xs font-semibold text-slate-300">
-                  <div className="flex justify-between">
-                    <span>Subtotal de Productos:</span>
+                <div className="space-y-3 border-t border-white/5 pt-4 text-xs">
+                  <div className="flex justify-between text-slate-400">
+                    <span>Subtotal</span>
                     <span className="text-white font-mono">${subtotal.toLocaleString()} COP</span>
                   </div>
-                  
-                  <div className="flex justify-between">
-                    <span>Envío a Colombia:</span>
-                    <span className="text-emerald-400 font-black uppercase tracking-wider">¡TOTALMENTE GRATIS! 🚚</span>
+                  <div className="flex justify-between text-slate-400">
+                    <span>Envío Nacional</span>
+                    <span className="text-emerald-400 font-black uppercase">¡GRATIS! 🚚</span>
                   </div>
-                  
-                  <div className="flex justify-between">
-                    <span>Método de despacho:</span>
-                    <span className="text-white font-bold">EntregaPrioritaria 📦</span>
-                  </div>
-
                   {quantityDiscount > 0 && (
-                    <div className="flex justify-between text-emerald-400 bg-emerald-500/5 p-2 rounded-xl border border-emerald-500/10">
-                      <span>Descuento de Cantidad ({totalQty >= 3 ? "15%" : "10%"}):</span>
-                      <span className="font-black font-mono">-${quantityDiscount.toLocaleString()} COP</span>
+                    <div className="flex justify-between text-emerald-400 bg-emerald-500/5 px-3 py-2 rounded-xl border border-emerald-500/10">
+                      <span>Dto. Cantidad ({totalQty >= 3 ? "15%" : "10%"})</span>
+                      <span className="font-black font-mono">-${quantityDiscount.toLocaleString()}</span>
                     </div>
                   )}
-
                   {prepaymentDiscount > 0 && (
-                    <div className="flex justify-between text-amber-400 bg-amber-400/5 p-2 rounded-xl border border-amber-400/10">
-                      <span>Descuento Pago Anticipado (8%):</span>
-                      <span className="font-black font-mono">-${prepaymentDiscount.toLocaleString()} COP</span>
+                    <div className="flex justify-between text-amber-400 bg-amber-400/5 px-3 py-2 rounded-xl border border-amber-400/10">
+                      <span>Dto. Anticipado (8%)</span>
+                      <span className="font-black font-mono">-${prepaymentDiscount.toLocaleString()}</span>
                     </div>
                   )}
 
-                  <div className="h-px bg-slate-900 my-2" />
-                  
-                  <div className="flex justify-between items-baseline pt-2">
-                    <span className="text-sm font-bold text-white uppercase">Total a Pagar:</span>
+                  <div className="h-px bg-white/5 my-2" />
+
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-base font-bold text-white">Total a Pagar</span>
                     <div className="text-right">
-                      <span className="text-2xl font-black text-amber-400 font-mono">${finalTotal.toLocaleString()} COP</span>
-                      <span className="block text-[9px] text-slate-500 mt-1">
-                        {paymentMethod === "anticipado" ? "Confirmas con transferencia bancaria" : "Pagas al recibir tu orden"}
-                      </span>
+                      <span className="text-3xl font-black text-gradient-gold font-mono">${finalTotal.toLocaleString()}</span>
+                      <span className="block text-[9px] text-slate-600 mt-0.5">COP</span>
                     </div>
                   </div>
+
+                  {savings > 0 && (
+                    <div className="bg-emerald-500/8 border border-emerald-500/15 rounded-2xl p-3 text-center">
+                      <span className="text-emerald-400 font-black text-sm">🎉 ¡Ahorras ${savings.toLocaleString()} COP!</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Security banners */}
-              <div className="bg-slate-900/10 border border-slate-900 p-6 rounded-3xl space-y-4">
-                <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+              {/* Guarantee box */}
+              <div className="glass-card rounded-3xl p-6 space-y-4">
+                <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
                   <ShieldCheck size={14} className="text-amber-400" />
-                  Sello de Garantía Colombiana
-                </h4>
+                  Sello de Garantía
+                </h3>
                 <p className="text-slate-500 text-xs leading-relaxed">
-                  Todos tus despachos viajan asegurados al 100%. Trabajamos de la mano con las mejores agencias logísticas (Servientrega, Envía, Coordinadora, Interrapidisimo) para asegurar entregas rápidas de 2 a 4 días hábiles.
+                  Todos tus despachos viajan asegurados al 100%. Trabajamos con las mejores agencias logísticas de Colombia.
                 </p>
-                <div className="flex items-center gap-3">
-                  <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 text-[10px] font-bold text-slate-400 flex flex-col items-center flex-1">
-                    <Truck size={16} className="text-amber-400 mb-1" />
-                    <span>Entrega 2-4 días</span>
-                  </div>
-                  <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 text-[10px] font-bold text-slate-400 flex flex-col items-center flex-1">
-                    <ShieldCheck size={16} className="text-amber-400 mb-1" />
-                    <span>Garantía de 30 días</span>
-                  </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { icon: <Truck size={16} className="text-amber-400" />, label: "Entrega 2-4 días" },
+                    { icon: <ShieldCheck size={16} className="text-emerald-400" />, label: "Garantía 30 días" },
+                    { icon: <BadgeCheck size={16} className="text-blue-400" />, label: "Producto original" },
+                    { icon: <Phone size={16} className="text-purple-400" />, label: "Soporte inmediato" },
+                  ].map((g, i) => (
+                    <div key={i} className="bg-white/[0.02] p-3 rounded-xl border border-white/5 text-[10px] font-bold text-slate-400 flex flex-col items-center gap-1.5 text-center">
+                      {g.icon}
+                      {g.label}
+                    </div>
+                  ))}
                 </div>
               </div>
+
+              {/* WhatsApp quick button */}
+              <button
+                onClick={() => handleWhatsAppOrder()}
+                className="w-full btn-cta-whatsapp text-white font-black text-sm uppercase tracking-wider py-4 rounded-2xl flex items-center justify-center gap-3 cursor-pointer"
+              >
+                <MessageCircle size={20} fill="currentColor" />
+                ¿Dudas? Escríbenos al WhatsApp
+              </button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Trust & Review Section */}
-      <section className="py-16 px-4 bg-slate-900/20 border-t border-slate-900">
-        <div className="max-w-4xl mx-auto text-center space-y-8">
-          <h4 className="text-2xl font-black font-serif italic uppercase tracking-tight">🗣️ Lo que opinan nuestros clientes felices</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-left">
-            <div className="bg-slate-950 p-6 rounded-3xl border border-slate-900 space-y-3">
-              <div className="flex text-amber-400">
-                {[...Array(5)].map((_, i) => <Star key={i} size={14} fill="currentColor" />)}
-              </div>
-              <p className="text-xs text-slate-400 leading-relaxed italic">"Pedí el módem portátil y me llegó súper rápido a Cali. Pagué contraentrega cuando lo recibí en mi casa. Espectacular el servicio de Jan."</p>
-              <span className="block text-[10px] font-bold text-white font-mono">— Carlos M., Cali</span>
+      {/* ════════════════════════════════════════════
+          TESTIMONIOS — CAROUSEL PREMIUM
+      ════════════════════════════════════════════ */}
+      <section className="py-20 px-4 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-950/10 to-transparent pointer-events-none" />
+        <div className="max-w-6xl mx-auto relative z-10">
+          <div className="text-center space-y-4 mb-12">
+            <div className="inline-flex items-center gap-2 glass-card px-4 py-1.5 rounded-full text-amber-400 text-[10px] font-black uppercase tracking-widest">
+              <Star size={12} fill="currentColor" />
+              Clientes Reales · Opiniones Verificadas
             </div>
-            <div className="bg-slate-950 p-6 rounded-3xl border border-slate-900 space-y-3">
-              <div className="flex text-amber-400">
-                {[...Array(5)].map((_, i) => <Star key={i} size={14} fill="currentColor" />)}
-              </div>
-              <p className="text-xs text-slate-400 leading-relaxed italic">"Aproveché el 8% de descuento por pagar anticipado con Nequi. El despacho fue prioritario y me ahorré un buen dinero. Todo original y bien empacado."</p>
-              <span className="block text-[10px] font-bold text-white font-mono">— Diana P., Bogotá</span>
+            <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
+              🗣️ Lo que dicen nuestros clientes
+            </h2>
+
+            {/* Stats row */}
+            <div className="flex flex-wrap items-center justify-center gap-6 pt-4">
+              {[
+                { value: "4.9/5", label: "Calificación promedio", color: "text-amber-400" },
+                { value: "+500", label: "Clientes satisfechos", color: "text-emerald-400" },
+                { value: "98%", label: "Recomendarían Jan Shop", color: "text-blue-400" },
+                { value: "2-4 días", label: "Tiempo de entrega", color: "text-purple-400" },
+              ].map((stat) => (
+                <div key={stat.label} className="text-center">
+                  <div className={`text-2xl font-black ${stat.color}`}>{stat.value}</div>
+                  <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">{stat.label}</div>
+                </div>
+              ))}
             </div>
-            <div className="bg-slate-950 p-6 rounded-3xl border border-slate-900 space-y-3">
-              <div className="flex text-amber-400">
-                {[...Array(5)].map((_, i) => <Star key={i} size={14} fill="currentColor" />)}
-              </div>
-              <p className="text-xs text-slate-400 leading-relaxed italic">"El intercomunicador funciona de maravilla en carretera, se escucha súper claro incluso a alta velocidad. Es una compra excelente para viajar seguro."</p>
-              <span className="block text-[10px] font-bold text-white font-mono">— Mateo R., Medellín</span>
+          </div>
+
+          {/* Testimonial carousel */}
+          <div className="relative">
+            {/* Main testimonial (large) */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={testimonialIdx}
+                initial={{ opacity: 0, x: 60 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -60 }}
+                transition={{ duration: 0.4 }}
+                className="glass-card rounded-3xl p-8 sm:p-10 max-w-3xl mx-auto text-center space-y-5"
+              >
+                <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${TESTIMONIALS[testimonialIdx].color} flex items-center justify-center font-black text-xl text-white mx-auto shadow-lg`}>
+                  {TESTIMONIALS[testimonialIdx].avatar}
+                </div>
+                <div className="flex items-center justify-center gap-1 text-amber-400">
+                  {[...Array(TESTIMONIALS[testimonialIdx].rating)].map((_, i) => (
+                    <Star key={i} size={16} fill="currentColor" />
+                  ))}
+                </div>
+                <p className="text-slate-200 text-base sm:text-lg leading-relaxed italic font-light max-w-xl mx-auto">
+                  "{TESTIMONIALS[testimonialIdx].text}"
+                </p>
+                <div>
+                  <span className="font-black text-white">— {TESTIMONIALS[testimonialIdx].name}</span>
+                  <span className="text-amber-400 font-bold">, {TESTIMONIALS[testimonialIdx].city}</span>
+                  <span className="block text-[10px] text-slate-600 mt-1 font-mono">{TESTIMONIALS[testimonialIdx].product} · {TESTIMONIALS[testimonialIdx].date}</span>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Dots navigation */}
+            <div className="flex items-center justify-center gap-2 mt-6">
+              {TESTIMONIALS.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setTestimonialIdx(i)}
+                  className={`rounded-full transition-all cursor-pointer ${i === testimonialIdx ? "w-8 h-2 bg-amber-400" : "w-2 h-2 bg-white/15 hover:bg-white/30"}`}
+                />
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* Floating Shopping Cart Drawer Component */}
+      {/* ════════════════════════════════════════════
+          FAQ — ACORDEÓN
+      ════════════════════════════════════════════ */}
+      <section className="py-16 px-4">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center space-y-4 mb-10">
+            <h2 className="text-3xl font-black tracking-tight">❓ Preguntas Frecuentes</h2>
+            <p className="text-slate-400 text-sm">Resolvemos tus dudas antes de que compres.</p>
+          </div>
+          <div className="space-y-3">
+            {FAQ_ITEMS.map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.07 }}
+                className={`glass-card rounded-2xl overflow-hidden transition-all ${openFaq === i ? "border-amber-400/30" : ""}`}
+              >
+                <button
+                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                  className="w-full flex items-center justify-between p-5 text-left gap-4 cursor-pointer hover:bg-white/[0.02] transition-colors"
+                >
+                  <span className="font-bold text-sm text-white">{item.q}</span>
+                  <ChevronDown
+                    size={18}
+                    className={`text-amber-400 shrink-0 transition-transform ${openFaq === i ? "rotate-180" : ""}`}
+                  />
+                </button>
+                <AnimatePresence>
+                  {openFaq === i && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden"
+                    >
+                      <p className="px-5 pb-5 text-sm text-slate-400 leading-relaxed border-t border-white/5 pt-3">
+                        {item.a}
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════
+          CTA FINAL — CIERRE PODEROSO
+      ════════════════════════════════════════════ */}
+      <section className="py-24 px-4 relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-950/30 via-orange-950/20 to-[#070810]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-[120px]"
+            style={{ background: "radial-gradient(circle, rgba(251,191,36,0.12) 0%, transparent 70%)" }} />
+        </div>
+
+        <div className="max-w-4xl mx-auto relative z-10 text-center space-y-8">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="space-y-6"
+          >
+            <div className="inline-flex items-center gap-2 glass-card-amber px-5 py-2 rounded-full">
+              <Package size={14} className="text-amber-400" />
+              <span className="text-amber-300 text-xs font-black uppercase tracking-widest">
+                📦 {ordersToday} pedidos despachados hoy
+              </span>
+            </div>
+
+            <h2 className="text-4xl sm:text-5xl font-black leading-tight">
+              ¿Listo para recibir tu{" "}
+              <span className="text-gradient-gold">pedido mañana?</span>
+            </h2>
+
+            <p className="text-slate-400 text-lg max-w-xl mx-auto leading-relaxed">
+              Más de <strong className="text-white">500 colombianos</strong> ya compraron con nosotros.
+              Paga al recibirlo, envío gratis y garantía de 30 días.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <button
+                onClick={() => formRef.current?.scrollIntoView({ behavior: "smooth" })}
+                className="btn-cta-primary text-black font-black text-base uppercase tracking-wider px-10 py-5 rounded-2xl flex items-center gap-3 cursor-pointer w-full sm:w-auto justify-center"
+              >
+                <ShoppingBag size={20} />
+                Hacer mi Pedido Ahora
+              </button>
+              <button
+                onClick={() => handleWhatsAppOrder()}
+                className="btn-cta-whatsapp text-white font-black text-base uppercase tracking-wider px-10 py-5 rounded-2xl flex items-center gap-3 cursor-pointer w-full sm:w-auto justify-center"
+              >
+                <MessageCircle size={20} fill="currentColor" />
+                Escribir al WhatsApp
+              </button>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-slate-500 font-bold pt-2">
+              {["🔒 Pago seguro", "🚚 Envío gratis", "📦 Despacho hoy", "✅ Garantía 30 días"].map((t) => (
+                <span key={t}>{t}</span>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════
+          FOOTER
+      ════════════════════════════════════════════ */}
+      <footer className="border-t border-white/5 bg-[#050609] py-12 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-10">
+            {/* Brand */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <img src="/src/assets/images/logo.jpeg" alt="Logo" className="w-10 h-10 rounded-xl object-contain border border-white/10"
+                  onError={(e) => { e.currentTarget.style.display = "none"; }} />
+                <div>
+                  <div className="font-black text-base text-gradient-gold">JANSEL SHOP</div>
+                  <div className="text-[9px] text-slate-600 font-mono">Colombia · Tienda Oficial</div>
+                </div>
+              </div>
+              <p className="text-xs text-slate-600 leading-relaxed max-w-[250px]">
+                Tu tienda de confianza en Colombia. Productos de calidad, envío gratis y pago contraentrega.
+              </p>
+            </div>
+
+            {/* Links */}
+            <div className="space-y-3">
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500">Compras</h3>
+              {["Catálogo completo", "Cómo comprar", "Seguimiento de pedido", "Garantías"].map((l) => (
+                <p key={l} className="text-xs text-slate-600 hover:text-amber-400 cursor-pointer transition-colors">{l}</p>
+              ))}
+            </div>
+
+            {/* Contact */}
+            <div className="space-y-3">
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500">Contacto</h3>
+              <button
+                onClick={() => handleWhatsAppOrder()}
+                className="flex items-center gap-2 text-xs text-emerald-400 font-bold hover:text-emerald-300 transition-colors cursor-pointer"
+              >
+                <MessageCircle size={14} fill="currentColor" />
+                WhatsApp — Atención 24/7
+              </button>
+              <div className="text-xs text-slate-600 space-y-1">
+                <p>🚚 Servientrega, Envía, Coordinadora</p>
+                <p>💳 Nequi, Daviplata, Bancolombia</p>
+                <p>🛡️ Garantía 30 días en todos los productos</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-white/5 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-[10px] text-slate-700 text-center sm:text-left">
+              © 2025 Jansel Shop · Todos los derechos reservados · Colombia 🇨🇴
+            </p>
+            <div className="flex items-center gap-3 text-[10px] text-slate-700 font-mono">
+              <span>🔒 SSL Seguro</span>
+              <span>·</span>
+              <span>✅ Empresa Verificada</span>
+            </div>
+          </div>
+        </div>
+      </footer>
+
+      {/* ════════════════════════════════════════════
+          FLOATING CART DRAWER
+      ════════════════════════════════════════════ */}
       <AnimatePresence>
         {isCartOpen && (
           <div className="fixed inset-0 z-50 overflow-hidden">
-            {/* Backdrop */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsCartOpen(false)}
-              className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             />
-
-            {/* Sliding Panel */}
             <div className="absolute inset-y-0 right-0 max-w-full flex">
-              <motion.div 
+              <motion.div
                 initial={{ x: "100%" }}
                 animate={{ x: 0 }}
                 exit={{ x: "100%" }}
-                transition={{ type: "tween", duration: 0.35 }}
-                className="w-screen max-w-md bg-slate-950 border-l border-slate-900 flex flex-col h-full shadow-2xl relative"
+                transition={{ type: "tween", duration: 0.3 }}
+                className="w-screen max-w-md bg-[#0a0c14] border-l border-white/8 flex flex-col h-full shadow-2xl"
               >
-                {/* Header */}
-                <div className="p-6 border-b border-slate-900 flex items-center justify-between">
+                <div className="p-6 border-b border-white/8 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <ShoppingCart size={18} className="text-amber-400" />
-                    <h3 className="font-extrabold text-white text-base">Tu Carrito de Compra</h3>
+                    <h3 className="font-extrabold text-white text-base">Tu Carrito</h3>
+                    {totalQty > 0 && <span className="glass-card-amber text-amber-400 text-[10px] font-black px-2 py-0.5 rounded-full border-0">{totalQty} productos</span>}
                   </div>
-                  <button 
+                  <button
                     onClick={() => setIsCartOpen(false)}
-                    className="p-2 text-slate-400 hover:text-white rounded-xl bg-slate-900 border border-slate-800 text-xs font-black cursor-pointer"
+                    className="p-2 text-slate-400 hover:text-white glass-card rounded-xl text-xs font-black cursor-pointer flex items-center gap-1"
                   >
-                    Cerrar ✕
+                    <X size={14} />
+                    Cerrar
                   </button>
                 </div>
 
-                {/* Cart list content */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-4">
                   {cart.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-center space-y-4">
-                      <div className="w-16 h-16 rounded-full bg-slate-900 flex items-center justify-center text-slate-600 border border-slate-800">
-                        <ShoppingCart size={28} />
+                    <div className="h-full flex flex-col items-center justify-center text-center space-y-5">
+                      <div className="w-20 h-20 rounded-full glass-card flex items-center justify-center">
+                        <ShoppingCart size={32} className="text-slate-600" />
                       </div>
                       <div>
-                        <h4 className="font-bold text-white">Tu carrito está vacío</h4>
-                        <p className="text-xs text-slate-500 max-w-[200px] mx-auto mt-1">Explora nuestro catálogo y agrega los productos de tu interés.</p>
+                        <h4 className="font-bold text-white text-base">Carrito vacío</h4>
+                        <p className="text-xs text-slate-500 mt-1 max-w-[200px] mx-auto">Explora el catálogo y agrega los productos de tu interés.</p>
                       </div>
-                      <button
-                        onClick={() => setIsCartOpen(false)}
-                        className="px-5 py-2.5 rounded-xl bg-amber-400 text-black text-xs font-bold uppercase tracking-wider hover:bg-amber-300 transition-colors cursor-pointer"
-                      >
+                      <button onClick={() => setIsCartOpen(false)} className="px-6 py-3 rounded-xl btn-cta-primary text-black text-xs font-bold uppercase tracking-wider cursor-pointer">
                         Ver Catálogo
                       </button>
                     </div>
                   ) : (
                     <div className="space-y-4">
                       {cart.map((item) => (
-                        <div key={item.product.id} className="flex gap-4 bg-slate-900/40 p-4 rounded-2xl border border-slate-900 relative group">
-                          {/* Item image */}
-                          <div className="w-16 h-16 rounded-xl overflow-hidden bg-slate-950 border border-slate-800 shrink-0">
-                            <img 
-                              src={getProxiedImageUrl(item.product.imageUrl)} 
-                              alt={item.product.name} 
-                              className="w-full h-full object-cover"
-                            />
+                        <div key={item.product.id} className="flex gap-4 glass-card p-4 rounded-2xl">
+                          <div className="w-16 h-16 rounded-xl overflow-hidden bg-slate-950 border border-white/8 shrink-0">
+                            <img src={getProxiedImageUrl(item.product.imageUrl)} alt={item.product.name} className="w-full h-full object-cover" />
                           </div>
-                          
-                          {/* Details */}
                           <div className="flex-1 min-w-0 space-y-1">
                             <h4 className="font-extrabold text-sm text-white truncate pr-6">{item.product.name}</h4>
                             <p className="text-xs text-slate-500 font-mono">${item.product.price.toLocaleString()} COP c/u</p>
-                            
                             <div className="flex items-center justify-between pt-1">
-                              {/* Quantity triggers */}
-                              <div className="flex items-center bg-slate-950 rounded-lg border border-slate-850 overflow-hidden">
-                                <button
-                                  onClick={() => updateCartQuantity(item.product.id, item.quantity - 1)}
-                                  className="p-1 hover:bg-slate-900 text-slate-400 hover:text-white transition-all cursor-pointer"
-                                >
-                                  <Minus size={10} />
-                                </button>
-                                <span className="px-2 text-xs font-mono font-black text-white">{item.quantity}</span>
-                                <button
-                                  onClick={() => updateCartQuantity(item.product.id, item.quantity + 1)}
-                                  className="p-1 hover:bg-slate-900 text-slate-400 hover:text-white transition-all cursor-pointer"
-                                >
-                                  <Plus size={10} />
-                                </button>
+                              <div className="flex items-center bg-black/40 rounded-lg border border-white/8 overflow-hidden">
+                                <button onClick={() => updateCartQuantity(item.product.id, item.quantity - 1)}
+                                  className="p-1.5 hover:bg-white/5 text-slate-400 hover:text-white cursor-pointer"><Minus size={10} /></button>
+                                <span className="px-2.5 text-xs font-mono font-black text-white">{item.quantity}</span>
+                                <button onClick={() => updateCartQuantity(item.product.id, item.quantity + 1)}
+                                  className="p-1.5 hover:bg-white/5 text-slate-400 hover:text-white cursor-pointer"><Plus size={10} /></button>
                               </div>
-
-                              <button
-                                onClick={() => removeFromCart(item.product.id)}
-                                className="text-[10px] text-red-400 hover:text-red-300 font-bold flex items-center gap-0.5 cursor-pointer"
-                              >
+                              <button onClick={() => removeFromCart(item.product.id)}
+                                className="text-[10px] text-red-400 hover:text-red-300 font-bold flex items-center gap-0.5 cursor-pointer">
                                 <Trash2 size={10} /> Quitar
                               </button>
                             </div>
@@ -1401,63 +1791,35 @@ export default function LandingPage() {
                   )}
                 </div>
 
-                {/* Footer calculations and checkout buttons */}
                 {cart.length > 0 && (
-                  <div className="p-6 bg-slate-950 border-t border-slate-900 space-y-4">
+                  <div className="p-6 bg-[#070810] border-t border-white/8 space-y-4">
                     <div className="space-y-2 text-xs">
-                      <div className="flex justify-between text-slate-400">
-                        <span>Subtotal ({totalQty} unidades):</span>
-                        <span className="text-white font-mono font-bold">${subtotal.toLocaleString()} COP</span>
-                      </div>
-                      
+                      <div className="flex justify-between text-slate-400"><span>Subtotal ({totalQty} und.):</span><span className="text-white font-mono font-bold">${subtotal.toLocaleString()}</span></div>
                       {quantityDiscount > 0 && (
-                        <div className="flex justify-between text-emerald-400">
-                          <span>Descuento de Cantidad ({totalQty >= 3 ? "15%" : "10%"}):</span>
-                          <span className="font-bold font-mono">-${quantityDiscount.toLocaleString()} COP</span>
-                        </div>
+                        <div className="flex justify-between text-emerald-400"><span>Dto. Cantidad ({totalQty >= 3 ? "15%" : "10%"}):</span><span className="font-bold">-${quantityDiscount.toLocaleString()}</span></div>
                       )}
-
-                      {paymentMethod === "anticipado" && prepaymentDiscount > 0 && (
-                        <div className="flex justify-between text-amber-400">
-                          <span>Ahorro por Pago Anticipado (8%):</span>
-                          <span className="font-bold font-mono">-${prepaymentDiscount.toLocaleString()} COP</span>
-                        </div>
-                      )}
-
-                      <div className="flex justify-between text-slate-400">
-                        <span>Envío Express Colombia:</span>
-                        <span className="text-emerald-400 font-black">¡COMPLETAMENTE GRATIS! 🚚</span>
-                      </div>
-                      
-                      <div className="h-px bg-slate-900 my-2" />
-                      
-                      <div className="flex justify-between items-baseline pt-1">
-                        <span className="text-sm font-bold text-white uppercase">Total Estimado:</span>
-                        <span className="text-2xl font-black text-amber-400 font-mono">${finalTotal.toLocaleString()} COP</span>
+                      <div className="flex justify-between text-slate-400"><span>Envío:</span><span className="text-emerald-400 font-black">¡GRATIS! 🚚</span></div>
+                      <div className="h-px bg-white/5 my-2" />
+                      <div className="flex justify-between items-baseline">
+                        <span className="text-sm font-bold text-white">Total Estimado</span>
+                        <span className="text-2xl font-black text-amber-400 font-mono">${finalTotal.toLocaleString()}</span>
                       </div>
                     </div>
-
-                    <div className="space-y-2 pt-2">
-                      <button
-                        onClick={handleProceedToForm}
-                        className="w-full py-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-black text-xs uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-amber-400/10 cursor-pointer"
-                      >
+                    <div className="space-y-2 pt-1">
+                      <button onClick={handleProceedToForm}
+                        className="w-full py-4 rounded-xl btn-cta-primary text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer">
                         <span>Completar Pedido por Formulario 📝</span>
                         <ArrowRight size={14} />
                       </button>
-
-                      <button
-                        onClick={() => handleWhatsAppOrder()}
-                        className="w-full py-4 rounded-xl bg-[#25D366] hover:bg-[#20ba5a] text-white font-black text-xs uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 shadow-lg cursor-pointer"
-                      >
+                      <button onClick={() => handleWhatsAppOrder()}
+                        className="w-full py-3.5 rounded-xl btn-cta-whatsapp text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer">
                         <MessageCircle size={14} fill="currentColor" />
-                        <span>Hacer Pedido por WhatsApp 🚀</span>
+                        <span>Pedir por WhatsApp 🚀</span>
                       </button>
                     </div>
-
-                    <p className="text-[9px] text-slate-600 text-center flex items-center justify-center gap-1">
-                      <Lock size={10} className="text-amber-400" />
-                      <span>Pago 100% seguro contra entrega o transferencia bancaria directa.</span>
+                    <p className="text-[9px] text-slate-700 text-center flex items-center justify-center gap-1">
+                      <Lock size={9} className="text-amber-400" />
+                      Pago 100% seguro contra entrega o transferencia.
                     </p>
                   </div>
                 )}
@@ -1467,7 +1829,9 @@ export default function LandingPage() {
         )}
       </AnimatePresence>
 
-      {/* Floating Bottom Cart Bubble for "más movible" and interactive feel */}
+      {/* ════════════════════════════════════════════
+          FLOATING CART BUBBLE
+      ════════════════════════════════════════════ */}
       <AnimatePresence>
         {cart.length > 0 && !isCartOpen && (
           <motion.button
@@ -1475,42 +1839,40 @@ export default function LandingPage() {
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0, y: 100 }}
             onClick={() => setIsCartOpen(true)}
-            className="fixed bottom-6 right-6 z-40 p-4 rounded-full bg-amber-400 text-black shadow-2xl hover:scale-110 active:scale-95 transition-transform flex items-center gap-2 cursor-pointer group"
+            className="fixed bottom-6 right-6 z-40 rounded-full btn-cta-primary text-black shadow-2xl hover:scale-110 active:scale-95 transition-transform flex items-center gap-2.5 cursor-pointer px-5 py-4"
           >
-            <ShoppingCart size={22} className="animate-pulse" />
-            <span className="text-xs font-black uppercase tracking-wide pr-1 hidden md:inline">Ver Carrito ({totalQty})</span>
-            <span className="w-6 h-6 rounded-full bg-black text-amber-400 text-[10px] font-black flex items-center justify-center">
+            <ShoppingCart size={22} />
+            <span className="text-xs font-black uppercase tracking-wide hidden md:inline">Ver Carrito</span>
+            <span className="w-6 h-6 rounded-full bg-black text-amber-400 text-[10px] font-black flex items-center justify-center shrink-0">
               {totalQty}
             </span>
           </motion.button>
         )}
       </AnimatePresence>
 
-      {/* Social Proof Live Sales Alert slide-in notification */}
+      {/* ════════════════════════════════════════════
+          SOCIAL PROOF NOTIFICATION
+      ════════════════════════════════════════════ */}
       <AnimatePresence>
         {livePurchase && (
           <motion.div
-            initial={{ opacity: 0, x: -100, y: 0 }}
-            animate={{ opacity: 1, x: 0, y: 0 }}
-            exit={{ opacity: 0, x: -100 }}
-            className="fixed bottom-6 left-6 z-40 bg-slate-900 border border-slate-800 text-white p-4 rounded-2xl max-w-sm shadow-2xl flex items-center gap-3 backdrop-blur-md"
+            initial={{ opacity: 0, x: -80, y: 0 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -80 }}
+            className="fixed bottom-6 left-4 sm:left-6 z-40 glass-card border-white/10 text-white p-4 rounded-2xl max-w-xs shadow-2xl flex items-center gap-3"
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-400 to-amber-600 flex items-center justify-center text-black font-black text-lg shrink-0">
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-amber-400 to-orange-500 flex items-center justify-center text-black font-black text-lg shrink-0 shadow-lg">
               🛒
             </div>
-            <div className="min-w-0 flex-1 text-left">
-              <p className="text-xs text-slate-300 leading-normal">
-                <span className="text-white font-extrabold">{livePurchase.name}</span> de <span className="text-amber-400 font-bold capitalize">{livePurchase.city}</span> compró un:
+            <div className="min-w-0 flex-1">
+              <p className="text-xs text-slate-300 leading-snug">
+                <span className="text-white font-extrabold">{livePurchase.name}</span> de{" "}
+                <span className="text-amber-400 font-bold">{livePurchase.city}</span> compró:
               </p>
-              <h5 className="font-extrabold text-xs text-white truncate max-w-[200px] mt-0.5">{livePurchase.product}</h5>
+              <h5 className="font-extrabold text-xs text-white truncate mt-0.5">{livePurchase.product}</h5>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-[9px] text-slate-500 font-mono">{livePurchase.time}</span>
-                {livePurchase.method && (
-                  <span className="bg-amber-400/10 text-amber-400 border border-amber-400/20 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest font-mono">
-                    8% Desc. Directo
-                  </span>
-                )}
-                <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-0.5">
+                <span className="text-[9px] text-slate-600 font-mono">{livePurchase.time}</span>
+                <span className="text-[9px] text-emerald-400 font-bold flex items-center gap-0.5">
                   <CheckCircle size={8} /> Envío gratis
                 </span>
               </div>
@@ -1519,135 +1881,72 @@ export default function LandingPage() {
         )}
       </AnimatePresence>
 
-      {/* Success Modal / Confirmation screen */}
+      {/* ════════════════════════════════════════════
+          ORDER SUCCESS MODAL
+      ════════════════════════════════════════════ */}
       <AnimatePresence>
         {orderCompleted && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto"
+            className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4"
           >
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
-              className="bg-slate-900 border border-amber-500/20 max-w-lg w-full rounded-3xl p-6 sm:p-8 space-y-6 text-center shadow-2xl relative my-8"
+              className="glass-card border-emerald-500/20 max-w-lg w-full rounded-3xl p-8 text-center space-y-6 shadow-2xl my-8"
             >
-              <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-24 h-24 bg-amber-400/20 rounded-full blur-xl animate-pulse" />
-              <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mx-auto text-emerald-400">
-                <CheckCircle size={36} />
+              <div className="w-20 h-20 rounded-full bg-emerald-500/10 border-2 border-emerald-500/30 flex items-center justify-center mx-auto animate-glow-pulse">
+                <CheckCircle size={40} className="text-emerald-400" />
               </div>
-
-              <div className="space-y-2">
-                <span className="text-[10px] font-mono tracking-widest text-emerald-400 uppercase font-black">¡Pedido Registrado Correctamente!</span>
-                <h4 className="text-2xl font-black text-white font-serif italic">¡Muchas Gracias por tu Compra! 🎉</h4>
-                <p className="text-xs text-slate-400">
-                  Hemos agendado tu despacho prioritario. Tu pedido con ID <span className="font-mono text-amber-400 font-bold bg-slate-950 px-2 py-0.5 rounded-md border border-white/5">#{orderCompleted.id}</span> ya ingresó a la cola de embalaje.
+              <div>
+                <h3 className="text-2xl font-black text-white mb-2">¡Pedido Registrado! 🎉</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">
+                  Tu pedido ha sido recibido con éxito. Un asesor te contactará en los próximos <strong className="text-white">minutos</strong> para confirmar el despacho.
                 </p>
               </div>
 
-              {/* Order details block */}
-              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-900 text-left text-xs font-semibold text-slate-400 space-y-3">
-                <div className="space-y-1.5">
-                  <span className="text-[10px] uppercase font-bold text-slate-500 block">Artículos Solicitados:</span>
-                  {orderCompleted.cartItems ? (
-                    <div className="space-y-1 pl-1.5">
-                      {orderCompleted.cartItems.map((item: any, i: number) => (
-                        <div key={i} className="flex justify-between text-white font-black">
-                          <span>{item.product.name} (x{item.quantity})</span>
-                          <span className="text-amber-400 font-mono">${(item.product.price * item.quantity).toLocaleString()}</span>
-                        </div>
-                      ))}
+              {orderCompleted.cartItems && (
+                <div className="glass-card rounded-2xl p-4 space-y-2 text-left">
+                  <span className="text-[10px] text-amber-400 font-black uppercase tracking-widest">Productos en tu pedido:</span>
+                  {orderCompleted.cartItems.map((item: any) => (
+                    <div key={item.product.id} className="flex justify-between text-xs">
+                      <span className="text-slate-300 truncate max-w-[200px]">{item.product.name} x{item.quantity}</span>
+                      <span className="text-white font-mono">${(item.product.price * item.quantity).toLocaleString()}</span>
                     </div>
-                  ) : (
-                    <div className="text-white font-black">{orderCompleted.productName} (x{orderCompleted.quantity})</div>
-                  )}
+                  ))}
                 </div>
+              )}
 
-                <div className="h-px bg-slate-900 my-1" />
-
-                <div className="flex justify-between">
-                  <span>Cliente:</span>
-                  <span className="text-white font-bold">{orderCompleted.customerName}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Destino de despacho:</span>
-                  <span className="text-white font-bold capitalize">{orderCompleted.city}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Dirección exacta:</span>
-                  <span className="text-white">{orderCompleted.address}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Método de Pago:</span>
-                  <span className="text-amber-400 font-black">
-                    {orderCompleted.paymentMethodMode === "anticipado" ? "Pago Anticipado (8% Descuento Aplicado)" : "Pago Contraentrega (Al mensajero)"}
-                  </span>
-                </div>
-                <div className="h-px bg-slate-900 my-1" />
-                <div className="flex justify-between items-baseline">
-                  <span className="text-sm font-bold text-white uppercase">Total Neto de Orden:</span>
-                  <span className="text-xl font-black text-amber-400 font-mono">${orderCompleted.totalPrice?.toLocaleString()} COP</span>
+              <div className="flex items-center justify-center gap-3 text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4">
+                <Truck size={20} />
+                <div className="text-left">
+                  <span className="block text-xs font-black text-white">Despacho Programado</span>
+                  <span className="text-xs text-emerald-400">Llegará en 2 a 4 días hábiles · Envío GRATIS</span>
                 </div>
               </div>
 
-              {/* Secondary CTA - Massive booster in Colombia */}
-              <div className="space-y-3">
+              <div className="flex flex-col gap-3">
                 <button
-                  onClick={() => {
-                    const itemsText = orderCompleted.cartItems ? orderCompleted.cartItems.map((item: any) => `• *${item.product.name}* (x${item.quantity})`).join("\n") : `• *${orderCompleted.productName}* (x${orderCompleted.quantity})`;
-                    const msg = `¡Hola Jan Sel Shop! 👋 Acabo de realizar mi pedido por formulario y quiero acelerar el despacho:\n\n` +
-                                `*ID Pedido:* #${orderCompleted.id}\n` +
-                                `*Cliente:* ${orderCompleted.customerName}\n` +
-                                `*Productos:* \n${itemsText}\n` +
-                                `*Total:* $${orderCompleted.totalPrice?.toLocaleString()} COP\n` +
-                                `*Método:* ${orderCompleted.paymentMethodMode === "anticipado" ? "Pago Anticipado (Recibí 8% Desc)" : "Pago Contraentrega"}\n\n` +
-                                `¡Por favor confírmame que todo esté correcto para despachar de inmediato hoy! 🚀`;
-                    const phone = officialBotNumber || "14155238886";
-                    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
-                  }}
-                  className="w-full py-4 px-6 rounded-2xl bg-[#25D366] hover:bg-[#20ba5a] text-white font-black text-sm uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 shadow-lg cursor-pointer active:scale-98"
+                  onClick={() => handleWhatsAppOrder()}
+                  className="w-full py-3.5 rounded-2xl btn-cta-whatsapp text-white font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <MessageCircle size={18} fill="currentColor" />
-                  <span>Acelerar Despacho por WhatsApp 🚀</span>
+                  <MessageCircle size={16} fill="currentColor" />
+                  Confirmar también por WhatsApp
                 </button>
-                
                 <button
                   onClick={() => setOrderCompleted(null)}
-                  className="w-full py-3.5 px-6 rounded-2xl bg-slate-950 hover:bg-slate-900 text-slate-400 hover:text-white border border-slate-850 font-bold text-xs uppercase tracking-wider transition-all cursor-pointer"
+                  className="text-slate-500 hover:text-white text-xs font-bold transition-colors cursor-pointer"
                 >
-                  Regresar al Catálogo
+                  Cerrar y seguir comprando
                 </button>
-              </div>
-
-              <div className="text-[10px] text-slate-500 flex items-center justify-center gap-1">
-                <Truck size={12} className="text-emerald-400" />
-                <span>Envío express garantizado. Recibes en la puerta de tu casa.</span>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Modern Footer */}
-      <footer className="bg-slate-950 border-t border-slate-900/80 py-12 px-4 text-center mt-12">
-        <div className="max-w-4xl mx-auto space-y-6">
-          <div className="flex items-center justify-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-400 to-amber-600 flex items-center justify-center text-black font-black text-lg">
-              J
-            </div>
-            <h4 className="font-extrabold text-white tracking-tight">Jan Sel Shop</h4>
-          </div>
-          <p className="text-slate-500 text-xs max-w-lg mx-auto leading-relaxed">
-            Jan Sel Shop es una tienda de absoluta confianza registrada en Colombia, líder en la distribución de productos de consumo masivo, tecnología y artículos del hogar con el método de pago contraentrega nacional.
-          </p>
-          <div className="text-slate-600 text-[10px] font-mono space-y-1">
-            <p>© 2026 Jan Sel Shop. Todos los derechos reservados.</p>
-            <p>Despachado con amor desde Colombia 🇨🇴</p>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
