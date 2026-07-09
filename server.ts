@@ -5,18 +5,11 @@ import path from "path";
 import { fileURLToPath } from "url";
 import twilio from "twilio";
 import { readFileSync, existsSync } from "fs";
-import { GoogleGenAI } from "@google/genai";
 import "dotenv/config";
 
 import { createClient } from "@supabase/supabase-js";
 import sgMail from '@sendgrid/mail';
-import { 
-  getSystemInstruction, 
-  JAN_RESPONSE_SCHEMA, 
-  captureOrderTool, 
-  checkInventoryTool, 
-  updateCustomerProfileTool
-} from "./src/lib/janAgent.js";
+import { getSystemInstruction } from "./src/lib/janAgent.js";
 import { writeFileSync } from "fs";
 
 // 1. Initialize Supabase / Local JSON File Storage
@@ -337,7 +330,8 @@ export function writeBatch(dbObj?: any) {
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID || process.env.SID_DE_CUENTA_TWILIO;
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN || process.env.TOKEN_DE_AUTORIZACION_DE_TWILIO;
 const TWILIO_FROM_NUMBER = process.env.TWILIO_FROM_NUMBER || process.env.TWILIO_DESDE_NÚMERO || process.env.TWILIO_NUMBER;
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.API_KEY || process.env.GOOGLE_API_KEY || process.env.Clave_API;
+const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 const SENDGRID_FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL;
 const FB_PAGE_ACCESS_TOKEN = process.env.FB_PAGE_ACCESS_TOKEN;
@@ -587,7 +581,7 @@ async function scheduleFollowUp(phone: string, score: number, reason: string, st
 }
 
 /**
- * Downloads media from Twilio and prepares it for Gemini analysis
+ * Downloads media from Twilio for AI analysis (image vision / audio)
  */
 async function downloadMediaAsBase64(url: string): Promise<{ data: string, mimeType: string } | null> {
   console.log(`[Media Download] Fetching: ${url}`);
@@ -736,18 +730,11 @@ async function seedDatabase(force = false, customCatalog?: any, storeId: string 
 }
 
 /**
- * Tool Definitions for Gemini (Reference for sync/seed)
+ * Tool & schema definitions (reference, ver src/lib/janAgent.ts)
  */
 // Tools are imported from janAgent.ts
 
 async function processInferenceOnServer(activityId: string, data: any) {
-  const API_KEY = GEMINI_API_KEY;
-  if (!API_KEY) {
-    console.error("[Server AI] Faltan claves de Gemini en el servidor.");
-    await updateDoc(doc(db, "activities", activityId), { status: "error", response: "Error: No hay clave de IA configurada en Railway." });
-    return;
-  }
-
   try {
     await updateDoc(doc(db, "activities", activityId), { 
       status: "procesando",
@@ -788,8 +775,15 @@ async function processInferenceOnServer(activityId: string, data: any) {
       storeConfig = storeSnap.data();
     }
 
-    const ai = new GoogleGenAI({ apiKey: API_KEY });
-    
+    // Al menos una clave de IA (NVIDIA u OpenRouter) debe existir, ya sea global (env) o por tienda
+    const hasNvidiaKey = !!(NVIDIA_API_KEY || storeConfig.nvidiaApiKey);
+    const hasOpenrouterKey = !!(OPENROUTER_API_KEY || storeConfig.openrouterApiKey);
+    if (!hasNvidiaKey && !hasOpenrouterKey) {
+      console.error("[Server AI] Faltan claves de IA (NVIDIA_API_KEY / OPENROUTER_API_KEY) en el servidor.");
+      await updateDoc(doc(db, "activities", activityId), { status: "error", response: "Error: No hay clave de IA (NVIDIA/OpenRouter) configurada en Railway." });
+      return;
+    }
+
     // SAFETY: Truncate message if it's too long to prevent crashes
     let safeMessage = data.message || "";
     if (safeMessage.length > 10000) {
@@ -826,17 +820,37 @@ async function processInferenceOnServer(activityId: string, data: any) {
       }
     }
 
-    // Prepare multimedial parts if any
-    const mediaParts: any[] = [];
+    // Separar imágenes (sí soportadas por los modelos de visión de NVIDIA/OpenRouter)
+    // de audio (NINGÚN modelo de la cascada actual puede transcribir audio de forma nativa
+    // sin Gemini; antes se le pasaba el audio como si fuera comprendido y el LLM alucinaba
+    // una respuesta genérica. Ahora avisamos honestamente al cliente).
+    const imageParts: { data: string; mimeType: string }[] = [];
+    let hasAudio = false;
     if (data.mediaItems && Array.isArray(data.mediaItems)) {
       for (const item of data.mediaItems) {
-        mediaParts.push({
-          inlineData: {
-            data: item.data,
-            mimeType: item.mimeType
-          }
-        });
+        if (item.mimeType && item.mimeType.startsWith("audio/")) {
+          hasAudio = true;
+        } else if (item.mimeType && item.mimeType.startsWith("image/")) {
+          imageParts.push({ data: item.data, mimeType: item.mimeType });
+        }
       }
+    }
+
+    // Atajo rápido: si el cliente SOLO mandó audio (sin texto ni imagen), respondemos
+    // de una sin gastar tiempo/costos en la cascada de IA, ya que no podemos transcribirlo.
+    if (hasAudio && imageParts.length === 0 && (!safeMessage || !safeMessage.trim())) {
+      const audioFallbackMsg = "¡Hola! Qué pena, por ahora no puedo escuchar audios 🙉. ¿Me lo escribís por acá porfa? ¡Quedo pendiente!";
+      if (data.from.startsWith("whatsapp:")) {
+        await sendWhatsApp(data.from, audioFallbackMsg, undefined, activityId, data.to);
+      } else if (data.platform === "instagram" || data.platform === "messenger") {
+        await sendMetaMessage(data.from, audioFallbackMsg, data.platform, data.to);
+      }
+      await updateDoc(doc(db, "activities", activityId), {
+        status: "respondido",
+        response: audioFallbackMsg,
+        respondedAt: serverTimestamp()
+      });
+      return;
     }
 
     const promptText = `ESTÁS ATENDIENDO EN LA TIENDA: ${storeConfig.name || "Jan Sel Shop"} (Slug: ${assignedStoreId})
@@ -847,7 +861,7 @@ INTENCIÓN ANTERIOR: ${customerProfile?.intencion || "Ninguna"}
 HISTORIAL:
 ${history}
 
-MENSAJE ACTUAL: ${safeMessage}${mediaParts.length > 0 ? " (El cliente envió archivos multimedia/audio que adjunto para tu análisis)" : ""}
+MENSAJE ACTUAL: ${safeMessage}${imageParts.length > 0 ? " (El cliente también envió una imagen que adjunto para tu análisis)" : ""}
 
 INVENTARIO ACTUAL:
 ${JSON.stringify(products)}
@@ -857,181 +871,135 @@ IMPORTANTE: Sé extremadamente breve y directo. Evita explicaciones largas. El c
 ESTADO ACTUAL DEL EMBUDO: Utiliza los campos intencion, probabilidad_compra, urgencia, objeciones, nivel_interes y siguiente_mejor_accion, basado en si ha dado direccion, etc.`;
 
     let result: any = null;
-    const modelsCascade: Array<{ name: string; label: string; provider?: string }> = [
-      // NVIDIA MODELS (ordenados de mayor a menor probabilidad de éxito/rapidez)
+
+    // Cascada de modelos NVIDIA NIM (free endpoints, confirmados por el catálogo real
+    // de build.nvidia.com que compartiste) + OpenRouter como respaldo final.
+    // Orden: primero los modelos livianos/rápidos (mejor para latencia en el caso normal),
+    // y al final los "tanque" (más grandes/lentos pero más capaces) por si los de arriba fallan.
+    // Un solo intento por modelo (no reintentos) para no acumular tiempos muertos.
+    const visionModels: Array<{ name: string; label: string; provider: string }> = [
+      { name: "meta/llama-3.2-11b-vision-instruct", provider: "nvidia", label: "NVIDIA Llama 3.2 11B Vision" },
+      { name: "meta/llama-3.2-90b-vision-instruct", provider: "nvidia", label: "NVIDIA Llama 3.2 90B Vision" },
+      { name: "nvidia/llama-3.1-nemotron-nano-vl-8b-v1", provider: "nvidia", label: "NVIDIA Nemotron Nano VL 8B" },
+      { name: "nvidia/nemotron-nano-12b-v2-vl", provider: "nvidia", label: "NVIDIA Nemotron Nano 12B VL" },
+    ];
+    const textModels: Array<{ name: string; label: string; provider: string }> = [
+      // Rápidos / livianos primero
       { name: "meta/llama-3.1-8b-instruct", provider: "nvidia", label: "NVIDIA Llama 3.1 8B" },
-      { name: "meta/llama-3.1-70b-instruct", provider: "nvidia", label: "NVIDIA Llama 3.1 70B" },
-      { name: "meta/llama-3.3-70b-instruct", provider: "nvidia", label: "NVIDIA Llama 3.3 70B" },
-      { name: "meta/llama-3.2-3b-instruct", provider: "nvidia", label: "NVIDIA Llama 3.2 3B" },
-      { name: "meta/llama-3.2-1b-instruct", provider: "nvidia", label: "NVIDIA Llama 3.2 1B" },
-      { name: "mistralai/mixtral-8x7b-instruct-v0.1", provider: "nvidia", label: "NVIDIA Mixtral 8x7B" },
-      { name: "mistralai/mistral-large-3-675b-instruct-2512", provider: "nvidia", label: "NVIDIA Mistral Large 3" },
-      { name: "mistralai/mistral-medium-3.5-128b", provider: "nvidia", label: "NVIDIA Mistral Medium 3.5" },
-      { name: "nvidia/llama-3.1-nemotron-nano-8b-v1", provider: "nvidia", label: "NVIDIA Nemotron Nano" },
-      { name: "nvidia/llama-3.3-nemotron-super-49b-v1.5", provider: "nvidia", label: "NVIDIA Nemotron Super" },
-      { name: "microsoft/phi-4-mini-instruct", provider: "nvidia", label: "NVIDIA Phi 4 Mini" },
-      { name: "google/gemma-4-31b-it", provider: "nvidia", label: "NVIDIA Gemma 4 31B" },
+      { name: "nvidia/llama-3.1-nemotron-nano-8b-v1", provider: "nvidia", label: "NVIDIA Nemotron Nano 8B" },
+      { name: "nvidia/nvidia-nemotron-nano-9b-v2", provider: "nvidia", label: "NVIDIA Nemotron Nano 9B v2" },
       { name: "google/gemma-2-2b-it", provider: "nvidia", label: "NVIDIA Gemma 2 2B" },
-      { name: "deepseek-ai/deepseek-v4-pro", provider: "nvidia", label: "NVIDIA DeepSeek V4 Pro" },
+      { name: "mistralai/mixtral-8x7b-instruct-v0.1", provider: "nvidia", label: "NVIDIA Mixtral 8x7B" },
+      { name: "microsoft/phi-4-mini-instruct", provider: "nvidia", label: "NVIDIA Phi-4 Mini" },
+      { name: "upstage/solar-10.7b-instruct", provider: "nvidia", label: "NVIDIA Solar 10.7B" },
+      // Medianos, buena calidad
+      { name: "meta/llama-3.3-70b-instruct", provider: "nvidia", label: "NVIDIA Llama 3.3 70B" },
+      { name: "google/gemma-4-31b-it", provider: "nvidia", label: "NVIDIA Gemma 4 31B" },
+      { name: "nvidia/llama-3.3-nemotron-super-49b-v1.5", provider: "nvidia", label: "NVIDIA Nemotron Super 49B v1.5" },
+      { name: "mistralai/mistral-medium-3.5-128b", provider: "nvidia", label: "NVIDIA Mistral Medium 3.5" },
       { name: "deepseek-ai/deepseek-v4-flash", provider: "nvidia", label: "NVIDIA DeepSeek V4 Flash" },
       { name: "qwen/qwen3.5-122b-a10b", provider: "nvidia", label: "NVIDIA Qwen 3.5 122B" },
-      { name: "qwen/qwen3.5-397b-a17b", provider: "nvidia", label: "NVIDIA Qwen 3.5 400B" },
-      { name: "upstage/solar-10.7b-instruct", provider: "nvidia", label: "NVIDIA Solar 10.7B" },
-      
-      // OPENROUTER (última opción de respaldo)
+      // Pesados / último recurso
+      { name: "mistralai/mistral-large-3-675b-instruct-2512", provider: "nvidia", label: "NVIDIA Mistral Large 3" },
+      { name: "deepseek-ai/deepseek-v4-pro", provider: "nvidia", label: "NVIDIA DeepSeek V4 Pro" },
+      { name: "qwen/qwen3.5-397b-a17b", provider: "nvidia", label: "NVIDIA Qwen 3.5 397B" },
+      // Respaldo final vía OpenRouter, por si NVIDIA falla por completo (caída del servicio, etc.)
       { name: "meta-llama/llama-3.3-70b-instruct", provider: "openrouter", label: "OpenRouter Llama 3.3 70B" },
       { name: "openai/gpt-4o-mini", provider: "openrouter", label: "OpenRouter GPT-4o-Mini" }
     ];
+    const modelsCascade: Array<{ name: string; label: string; provider: string }> =
+      imageParts.length > 0 ? [...visionModels, ...textModels] : textModels;
 
-    const contents = [
-      { 
-        role: 'user', 
-        parts: [
-          { text: promptText },
-          ...mediaParts
-        ] 
+    // Construye el "content" del mensaje de usuario en formato compatible OpenAI.
+    // Para modelos de visión metemos las imágenes como image_url (base64 data URI).
+    // NOTA: Meta exige que con imágenes NO se use mensaje "system" aparte, así que
+    // en ese caso el system prompt se antepone dentro del propio mensaje de usuario.
+    const systemInst = getSystemInstruction(storeConfig);
+    const buildMessages = (isVision: boolean) => {
+      if (isVision && imageParts.length > 0) {
+        const userContent: any[] = [
+          { type: "text", text: `${systemInst}\n\n---\n\n${promptText}` }
+        ];
+        // Solo se soporta 1 imagen por request en los modelos de visión de NVIDIA
+        const img = imageParts[0];
+        userContent.push({
+          type: "image_url",
+          image_url: { url: `data:${img.mimeType};base64,${img.data}` }
+        });
+        return [{ role: "user", content: userContent }];
       }
-    ];
-
-    // Helper for timeout
-    const withTimeout = (promise: Promise<any>, ms: number) => {
-      let timeoutId: any;
-      const timeoutPromise = new Promise((_, reject) => {
-        timeoutId = setTimeout(() => reject(new Error(`TIMEOUT_AI_${ms}`)), ms);
-      });
-      return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
+      return [
+        { role: "system", content: systemInst },
+        { role: "user", content: promptText }
+      ];
     };
 
     let lastError: any = null;
-    const timeoutMs = 6000; // 5-6 segundos por cada intento de modelo según solicitud
+    const timeoutMs = 5000; // timeout corto por intento: prioriza velocidad de respuesta al cliente
 
     for (let i = 0; i < modelsCascade.length; i++) {
       const modelObj = modelsCascade[i];
       let success = false;
-      
-      // NVIDIA models: 2 attempts (maxAttempts = 2). Other models: 3 attempts.
-      const maxAttempts = modelObj.provider === "nvidia" ? 2 : 3;
+      const isVisionModel = visionModels.some(v => v.name === modelObj.name);
+
+      // Un único intento por modelo: si falla, saltamos directo al siguiente de la cascada
+      // en vez de reintentar el mismo (eso es lo que hacía la respuesta lenta antes).
+      const maxAttempts = 1;
 
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         try {
-          console.log(`[Server AI] Intentando modelo [${i + 1}/${modelsCascade.length}], intento [${attempt}/${maxAttempts}]: ${modelObj.name} para ${fromPhone} con timeout de ${timeoutMs}ms...`);
-          
-          if (modelObj.provider === "nvidia") {
-            const currentNvidiaKey = process.env.NVIDIA_API_KEY || storeConfig.nvidiaApiKey;
-            if (!currentNvidiaKey) {
-              throw new Error("NVIDIA_API_KEY no está configurada en las variables de entorno.");
-            }
-            
-            // Build system & user message prompt for OpenAI-compatible NVIDIA NIM endpoint
-            const systemInst = getSystemInstruction(storeConfig);
-            const response = await axios.post(
-              "https://integrate.api.nvidia.com/v1/chat/completions",
-              {
-                model: modelObj.name,
-                messages: [
-                  { role: "system", content: systemInst },
-                  { role: "user", content: promptText }
-                ],
-                temperature: 0.2,
-                max_tokens: 1024,
-                top_p: 0.7
-              },
-              {
-                headers: {
-                  "Authorization": `Bearer ${currentNvidiaKey}`,
-                  "Content-Type": "application/json"
-                },
-                timeout: timeoutMs
-              }
-            );
+          console.log(`[Server AI] Intentando modelo [${i + 1}/${modelsCascade.length}]: ${modelObj.name} (${modelObj.provider}) para ${fromPhone} con timeout de ${timeoutMs}ms...`);
 
-            let text = response.data?.choices?.[0]?.message?.content || "";
-            // Clean up any potential markdown code blocks wrapped in ```json ... ```
-            if (text.includes("```json")) {
-              text = text.split("```json")[1].split("```")[0].trim();
-            } else if (text.includes("```")) {
-              text = text.split("```")[1].split("```")[0].trim();
-            }
+          const apiUrl = modelObj.provider === "nvidia"
+            ? "https://integrate.api.nvidia.com/v1/chat/completions"
+            : "https://openrouter.ai/api/v1/chat/completions";
 
-            if (text) {
-              result = { text };
-              console.log(`[Server AI] [NVIDIA] Éxito con el modelo ${modelObj.name} en el intento ${attempt}`);
-              success = true;
-              break;
-            } else {
-              throw new Error("La respuesta de NVIDIA no devolvió contenido de texto válido.");
-            }
-          } else if (modelObj.provider === "openrouter") {
-            const currentOrKey = process.env.OPENROUTER_API_KEY || storeConfig.openrouterApiKey;
-            if (!currentOrKey) {
-              throw new Error("OPENROUTER_API_KEY no está configurada en las variables de entorno.");
-            }
+          const apiKey = modelObj.provider === "nvidia"
+            ? (process.env.NVIDIA_API_KEY || storeConfig.nvidiaApiKey)
+            : (process.env.OPENROUTER_API_KEY || storeConfig.openrouterApiKey);
 
-            const systemInst = getSystemInstruction(storeConfig);
-            const response = await axios.post(
-              "https://openrouter.ai/api/v1/chat/completions",
-              {
-                model: modelObj.name,
-                messages: [
-                  { role: "system", content: systemInst },
-                  { role: "user", content: promptText }
-                ],
-                temperature: 0.2,
-                max_tokens: 1024,
-                top_p: 0.7
-              },
-              {
-                headers: {
-                  "Authorization": `Bearer ${currentOrKey}`,
-                  "Content-Type": "application/json"
-                },
-                timeout: timeoutMs
-              }
-            );
+          if (!apiKey) {
+            throw new Error(`${modelObj.provider === "nvidia" ? "NVIDIA_API_KEY" : "OPENROUTER_API_KEY"} no está configurada.`);
+          }
 
-            let text = response.data?.choices?.[0]?.message?.content || "";
-            // Clean up any potential markdown code blocks wrapped in ```json ... ```
-            if (text.includes("```json")) {
-              text = text.split("```json")[1].split("```")[0].trim();
-            } else if (text.includes("```")) {
-              text = text.split("```")[1].split("```")[0].trim();
-            }
-
-            if (text) {
-              result = { text };
-              console.log(`[Server AI] [OPENROUTER] Éxito con el modelo ${modelObj.name} en el intento ${attempt}`);
-              success = true;
-              break;
-            } else {
-              throw new Error("La respuesta de OpenRouter no devolvió contenido de texto válido.");
-            }
-          } else {
-            // Keep Gemini as a fallback just in case a gemini model slips through, though we removed them
-            result = await withTimeout(ai.models.generateContent({
+          const response = await axios.post(
+            apiUrl,
+            {
               model: modelObj.name,
-              contents: contents,
-              config: {
-                systemInstruction: getSystemInstruction(storeConfig),
-                responseMimeType: "application/json",
-                responseSchema: JAN_RESPONSE_SCHEMA
-              }
-            }), timeoutMs);
-
-            if (result && result.text) {
-              console.log(`[Server AI] Éxito con el modelo ${modelObj.name} en el intento ${attempt}`);
-              success = true;
-              break;
+              messages: buildMessages(isVisionModel),
+              temperature: 0.2,
+              max_tokens: 1024,
+              top_p: 0.7
+            },
+            {
+              headers: {
+                "Authorization": `Bearer ${apiKey}`,
+                "Content-Type": "application/json"
+              },
+              timeout: timeoutMs
             }
+          );
+
+          let text = response.data?.choices?.[0]?.message?.content || "";
+          // Limpieza de bloques markdown ```json ... ```
+          if (text.includes("```json")) {
+            text = text.split("```json")[1].split("```")[0].trim();
+          } else if (text.includes("```")) {
+            text = text.split("```")[1].split("```")[0].trim();
+          }
+
+          if (text) {
+            result = { text };
+            console.log(`[Server AI] [${modelObj.provider.toUpperCase()}] Éxito con el modelo ${modelObj.name}`);
+            success = true;
+            break;
+          } else {
+            throw new Error(`La respuesta de ${modelObj.provider} no devolvió contenido de texto válido.`);
           }
         } catch (err: any) {
           lastError = err;
           const errMsg = err instanceof Error ? err.message : String(err);
-          console.warn(`[Server AI] Falló modelo ${modelObj.name} (Intento ${attempt}/${maxAttempts}): ${errMsg}`);
-          
-          if (attempt < maxAttempts) {
-            console.warn(`[Server AI] Reintentando el mismo modelo en 500ms...`);
-            await new Promise(r => setTimeout(r, 500)); // Pequeña pausa antes de reintentar
-          }
+          console.warn(`[Server AI] Falló modelo ${modelObj.name}: ${errMsg}`);
         }
       }
 
@@ -1052,7 +1020,7 @@ ESTADO ACTUAL DEL EMBUDO: Utiliza los campos intencion, probabilidad_compra, urg
     try {
       jsonResponse = JSON.parse(result.text);
     } catch (parseErr: any) {
-      console.error(`[Server AI] Error parseando JSON de Gemini. Longitud del texto: ${result.text.length}`);
+      console.error(`[Server AI] Error parseando JSON de la IA. Longitud del texto: ${result.text.length}`);
       if (result.text.length > 500) {
          console.debug("[Server AI] Primeros 500 chars:", result.text.substring(0, 500));
          console.debug("[Server AI] Últimos 500 chars:", result.text.substring(result.text.length - 500));
@@ -1662,7 +1630,8 @@ async function startServer() {
       status: "Jan is alive",
       time: new Date().toISOString(),
       twilio_configured: !!process.env.TWILIO_ACCOUNT_SID,
-      gemini_key_detected: !!process.env.GEMINI_API_KEY,
+      nvidia_key_detected: !!process.env.NVIDIA_API_KEY,
+      openrouter_key_detected: !!process.env.OPENROUTER_API_KEY,
       app_url: currentAppUrl || process.env.APP_URL || "Not set"
     });
   });

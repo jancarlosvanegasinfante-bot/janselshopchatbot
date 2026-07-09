@@ -93,14 +93,11 @@ import {
   ResponsiveContainer,
   Cell
 } from 'recharts';
-import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 import { 
   JAN_RESPONSE_SCHEMA, 
   captureOrderTool, 
   checkInventoryTool, 
-  updateCustomerProfileTool,
-  generateAudio,
-  generateImage
+  updateCustomerProfileTool
 } from "./lib/janAgent";
 
 // Type definitions
@@ -977,7 +974,7 @@ function JanAdmin() {
 /**
  * BACKGROUND AI AGENT
  * This component runs while the dashboard is open.
- * It listens for new WhatsApp messages and processes them via Gemini.
+ * It listens for new WhatsApp messages and processes them via the AI cascade (NVIDIA / OpenRouter).
  */
 function AIProcessor({ user }: { user: FirebaseUser }) {
   const [processingCount, setProcessingCount] = useState(0);
@@ -2566,7 +2563,7 @@ function MonitorTab({ activities }: { activities: Activity[], key?: string }) {
         <div className="space-y-1">
           <h4 className="text-white text-xs font-bold uppercase tracking-widest">Guía de Auditoría</h4>
           <p className="text-[11px] text-neutral-500 leading-relaxed">
-            Si ves un estado en <span className="text-red-400 font-bold">ROJO</span>, el log te dirá si falló la API de Gemini o si Twilio rechazó el mensaje. 
+            Si ves un estado en <span className="text-red-400 font-bold">ROJO</span>, el log te dirá si falló la API de NVIDIA/OpenRouter o si Twilio rechazó el mensaje. 
             El tiempo ideal de respuesta debe ser menor a <span className="text-white font-mono">15.0s</span> para mantener la fluidez del chat.
           </p>
         </div>

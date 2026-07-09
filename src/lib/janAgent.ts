@@ -1,5 +1,12 @@
-import { GoogleGenAI, Type, Modality } from "@google/genai";
-import type { FunctionDeclaration } from "@google/genai";
+// Constantes de "tipo" locales, equivalentes a las que traía el SDK de Gemini
+// (@google/genai). Se mantienen como strings planos para no depender de ningún
+// SDK: NVIDIA y OpenRouter usan JSON plano vía REST, no un SDK de tipos.
+const FieldType = {
+  OBJECT: "object",
+  STRING: "string",
+  NUMBER: "number",
+} as const;
+
 import { ACTIVE_PROMOTIONS } from "./promotions";
 
 export interface StoreBotConfig {
@@ -48,8 +55,8 @@ REGLAS DE ORO:
      ${expectedData}
      Una vez el usuario te haya proporcionado TODOS estos datos solicitados, usa accion = "confirmar_pedido" (y añádelos todos a la clave "notas" dentro de "datos_pedido", además de rellenar los datos de nombre, etc si aplican). 
    - Conversación normal -> accion = "respuesta"
-5. CAPACIDAD MULTIMODAL (OJOS Y OÍDOS): 
-   - AUDIOS: Analiza el audio y responde a su contenido.
+5. CAPACIDAD MULTIMODAL (OJOS): 
+   - AUDIOS: No tienes capacidad de escuchar audios por ahora; si el cliente manda uno, pídele amablemente que te escriba.
    - IMÁGENES: Analiza cualquier imagen. Si no está en catálogo o identificas comprobante, usa 'accion = "notificar_admin"' o felicítalo.
 ${knowledgeBase}
 ESTILO: ${tone}, mensajes visualmente atractivos.`;
@@ -82,9 +89,9 @@ REGLAS DE ORO:
      * REFERENCIA DE LA DIRECCIÓN (ej: "frente al parque", "edificio de puertas negras", "casa verde"). 
      ¡No cierres el pedido hasta tener la REFERENCIA! Una vez tengas TODO, usa accion = "confirmar_pedido".
    - Conversación normal -> accion = "respuesta"
-6. CAPACIDAD MULTIMODAL (OJOS Y OÍDOS):
-   - AUDIOS: Analiza el audio que te envían con atención usando gemini-2.5-flash. Transcribe mentalmente y responde al contenido del audio con tu Chispa Paisa. Si no se entiende nada (mucho ruido), di: "¡Hola! Qué pena con vos mi reina/parce, hay mucha bulla en ese audio y no te alcancé a entender bien. ¿Me lo podés repetir o escribir por acá? ¡Quedo súper pendiente!"
-   - IMÁGENES: Analiza CUALQUIER imagen que el cliente envíe con ojo de águila (tus ojos son gemini-2.5-flash). Observa el objeto central, textos, logos o detalles:
+6. CAPACIDAD MULTIMODAL (OJOS):
+   - AUDIOS: Si no puedes entender el audio (no tienes esa capacidad activada), dilo con cariño: "¡Hola! Qué pena con vos mi reina/parce, por ahora no puedo escuchar audios. ¿Me lo podés repetir escrito por acá? ¡Quedo súper pendiente!"
+   - IMÁGENES: Analiza CUALQUIER imagen que el cliente envíe con ojo de águila. Observa el objeto central, textos, logos o detalles:
      * SI ES UN PRODUCTO: Búscalo con cuidado en el catálogo. Si es la alfombrilla multifuncional o soporte de silicona (están en el inventario), ¡VÉNDELA con toda la energía! 🚀
      * SI ES UN COMPROBANTE DE PAGO: Reconócelo de inmediato (nequi, bancolombia, etc. con logos y valores), dile que ya lo vas a validar con contabilidad y usa 'accion = "respuesta"'. ¡Felicítalo por su compra! 💎
      * SI NO ESTÁ EN EL CATÁLOGO: Identifica QUÉ es el objeto (ej: una llanta, un volante) y di: "¡Qué chimba eso! Dejame yo le pregunto a mi jefe si nos llega pronto y te aviso de una" y usa 'accion = "notificar_admin"'. ¡Nunca digas que no viste bien la foto! Siempre identifica el objeto así no lo tengas y pregunta a tus jefes (Jan o Tatiana). ⚡
@@ -93,138 +100,81 @@ REGLAS DE ORO:
    Si el cliente pregunta o se interesa por alguno de los productos de un combo, ¡OBLIGATORIAMENTE ofrécele de una el COMBO funcional con descuento! Dile con tu chispa paisa que si lleva el combo se ahorra un platal:
 ${ACTIVE_PROMOTIONS.map(p => `   - ${p.name}: ${p.description} -> ¡Ofrécelo por solo *${p.promoPrice}*!`).join('\n')}
 ${knowledgeBase}
-ESTILO: Paisa, carismático, emojis abundantes, mensajes visualmente bonitos, persuasivo y siempre respetuoso. Eres el Asesor Experto de confianza de ${storeName}. ✨📦⚡\`;
-}isa, carismático, emojis abundantes, mensajes visualmente bonitos, persuasivo y siempre respetuoso. Eres el Asesor Experto de confianza de ${storeName}. ✨📦⚡`;
+ESTILO: Paisa, carismático, emojis abundantes, mensajes visualmente bonitos, persuasivo y siempre respetuoso. Eres el Asesor Experto de confianza de ${storeName}. ✨📦⚡`;
 }
 
 export const JAN_RESPONSE_SCHEMA = {
-  type: Type.OBJECT,
+  type: FieldType.OBJECT,
   properties: {
-    accion: { type: Type.STRING, enum: ["respuesta", "notificar_admin", "confirmar_pedido"] },
-    mensaje: { type: Type.STRING, description: "Respuesta para el usuario en estilo paisa" },
-    producto: { type: Type.STRING, description: "Nombre del producto si aplica" },
-    intencion: { type: Type.STRING, description: "Intención detectada en el mensaje (ej: preguntar_precio, confirmar_pedido, saludar)" },
-    nivel_interes: { type: Type.STRING, description: "Nivel de interés", enum: ["alto", "medio", "bajo"] },
-    objeciones: { type: Type.STRING, description: "Objeciones mencionadas (si no hay pon 'ninguna')" },
-    urgencia: { type: Type.STRING, description: "Nivel de urgencia detectada" },
-    probabilidad_compra: { type: Type.NUMBER, description: "Probabilidad de compra del 0 al 100" },
-    siguiente_mejor_accion: { type: Type.STRING, description: "Qué debería hacer el agente o sistema a continuación" },
+    accion: { type: FieldType.STRING, enum: ["respuesta", "notificar_admin", "confirmar_pedido"] },
+    mensaje: { type: FieldType.STRING, description: "Respuesta para el usuario en estilo paisa" },
+    producto: { type: FieldType.STRING, description: "Nombre del producto si aplica" },
+    intencion: { type: FieldType.STRING, description: "Intención detectada en el mensaje (ej: preguntar_precio, confirmar_pedido, saludar)" },
+    nivel_interes: { type: FieldType.STRING, description: "Nivel de interés", enum: ["alto", "medio", "bajo"] },
+    objeciones: { type: FieldType.STRING, description: "Objeciones mencionadas (si no hay pon 'ninguna')" },
+    urgencia: { type: FieldType.STRING, description: "Nivel de urgencia detectada" },
+    probabilidad_compra: { type: FieldType.NUMBER, description: "Probabilidad de compra del 0 al 100" },
+    siguiente_mejor_accion: { type: FieldType.STRING, description: "Qué debería hacer el agente o sistema a continuación" },
     datos_pedido: {
-      type: Type.OBJECT,
+      type: FieldType.OBJECT,
       properties: {
-        nombre: { type: Type.STRING, description: "Nombre completo" },
-        direccion: { type: Type.STRING, description: "Dirección de entrega" },
-        telefono: { type: Type.STRING, description: "Teléfono de contacto" },
-        ciudad: { type: Type.STRING, description: "Ciudad de destino" },
-        referencia: { type: Type.STRING, description: "Punto de referencia o descripción del lugar" },
-        valor: { type: Type.NUMBER, description: "Valor total del pedido o precio acordado" },
-        notas: { type: Type.STRING, description: "Cualquier otro dato recolectado que no encaje en los anteriores (como correo, perfil social, etc)" }
+        nombre: { type: FieldType.STRING, description: "Nombre completo" },
+        direccion: { type: FieldType.STRING, description: "Dirección de entrega" },
+        telefono: { type: FieldType.STRING, description: "Teléfono de contacto" },
+        ciudad: { type: FieldType.STRING, description: "Ciudad de destino" },
+        referencia: { type: FieldType.STRING, description: "Punto de referencia o descripción del lugar" },
+        valor: { type: FieldType.NUMBER, description: "Valor total del pedido o precio acordado" },
+        notas: { type: FieldType.STRING, description: "Cualquier otro dato recolectado que no encaje en los anteriores (como correo, perfil social, etc)" }
       }
     },
-    imageUrl: { type: Type.STRING, description: "URL de la imagen del producto si aplica (IMPORTANTE: Debe ser una URL pública http/https. PROHIBIDO retornar base64 o cadenas de datos largas)" }
+    imageUrl: { type: FieldType.STRING, description: "URL de la imagen del producto si aplica (IMPORTANTE: Debe ser una URL pública http/https. PROHIBIDO retornar base64 o cadenas de datos largas)" }
   },
   required: ["accion", "mensaje"]
 };
 
-export const captureOrderTool: FunctionDeclaration = {
+export const captureOrderTool: Record<string, any> = {
   name: "captureOrder",
   description: "Registra un pedido cuando el cliente proporciona sus datos COMPLETOS y confirma el producto.",
   parameters: {
-    type: Type.OBJECT,
+    type: FieldType.OBJECT,
     properties: {
-      customerName: { type: Type.STRING, description: "Nombre completo del cliente" },
-      customerPhone: { type: Type.STRING, description: "Teléfono de WhatsApp confirmado del cliente" },
-      address: { type: Type.STRING, description: "Dirección de envío" },
-      addressIndicator: { type: Type.STRING, description: "Punto de referencia o descripción de la casa (ej: casa roja)" },
-      city: { type: Type.STRING, description: "Ciudad de Colombia" },
-      productId: { type: Type.STRING, description: "ID del producto que desea comprar" },
-      quantity: { type: Type.NUMBER, description: "Cantidad de unidades" }
+      customerName: { type: FieldType.STRING, description: "Nombre completo del cliente" },
+      customerPhone: { type: FieldType.STRING, description: "Teléfono de WhatsApp confirmado del cliente" },
+      address: { type: FieldType.STRING, description: "Dirección de envío" },
+      addressIndicator: { type: FieldType.STRING, description: "Punto de referencia o descripción de la casa (ej: casa roja)" },
+      city: { type: FieldType.STRING, description: "Ciudad de Colombia" },
+      productId: { type: FieldType.STRING, description: "ID del producto que desea comprar" },
+      quantity: { type: FieldType.NUMBER, description: "Cantidad de unidades" }
     },
     required: ["customerName", "customerPhone", "address", "addressIndicator", "city", "productId", "quantity"]
   }
 };
 
-export const checkInventoryTool: FunctionDeclaration = {
+export const checkInventoryTool: Record<string, any> = {
   name: "checkInventory",
   description: "Consulta el catálogo actual de productos y el stock disponible.",
   parameters: {
-    type: Type.OBJECT,
+    type: FieldType.OBJECT,
     properties: {}
   }
 };
 
-export const updateCustomerProfileTool: FunctionDeclaration = {
+export const updateCustomerProfileTool: Record<string, any> = {
   name: "updateCustomerProfile",
   description: "Guarda o actualiza el nombre y datos del cliente para recordarlo en el futuro.",
   parameters: {
-    type: Type.OBJECT,
+    type: FieldType.OBJECT,
     properties: {
-      name: { type: Type.STRING, description: "Nombre del cliente" },
-      gender: { type: Type.STRING, enum: ["male", "female"], description: "Género detectado" }
+      name: { type: FieldType.STRING, description: "Nombre del cliente" },
+      gender: { type: FieldType.STRING, enum: ["male", "female"], description: "Género detectado" }
     },
     required: ["name"]
   }
 };
 
-/**
- * Generates an image using Gemini (Frontend compatible)
- */
-export async function generateImage(prompt: string, apiKey: string): Promise<string | null> {
-  const ai = new GoogleGenAI({ apiKey });
-  const model = 'imagen-3.0-generate-001';
-
-  for (let i = 0; i < 3; i++) {
-    try {
-      const response = await ai.models.generateImages({
-        model,
-        prompt: prompt,
-        config: {
-          numberOfImages: 1,
-          outputMimeType: 'image/jpeg',
-          aspectRatio: '1:1',
-        },
-      });
-      
-      if (response.generatedImages && response.generatedImages.length > 0) {
-        return response.generatedImages[0].image.imageBytes; // Return base64
-      }
-      break;
-    } catch (err: any) {
-      console.warn(`[ImageGen] Attempt ${i + 1} failed:`, err.message);
-      if (i < 2) await new Promise(r => setTimeout(r, 2000));
-    }
-  }
-  return null;
-}
-
-/**
- * Generates audio using Gemini TTS (Frontend compatible)
- */
-export async function generateAudio(text: string, apiKey: string): Promise<string | null> {
-  const ai = new GoogleGenAI({ apiKey });
-  const model = "gemini-3.1-flash-tts-preview"; // Correct name from skill
-  const ttsPrompt = `Actúa como un vendedor paisa de Medellín, carismático, alegre y con mucha energía. Di lo siguiente con un acento paisa muy marcado: ${text}`;
-  
-  for (let i = 0; i < 3; i++) {
-    try {
-      const response = await ai.models.generateContent({
-        model,
-        contents: [{ parts: [{ text: ttsPrompt }] }],
-        config: {
-          responseModalities: [Modality.AUDIO],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: { voiceName: 'Zephyr' },
-            },
-          },
-        },
-      });
-
-      return response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data || null;
-    } catch (err: any) {
-      console.warn(`[AudioGen] Attempt ${i + 1} failed:`, err.message);
-      if (i < 2) await new Promise(r => setTimeout(r, 2000));
-    }
-  }
-  return null;
-}
+// NOTA: Las funciones generateImage()/generateAudio() (generación de imagen y voz
+// con Gemini) se retiraron por completo: no se usaban en ningún lugar de la app
+// (solo estaban importadas sin invocarse en App.tsx) y dependían del SDK de Gemini
+// que ya no se usa en este proyecto. Si en el futuro se necesita generación de
+// imagen/voz, agregar aquí un equivalente vía OpenRouter (soporta varios modelos
+// de imagen) o un proveedor de TTS dedicado.
