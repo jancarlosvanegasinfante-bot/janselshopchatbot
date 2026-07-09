@@ -195,7 +195,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Catalog from "./components/Catalog";
 
 function JanAdmin() {
-  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [user, setUser] = useState<FirebaseUser | null>({ uid: 'admin_jan_01', email: 'jancarlosvanegasinfante@gmail.com', phone: '+573133647176', displayName: 'Jan Carlos Vanegas' } as any);
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -232,10 +232,10 @@ function JanAdmin() {
   }, [activeTab]);
 
   useEffect(() => {
-    const unsubAuth = onAuthStateChanged(auth, (u) => setUser(u));
+    // const unsubAuth = onAuthStateChanged(auth, (u) => setUser(u));
     const url = window.location.origin + "/api/webhook/whatsapp";
     setWebhookUrl(url);
-    return () => unsubAuth();
+    // return () => unsubAuth();
   }, []);
 
   useEffect(() => {
@@ -2858,7 +2858,7 @@ function ConfigTab({ user, userStore, userStores, setUserStore, setUserStores, w
       .catch(err => console.error("Error fetching bot config", err));
   }, []);
 
-  const publicUrl = `https://${window.location.host}/tienda/${storeData.slug}`;
+  const publicUrl = `https://chatbotjanadsia.up.railway.app/landing`;
   const whatsappNumber = officialBotNumber || userStore?.phone?.replace(/\D/g, '') || "14155238886";
   const recognitionMessage = `Hola, vengo de la tienda *${storeData.name}* ref: #${storeData.slug}`;
   const whatsappLink = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(recognitionMessage)}`;
