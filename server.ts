@@ -799,26 +799,7 @@ async function processInferenceOnServer(activityId: string, data: any) {
     const history = await getCrmContext(data.from, assignedStoreId);
     
     // Get products specific to this store, or fallback to default
-    let products: any[] = [];
-    try {
-      const qProd = query(collection(db, "products"), where("storeId", "==", assignedStoreId));
-      let prodSnap = await getDocs(qProd);
-      if (prodSnap.empty && assignedStoreId === "default") {
-          prodSnap = await getDocs(collection(db, "products"));
-      }
-      products = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    } catch (e) {
-      console.error("Firebase quota or read error, using local JSON:", e);
-    }
-
-    if (products.length === 0) {
-      try {
-        const catalogData = JSON.parse(readFileSync(path.join(cwd, "src/catalog.json"), "utf8"));
-        products = catalogData.products;
-      } catch (errFallback) {
-        console.error("Error reading local catalog fallback:", errFallback);
-      }
-    }
+    let products: any[] = await loadProductsForStore(assignedStoreId);
 
     // Separar imágenes (sí soportadas por los modelos de visión de NVIDIA/OpenRouter)
     // de audio (NINGÚN modelo de la cascada actual puede transcribir audio de forma nativa
@@ -935,88 +916,111 @@ ESTADO ACTUAL DEL EMBUDO: Utiliza los campos intencion, probabilidad_compra, urg
     };
 
     let lastError: any = null;
-    const timeoutMs = 5000; // timeout corto por intento: prioriza velocidad de respuesta al cliente
+    const timeoutMs = 7000; // subido un poco de 5000 a 7000: el free-tier de NVIDIA a veces
+    // tarda más por congestión, y 5s estaba generando timeouts incluso en modelos chiquitos.
 
-    for (let i = 0; i < modelsCascade.length; i++) {
-      const modelObj = modelsCascade[i];
-      let success = false;
+    // Helper: intenta un modelo puntual, retorna { text, modelObj } o lanza error.
+    async function callModel(modelObj: { name: string; label: string; provider: string }) {
       const isVisionModel = visionModels.some(v => v.name === modelObj.name);
+      const apiUrl = modelObj.provider === "nvidia"
+        ? "https://integrate.api.nvidia.com/v1/chat/completions"
+        : "https://openrouter.ai/api/v1/chat/completions";
 
-      // Un único intento por modelo: si falla, saltamos directo al siguiente de la cascada
-      // en vez de reintentar el mismo (eso es lo que hacía la respuesta lenta antes).
-      const maxAttempts = 1;
+      const apiKey = modelObj.provider === "nvidia"
+        ? (process.env.NVIDIA_API_KEY || storeConfig.nvidiaApiKey)
+        : (process.env.OPENROUTER_API_KEY || storeConfig.openrouterApiKey);
 
-      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-        try {
-          console.log(`[Server AI] Intentando modelo [${i + 1}/${modelsCascade.length}]: ${modelObj.name} (${modelObj.provider}) para ${fromPhone} con timeout de ${timeoutMs}ms...`);
-
-          const apiUrl = modelObj.provider === "nvidia"
-            ? "https://integrate.api.nvidia.com/v1/chat/completions"
-            : "https://openrouter.ai/api/v1/chat/completions";
-
-          const apiKey = modelObj.provider === "nvidia"
-            ? (process.env.NVIDIA_API_KEY || storeConfig.nvidiaApiKey)
-            : (process.env.OPENROUTER_API_KEY || storeConfig.openrouterApiKey);
-
-          if (!apiKey) {
-            throw new Error(`${modelObj.provider === "nvidia" ? "NVIDIA_API_KEY" : "OPENROUTER_API_KEY"} no está configurada.`);
-          }
-
-          const response = await axios.post(
-            apiUrl,
-            {
-              model: modelObj.name,
-              messages: buildMessages(isVisionModel),
-              temperature: 0.2,
-              max_tokens: 1024,
-              top_p: 0.7
-            },
-            {
-              headers: {
-                "Authorization": `Bearer ${apiKey}`,
-                "Content-Type": "application/json"
-              },
-              timeout: timeoutMs
-            }
-          );
-
-          let text = response.data?.choices?.[0]?.message?.content || "";
-          // Limpieza de bloques markdown ```json ... ```
-          if (text.includes("```json")) {
-            text = text.split("```json")[1].split("```")[0].trim();
-          } else if (text.includes("```")) {
-            text = text.split("```")[1].split("```")[0].trim();
-          }
-
-          if (text) {
-            result = { text };
-            console.log(`[Server AI] [${modelObj.provider.toUpperCase()}] Éxito con el modelo ${modelObj.name}`);
-            success = true;
-            break;
-          } else {
-            throw new Error(`La respuesta de ${modelObj.provider} no devolvió contenido de texto válido.`);
-          }
-        } catch (err: any) {
-          lastError = err;
-          const errMsg = err instanceof Error ? err.message : String(err);
-          console.warn(`[Server AI] Falló modelo ${modelObj.name}: ${errMsg}`);
-        }
+      if (!apiKey) {
+        throw new Error(`${modelObj.provider === "nvidia" ? "NVIDIA_API_KEY" : "OPENROUTER_API_KEY"} no está configurada.`);
       }
 
-      if (success) break;
+      console.log(`[Server AI] Intentando modelo: ${modelObj.name} (${modelObj.provider}) para ${fromPhone} con timeout de ${timeoutMs}ms...`);
 
-      if (i < modelsCascade.length - 1) {
-        console.warn(`[Server AI] Pasando al siguiente modelo en la cascada tras agotar intentos de ${modelObj.name}...`);
+      const response = await axios.post(
+        apiUrl,
+        {
+          model: modelObj.name,
+          messages: buildMessages(isVisionModel),
+          temperature: 0.2,
+          max_tokens: 1024,
+          top_p: 0.7
+        },
+        {
+          headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": "application/json"
+          },
+          timeout: timeoutMs
+        }
+      );
+
+      let text = response.data?.choices?.[0]?.message?.content || "";
+      if (text.includes("```json")) {
+        text = text.split("```json")[1].split("```")[0].trim();
+      } else if (text.includes("```")) {
+        text = text.split("```")[1].split("```")[0].trim();
+      }
+
+      if (!text) {
+        throw new Error(`La respuesta de ${modelObj.provider} no devolvió contenido de texto válido.`);
+      }
+      console.log(`[Server AI] [${modelObj.provider.toUpperCase()}] Éxito con el modelo ${modelObj.name}`);
+      return { text, modelObj };
+    }
+
+    // FASE 1: carrera en paralelo entre los primeros N modelos (los más livianos/rápidos).
+    // Esto evita el problema que viste en los logs: 5-7 modelos en fila haciendo timeout
+    // uno detrás del otro (80+ segundos). Con la carrera, si 2-3 modelos livianos están
+    // lentos/caídos al mismo tiempo, no importa: apenas UNO responda, seguimos.
+    const RACE_SIZE = Math.min(4, modelsCascade.length);
+    const raceGroup = modelsCascade.slice(0, RACE_SIZE);
+    const sequentialRest = modelsCascade.slice(RACE_SIZE);
+
+    try {
+      const winner = await Promise.any(raceGroup.map(m => callModel(m)));
+      result = { text: winner.text };
+    } catch (aggErr: any) {
+      // Todos los de la carrera fallaron: seguimos con el resto de la cascada, uno por uno.
+      lastError = aggErr?.errors?.[aggErr.errors.length - 1] || aggErr;
+      console.warn(`[Server AI] Los ${RACE_SIZE} modelos en carrera fallaron. Pasando a la cascada secuencial de respaldo (${sequentialRest.length} modelos restantes)...`);
+
+      for (const modelObj of sequentialRest) {
+        try {
+          const r = await callModel(modelObj);
+          result = { text: r.text };
+          break;
+        } catch (err: any) {
+          lastError = err;
+          console.warn(`[Server AI] Falló modelo ${modelObj.name}: ${err instanceof Error ? err.message : String(err)}`);
+        }
       }
     }
 
     if (!result || !result.text) {
       console.error("[Server AI] Todos los modelos de la cascada fallaron o no devolvieron texto.");
+      // No dejamos al cliente sin respuesta: le avisamos que hubo un problema técnico
+      // en vez de solo loguear el error en el dashboard (antes se quedaba sin nada).
+      const outageMsg = "¡Uy, disculpá! Tuve un problema técnico procesando tu mensaje 😅. Ya le avisé a mi equipo, en un momento te escriben o intentá de nuevo en unos minutos.";
+      try {
+        if (data.from.startsWith("whatsapp:")) {
+          await sendWhatsApp(data.from, outageMsg, undefined, activityId, data.to);
+        } else if (data.platform === "instagram" || data.platform === "messenger") {
+          await sendMetaMessage(data.from, outageMsg, data.platform, data.to);
+        }
+      } catch (sendErr) {
+        console.error("[Server AI] Ni siquiera se pudo enviar el mensaje de outage:", sendErr);
+      }
       throw new Error(`Todos los modelos fallaron. Último error: ${lastError?.message || lastError}`);
     }
 
     if (!result.text) throw new Error("La IA no devolvió texto.");
     let jsonResponse;
+    const safeFallbackResponse = {
+      accion: "respuesta",
+      mensaje: "Uy parce, me enredé un poquito procesando eso. ¿Me repites porfa en un mensaje más cortico?",
+      intencion: "error",
+      nivel_interes: "bajo"
+    };
     try {
       jsonResponse = JSON.parse(result.text);
     } catch (parseErr: any) {
@@ -1026,12 +1030,23 @@ ESTADO ACTUAL DEL EMBUDO: Utiliza los campos intencion, probabilidad_compra, urg
          console.debug("[Server AI] Últimos 500 chars:", result.text.substring(result.text.length - 500));
       }
       // Fallback response to avoid freezing the conversation
-      jsonResponse = {
-        accion: "respuesta",
-        mensaje: "Uy parce, me enredé un poquito procesando eso tan largo. ¿Me repites porfa en un mensaje más cortico?",
-        intencion: "error",
-        nivel_interes: "bajo"
-      };
+      jsonResponse = safeFallbackResponse;
+    }
+
+    // VALIDACIÓN: el JSON puede haber parseado bien pero venir sin el campo "mensaje"
+    // (ej. un modelo genérico como gpt-4o-mini que no siguió el esquema al pie de la letra).
+    // Sin esta validación, Twilio rechaza el envío por venir con body vacío/undefined y
+    // el cliente se queda sin respuesta. Intentamos rescatar el texto de otros campos
+    // comunes antes de recurrir al fallback genérico.
+    if (!jsonResponse || typeof jsonResponse.mensaje !== "string" || !jsonResponse.mensaje.trim()) {
+      const rescatado = jsonResponse?.respuesta || jsonResponse?.message || jsonResponse?.text || jsonResponse?.reply;
+      if (typeof rescatado === "string" && rescatado.trim()) {
+        console.warn(`[Server AI] jsonResponse vino sin "mensaje" válido; se rescató de un campo alterno.`);
+        jsonResponse = { ...jsonResponse, mensaje: rescatado };
+      } else {
+        console.error(`[Server AI] jsonResponse sin "mensaje" utilizable. Texto crudo (primeros 300 chars): ${String(result.text).substring(0, 300)}`);
+        jsonResponse = safeFallbackResponse;
+      }
     }
     console.log(`[Server AI] Respuesta generada para ${fromPhone} (Acción: ${jsonResponse.accion}):`, jsonResponse.mensaje);
 
@@ -1058,93 +1073,56 @@ ESTADO ACTUAL DEL EMBUDO: Utiliza los campos intencion, probabilidad_compra, urg
     // Save enriched CRM Data per store
     await setDoc(doc(db, "customers", customerProfileId), profile, { merge: true });
 
+    // Seguro extra (defensa en profundidad): Twilio rechaza el envío si el body viene
+    // vacío/undefined ("A text message body or media urls must be specified"). Nunca debería
+    // llegar acá vacío gracias a la validación de arriba, pero por si acaso.
+    if (typeof jsonResponse.mensaje !== "string" || !jsonResponse.mensaje.trim()) {
+      jsonResponse.mensaje = "Uy, se me enredó la respuesta 😅. ¿Me repites porfa?";
+    }
+
+    // 3.0 Si la IA detecta intención de confirmar pedido, en vez de mandar el texto normal
+    // y crear el pedido de una, mandamos BOTONES de confirmación (Sí/No) y dejamos el pedido
+    // en pendingConfirmation hasta que el cliente toque el botón. Evita pedidos mal-confirmados
+    // por una interpretación ambigua de texto libre.
+    if (jsonResponse.accion === "confirmar_pedido") {
+      console.log("[Server AI] Intención de confirmar pedido detectada. Enviando botones de confirmación...");
+      try {
+        const sent = await sendOrderConfirmationButtons(data.from, data.to, jsonResponse);
+        if (sent) {
+          await setDoc(doc(db, "customers", customerProfileId), {
+            pendingConfirmation: {
+              jsonResponse,
+              storeId: assignedStoreId,
+              createdAt: serverTimestamp()
+            }
+          }, { merge: true });
+          jsonResponse._skipTextReply = true;
+        } else {
+          // Si por algo falla el envío de botones (ej. Twilio no listo), hacemos
+          // lo de siempre: confirmar directo, para no dejar el pedido perdido.
+          await finalizeOrder(jsonResponse, storeConfig, customerProfile, fromPhone, assignedStoreId, products, db);
+        }
+      } catch (e) {
+        console.error("[Server AI] Error en el flujo de confirmación por botones:", e);
+      }
+    }
+
     // 3. Enviar respuesta por la plataforma correcta
-    if (data.from.startsWith("whatsapp:")) {
-      let mediaUrl = jsonResponse.imageUrl || undefined;
-      await sendWhatsApp(data.from, jsonResponse.mensaje, mediaUrl, activityId, data.to);
-    } else if (data.platform === "instagram" || data.platform === "messenger") {
-      await sendMetaMessage(data.from, jsonResponse.mensaje, data.platform, data.to);
+    if (!jsonResponse._skipTextReply) {
+      if (data.from.startsWith("whatsapp:")) {
+        let mediaUrl = jsonResponse.imageUrl || undefined;
+        await sendWhatsApp(data.from, jsonResponse.mensaje, mediaUrl, activityId, data.to);
+      } else if (data.platform === "instagram" || data.platform === "messenger") {
+        await sendMetaMessage(data.from, jsonResponse.mensaje, data.platform, data.to);
+      }
     }
 
     // 4. Actualizar actividad
     await updateDoc(doc(db, "activities", activityId), {
       status: "respondido",
-      response: jsonResponse.mensaje,
+      response: jsonResponse._skipTextReply ? "[Botones de confirmación enviados]" : jsonResponse.mensaje,
       respondedAt: serverTimestamp()
     });
-
-    // 5. Notificar a los jefes si hay pedido
-    if (jsonResponse.accion === "confirmar_pedido") {
-      console.log("[Server AI] ¡PEDIDO DETECTADO! Notificando y Persistiendo...");
-      try {
-        let finalPrice = jsonResponse.datos_pedido?.valor || 0;
-        if (finalPrice <= 0 && jsonResponse.producto) {
-          const checkProd = jsonResponse.producto.toLowerCase();
-          const match = products.find((p: any) => 
-            (p.name && p.name.toLowerCase().includes(checkProd)) || 
-            (p.name && checkProd.includes(p.name.toLowerCase()))
-          );
-          if (match && (match as any).price) finalPrice = (match as any).price;
-        }
-
-        const orderInfo = {
-          storeId: assignedStoreId,
-          customerName: jsonResponse.datos_pedido?.nombre || customerProfile?.name || fromPhone,
-          customerPhone: jsonResponse.datos_pedido?.telefono || fromPhone,
-          productName: jsonResponse.producto || "No especificado",
-          productId: "manual", // Default since we don't strictly enforce ID in schema
-          quantity: 1,
-          totalPrice: finalPrice,
-          address: jsonResponse.datos_pedido?.direccion || "No especificada",
-          city: jsonResponse.datos_pedido?.ciudad || "No especificada",
-          addressIndicator: jsonResponse.datos_pedido?.referencia || "N/A",
-          notes: jsonResponse.datos_pedido?.notas || "",
-          status: 'pendiente',
-          shopifyStatus: 'no_enviado',
-          dropiStatus: 'no_enviado',
-          createdAt: serverTimestamp()
-        };
-
-        // 5.1 Persistir en Firestore para que aparezca en la APP
-        const orderRef = await addDoc(collection(db, "orders"), orderInfo);
-        const newOrderId = orderRef.id;
-        console.log(`[Server AI] Pedido guardado en base de datos con ID: ${newOrderId}`);
-
-        // 5.1.a Automatic integrations
-        if (storeConfig?.shopifyAutoSync && storeConfig?.shopifyDomain && storeConfig?.shopifyAccessToken) {
-          console.log("[Server AI] Shopify Auto Sync activo. Sincronizando pedido...");
-          try {
-            await pushOrderToShopify(newOrderId, orderInfo, storeConfig, db);
-            console.log("[Server AI] Pedido sincronizado con Shopify automáticamente.");
-          } catch (shopErr: any) {
-            console.error("[Server AI] Error sincronizando con Shopify automáticamente:", shopErr.message);
-            await updateDoc(doc(db, "orders", newOrderId), {
-              shopifyStatus: "error",
-              shopifyError: shopErr.message
-            });
-          }
-        }
-
-        if (storeConfig?.dropiAutoSync && storeConfig?.dropiApiKey) {
-          console.log("[Server AI] Dropi Auto Sync activo. Sincronizando pedido...");
-          try {
-            await pushOrderToDropi(newOrderId, orderInfo, storeConfig, db);
-            console.log("[Server AI] Pedido sincronizado con Dropi automáticamente.");
-          } catch (dropErr: any) {
-            console.error("[Server AI] Error sincronizando con Dropi automáticamente:", dropErr.message);
-            await updateDoc(doc(db, "orders", newOrderId), {
-              dropiStatus: "error",
-              dropiError: dropErr.message
-            });
-          }
-        }
-
-        // 5.2 Notificar Admin
-        await notifyAdmins(orderInfo, storeConfig?.name || "Jan Vanegas", storeConfig);
-      } catch (e) {
-        console.error("[Server AI] Error persistiendo o notificando pedido:", e);
-      }
-    }
 
     // 6. Notificar si se requiere atención humana
     if (jsonResponse.accion === "notificar_admin") {
@@ -1229,6 +1207,190 @@ async function checkTwilioStatus(): Promise<boolean> {
 /**
  * Normalizes a phone number for Twilio (whatsapp:+...)
  */
+// ==============================================
+// 🔘 BOTONES DE CONFIRMACIÓN DE PEDIDO (WhatsApp Quick Reply)
+// ==============================================
+// Se auto-provisiona UNA sola vez el Content Template en Twilio (no requiere
+// tocar la consola de Twilio a mano). El ContentSid resultante se guarda en
+// Firestore (config/system) para no volver a crearlo en cada arranque.
+const CONFIRM_YES_ID = "JAN_CONFIRM_YES";
+const CONFIRM_NO_ID = "JAN_CONFIRM_NO";
+
+async function ensureOrderConfirmationTemplate(): Promise<string | null> {
+  if (!twilioClient) return null;
+  try {
+    const cfgSnap = await getDoc(doc(db, "config", "system"));
+    const existingSid = cfgSnap.exists() ? cfgSnap.data()?.orderConfirmTemplateSid : null;
+    if (existingSid) {
+      console.log(`[WhatsApp Buttons] Usando template existente: ${existingSid}`);
+      return existingSid;
+    }
+
+    console.log("[WhatsApp Buttons] No hay template de confirmación aún. Creando uno nuevo...");
+    const content = await (twilioClient as any).content.v1.contents.create({
+      friendlyName: `jan_order_confirm_${Date.now()}`,
+      language: "es",
+      variables: { "1": "Producto x1 - $50.000, Cra 10 #20-30" },
+      types: {
+        "twilio/quick-reply": {
+          body: "🧾 Resumen de tu pedido:\n{{1}}\n\n¿Confirmas para enviarlo ya?",
+          actions: [
+            { title: "Sí, confirmar ✅", id: CONFIRM_YES_ID },
+            { title: "No, cambiar algo ✏️", id: CONFIRM_NO_ID }
+          ]
+        },
+        "twilio/text": {
+          body: "🧾 Resumen de tu pedido:\n{{1}}\n\n¿Confirmas para enviarlo ya? Responde SI o NO."
+        }
+      }
+    });
+
+    await setDoc(doc(db, "config", "system"), { orderConfirmTemplateSid: content.sid }, { merge: true });
+    console.log(`[WhatsApp Buttons] Template creado y guardado: ${content.sid}`);
+    return content.sid;
+  } catch (e: any) {
+    console.error("[WhatsApp Buttons] No se pudo crear/obtener el template de confirmación:", e.message);
+    return null;
+  }
+}
+
+// Arma el texto corto que va dentro de la variable {{1}} del template
+function buildOrderSummaryLine(jsonResponse: any): string {
+  const producto = jsonResponse.producto || "Producto";
+  const valor = jsonResponse.datos_pedido?.valor ? `$${Number(jsonResponse.datos_pedido.valor).toLocaleString("es-CO")}` : "";
+  const direccion = jsonResponse.datos_pedido?.direccion || "";
+  const ciudad = jsonResponse.datos_pedido?.ciudad || "";
+  return [producto, valor, [direccion, ciudad].filter(Boolean).join(", ")].filter(Boolean).join(" - ").slice(0, 300);
+}
+
+async function sendOrderConfirmationButtons(to: string, from: string, jsonResponse: any): Promise<boolean> {
+  if (!twilioClient) return false;
+  const contentSid = await ensureOrderConfirmationTemplate();
+  if (!contentSid) return false;
+
+  try {
+    await (twilioClient as any).messages.create({
+      from: normalizePhone(from || TWILIO_FROM_NUMBER || "+14155238886"),
+      to: normalizePhone(to),
+      contentSid,
+      contentVariables: JSON.stringify({ "1": buildOrderSummaryLine(jsonResponse) })
+    });
+    console.log(`[WhatsApp Buttons] Botones de confirmación enviados a ${to}`);
+    return true;
+  } catch (e: any) {
+    console.error("[WhatsApp Buttons] Error enviando botones de confirmación:", e.message);
+    return false;
+  }
+}
+
+// Crea el pedido en Firestore, sincroniza con Shopify/Dropi si aplica, y notifica a los admins.
+// Extraída como función reutilizable: se llama tanto cuando el cliente confirma por botón
+// como en el fallback directo si no se pudieron mandar los botones.
+async function finalizeOrder(
+  jsonResponse: any,
+  storeConfig: any,
+  customerProfile: any,
+  fromPhone: string,
+  assignedStoreId: string,
+  products: any[],
+  dbRef: any
+) {
+  console.log("[Server AI] ¡PEDIDO CONFIRMADO! Notificando y Persistiendo...");
+  try {
+    let finalPrice = jsonResponse.datos_pedido?.valor || 0;
+    if (finalPrice <= 0 && jsonResponse.producto) {
+      const checkProd = jsonResponse.producto.toLowerCase();
+      const match = products.find((p: any) =>
+        (p.name && p.name.toLowerCase().includes(checkProd)) ||
+        (p.name && checkProd.includes(p.name.toLowerCase()))
+      );
+      if (match && (match as any).price) finalPrice = (match as any).price;
+    }
+
+    const orderInfo = {
+      storeId: assignedStoreId,
+      customerName: jsonResponse.datos_pedido?.nombre || customerProfile?.name || fromPhone,
+      customerPhone: jsonResponse.datos_pedido?.telefono || fromPhone,
+      productName: jsonResponse.producto || "No especificado",
+      productId: "manual",
+      quantity: 1,
+      totalPrice: finalPrice,
+      address: jsonResponse.datos_pedido?.direccion || "No especificada",
+      city: jsonResponse.datos_pedido?.ciudad || "No especificada",
+      addressIndicator: jsonResponse.datos_pedido?.referencia || "N/A",
+      notes: jsonResponse.datos_pedido?.notas || "",
+      status: 'pendiente',
+      shopifyStatus: 'no_enviado',
+      dropiStatus: 'no_enviado',
+      createdAt: serverTimestamp()
+    };
+
+    const orderRef = await addDoc(collection(dbRef, "orders"), orderInfo);
+    const newOrderId = orderRef.id;
+    console.log(`[Server AI] Pedido guardado en base de datos con ID: ${newOrderId}`);
+
+    if (storeConfig?.shopifyAutoSync && storeConfig?.shopifyDomain && storeConfig?.shopifyAccessToken) {
+      console.log("[Server AI] Shopify Auto Sync activo. Sincronizando pedido...");
+      try {
+        await pushOrderToShopify(newOrderId, orderInfo, storeConfig, dbRef);
+        console.log("[Server AI] Pedido sincronizado con Shopify automáticamente.");
+      } catch (shopErr: any) {
+        console.error("[Server AI] Error sincronizando con Shopify automáticamente:", shopErr.message);
+        await updateDoc(doc(dbRef, "orders", newOrderId), {
+          shopifyStatus: "error",
+          shopifyError: shopErr.message
+        });
+      }
+    }
+
+    if (storeConfig?.dropiAutoSync && storeConfig?.dropiApiKey) {
+      console.log("[Server AI] Dropi Auto Sync activo. Sincronizando pedido...");
+      try {
+        await pushOrderToDropi(newOrderId, orderInfo, storeConfig, dbRef);
+        console.log("[Server AI] Pedido sincronizado con Dropi automáticamente.");
+      } catch (dropErr: any) {
+        console.error("[Server AI] Error sincronizando con Dropi automáticamente:", dropErr.message);
+        await updateDoc(doc(dbRef, "orders", newOrderId), {
+          dropiStatus: "error",
+          dropiError: dropErr.message
+        });
+      }
+    }
+
+    await notifyAdmins(orderInfo, storeConfig?.name || "Jan Vanegas", storeConfig);
+    return orderInfo;
+  } catch (e) {
+    console.error("[Server AI] Error persistiendo o notificando pedido:", e);
+    return null;
+  }
+}
+
+// Carga el catálogo de productos de una tienda (con fallback a JSON local si Firestore falla).
+// Extraída para reutilizarla tanto en el flujo normal de IA como en la confirmación por botón.
+async function loadProductsForStore(assignedStoreId: string): Promise<any[]> {
+  let products: any[] = [];
+  try {
+    const qProd = query(collection(db, "products"), where("storeId", "==", assignedStoreId));
+    let prodSnap = await getDocs(qProd);
+    if (prodSnap.empty && assignedStoreId === "default") {
+      prodSnap = await getDocs(collection(db, "products"));
+    }
+    products = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch (e) {
+    console.error("Firebase quota or read error, using local JSON:", e);
+  }
+
+  if (products.length === 0) {
+    try {
+      const catalogData = JSON.parse(readFileSync(path.join(cwd, "src/catalog.json"), "utf8"));
+      products = catalogData.products;
+    } catch (errFallback) {
+      console.error("Error reading local catalog fallback:", errFallback);
+    }
+  }
+  return products;
+}
+
 function normalizePhone(phone: string): string {
   if (!phone) return "";
   // 1. Remove the 'whatsapp:' prefix if present to avoid double-prepending
@@ -1562,6 +1724,13 @@ async function startServer() {
   } catch (err: any) {
     console.warn("[Database] Details:", err.message);
   }
+
+  // Auto-provisionar el template de botones de confirmación de pedido (una sola vez,
+  // sin necesidad de tocar la consola de Twilio). Si falla, no bloquea el arranque:
+  // el bot cae de vuelta a confirmación por texto normal.
+  ensureOrderConfirmationTemplate().catch(e =>
+    console.warn("[WhatsApp Buttons] No se pudo pre-provisionar el template al arrancar:", e.message)
+  );
 
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json({ limit: '10mb' }));
@@ -2243,6 +2412,50 @@ async function startServer() {
     if (!canReply(normFrom)) {
       console.warn(`[WhatsApp Webhook] Anti-spam: Ignorando mensajes múltiples de ${normFrom}`);
       return res.status(200).send("");
+    }
+
+    // ==============================================
+    // 🔘 RESPUESTA A BOTONES DE CONFIRMACIÓN DE PEDIDO
+    // ==============================================
+    // Si el cliente tocó un botón (Sí/No), Twilio manda ButtonPayload con el id que
+    // definimos al crear el template. Esto es 100% determinístico: no pasa por la IA.
+    const buttonPayload = req.body?.ButtonPayload;
+    if (buttonPayload) {
+      try {
+        const cleanFrom = from.replace('whatsapp:', '').trim();
+        const assignedStoreId = await determineStoreId(cleanFrom, messageBody || "", to);
+        const customerProfileId = `${assignedStoreId}_${cleanFrom}`;
+        const cxSnap = await getDoc(doc(db, "customers", customerProfileId));
+        const customerData = cxSnap.exists() ? cxSnap.data() : null;
+        const pending = customerData?.pendingConfirmation;
+
+        if (pending && pending.jsonResponse) {
+          await cancelPendingFollowUps(from, assignedStoreId);
+
+          if (buttonPayload === CONFIRM_YES_ID) {
+            let storeConfig: any = {};
+            const storeSnap = await getDoc(doc(db, "stores", assignedStoreId));
+            if (storeSnap.exists()) storeConfig = storeSnap.data();
+            const products = await loadProductsForStore(assignedStoreId);
+
+            await finalizeOrder(pending.jsonResponse, storeConfig, customerData, cleanFrom, assignedStoreId, products, db);
+            await updateDoc(doc(db, "customers", customerProfileId), { pendingConfirmation: null });
+            await sendWhatsApp(from, "¡Listo! 🎉 Tu pedido quedó confirmado, ya te lo estamos alistando. ¡Gracias por tu compra!", undefined, undefined, to);
+          } else if (buttonPayload === CONFIRM_NO_ID) {
+            await updateDoc(doc(db, "customers", customerProfileId), { pendingConfirmation: null });
+            await sendWhatsApp(from, "Tranqui, no confirmé nada todavía 🙂 Contame qué querés cambiar y seguimos.", undefined, undefined, to);
+          } else {
+            console.warn(`[WhatsApp Webhook] ButtonPayload desconocido: ${buttonPayload}`);
+          }
+
+          return res.status(200).send("");
+        }
+        // Si no había pendingConfirmation (ej. botón viejo, ya resuelto), seguimos el
+        // flujo normal más abajo tratando el ButtonText como si fuera texto escrito.
+      } catch (e: any) {
+        console.error("[WhatsApp Webhook] Error procesando ButtonPayload:", e.message);
+        // No cortamos el flujo: si algo falla acá, seguimos abajo como mensaje normal.
+      }
     }
 
     // Dynamic URL detection for status callbacks
