@@ -324,27 +324,15 @@ function JanAdmin() {
 
     let qOrders, qProducts, qActivity, qCustomers, qConversations;
 
-    // For the original default store, fetch without filter to prevent breaking old data
-    if (userStore.id === "default") {
-      qOrders = query(collection(db, "orders"), orderBy("createdAt", "desc"));
-      qProducts = query(collection(db, "products"), orderBy("name", "asc"));
-      qActivity = query(collection(db, "activities"), orderBy("timestamp", "desc"), limit(200));
-      qCustomers = collection(db, "customers");
-      qConversations = collection(db, "conversations");
-    } else {
-      qOrders = query(collection(db, "orders"), where("storeId", "==", userStore.id), orderBy("createdAt", "desc"));
-      qProducts = query(collection(db, "products"), where("storeId", "==", userStore.id), orderBy("name", "asc"));
-      qActivity = query(collection(db, "activities"), where("storeId", "==", userStore.id), orderBy("timestamp", "desc"), limit(200));
-      qCustomers = query(collection(db, "customers"), where("storeId", "==", userStore.id));
-      qConversations = query(collection(db, "conversations"), where("storeId", "==", userStore.id));
-    }
+    qOrders = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+    qProducts = query(collection(db, "products"), orderBy("name", "asc"));
+    qActivity = query(collection(db, "activities"), orderBy("timestamp", "desc"), limit(200));
+    qCustomers = collection(db, "customers");
+    qConversations = collection(db, "conversations");
 
     const unsubOrders = onSnapshot(qOrders, 
       (snapshot) => {
         let docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Order));
-        if (userStore.id === "default") {
-          docs = docs.filter(o => !o.storeId || o.storeId === "default");
-        }
         setOrders(docs);
       },
       (err) => {
@@ -356,9 +344,6 @@ function JanAdmin() {
     const unsubProducts = onSnapshot(qProducts, 
       (snapshot) => {
         let docs = snapshot.docs.map(d => ({ docId: d.id, ...d.data() } as Product));
-        if (userStore.id === "default") {
-          docs = docs.filter(p => !p.storeId || p.storeId === "default");
-        }
         setProducts(docs);
       },
       (err) => {
@@ -370,9 +355,6 @@ function JanAdmin() {
     const unsubActivity = onSnapshot(qActivity, 
       (snapshot) => {
         let docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Activity));
-        if (userStore.id === "default") {
-          docs = docs.filter(a => !a.storeId || a.storeId === "default");
-        }
         setActivities(docs);
       },
       (err) => {
@@ -385,9 +367,6 @@ function JanAdmin() {
     const unsubCustomers = onSnapshot(qCustomers, 
       (snapshot) => {
         let docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-        if (userStore.id === "default") {
-          docs = docs.filter((c: any) => !c.storeId || c.storeId === "default");
-        }
         // local sort to avoid need of index for now because we might vary order fields
         docs.sort((a: any, b: any) => (b.ultima_interaccion?.toMillis?.() || 0) - (a.ultima_interaccion?.toMillis?.() || 0));
         setCustomers(docs);
@@ -403,13 +382,7 @@ function JanAdmin() {
         const convs: Record<string, any> = {};
         snapshot.docs.forEach(d => {
           const data = d.data();
-          if (userStore.id === "default") {
-            if (!data.storeId || data.storeId === "default") {
-              convs[d.id] = data;
-            }
-          } else {
-            convs[d.id] = data;
-          }
+          convs[d.id] = data;
         });
         setConversations(convs);
       },
@@ -2127,7 +2100,7 @@ function InventoryTab({ products, onUpdateStock, onReset, isResetting, userStore
     }
   };
 
-  const categories = ["todas", ...Array.from(new Set(products.filter(p => !userStore?.id || p.storeId === userStore.id).map(p => p.category).filter(Boolean)))];
+  const categories = ["todas", ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))];
 
   const handleImageUpload = async (p: Product, file: File) => {
     if (!file || !p.docId) return;

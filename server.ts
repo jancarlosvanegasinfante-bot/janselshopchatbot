@@ -420,59 +420,9 @@ async function getStoreByPhone(phone: string): Promise<StoreConfig> {
  * Determines the associated store based on a WhatsApp/Meta message
  */
 async function determineStoreId(cleanPhone: string, message: string, toBotPhone?: string): Promise<string> {
-  let assignedStoreId: string | null = null;
-  
-  // 1. Check for predefined trigger message (e.g. "Hola, vengo de la tienda XYZ ref: #odontologia-feliz")
-  const refMatch = message?.match(/ref:\s*#([a-zA-Z0-9_\-]+)/i);
-  
-  if (refMatch && refMatch[1]) {
-    const storeSlug = refMatch[1].toLowerCase();
-    const qStore = query(collection(db, "stores"), where("slug", "==", storeSlug), limit(1));
-    const snapStore = await getDocs(qStore);
-    if (!snapStore.empty) {
-      assignedStoreId = snapStore.docs[0].id;
-    }
-  }
-
-  // 2. Fallback: Search for store names mentioned in "vengo de la tienda [Name]"
-  if (!assignedStoreId && message) {
-    const storeNameMatch = message.match(/vengo de (?:la tienda\s*)?([^*|\n|\r]+)/i);
-    if (storeNameMatch && storeNameMatch[1]) {
-      const potentialName = storeNameMatch[1].trim();
-      const qStoreName = query(collection(db, "stores"), where("name", "==", potentialName), limit(1));
-      const snapStoreName = await getDocs(qStoreName);
-      if (!snapStoreName.empty) {
-        assignedStoreId = snapStoreName.docs[0].id;
-      }
-    }
-  }
-
-  // 3. Fallback: Lookup existing session by phone
-  if (!assignedStoreId) {
-    const convoSnap = await getDoc(doc(db, "conversations", cleanPhone));
-    if (convoSnap.exists() && convoSnap.data().storeId) {
-      assignedStoreId = convoSnap.data().storeId;
-    }
-  }
-
-  // 4. Ultimate Fallback: Legacy phone mapping or "default"
-  if (!assignedStoreId && toBotPhone) {
-    const legacyStore = await getStoreByPhone(toBotPhone);
-    assignedStoreId = legacyStore.id || "default";
-  } else if (!assignedStoreId) {
-    assignedStoreId = "default";
-  }
-  
-  // Update session if we found a store
-  if (assignedStoreId !== "default") {
-    await setDoc(doc(db, "conversations", cleanPhone), {
-      phone: cleanPhone,
-      storeId: assignedStoreId,
-      updatedAt: serverTimestamp()
-    }, { merge: true });
-  }
-  
-  return assignedStoreId || "default";
+  // HARDCODED UNIFIED STORE OVERRIDE
+  // All messages and events will funnel to the single "default" session per the user's request
+  return "default";
 }
 
 /**
@@ -1807,11 +1757,8 @@ async function finalizeOrder(
 async function loadProductsForStore(assignedStoreId: string): Promise<any[]> {
   let products: any[] = [];
   try {
-    const qProd = query(collection(db, "products"), where("storeId", "==", assignedStoreId));
-    let prodSnap = await getDocs(qProd);
-    if (prodSnap.empty && assignedStoreId === "default") {
-      prodSnap = await getDocs(collection(db, "products"));
-    }
+    // UNIFIED MODE: Fetch all products across all stores
+    let prodSnap = await getDocs(collection(db, "products"));
     products = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }));
   } catch (e) {
     console.error("Supabase read error, using local JSON:", e);
