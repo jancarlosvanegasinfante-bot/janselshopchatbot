@@ -847,9 +847,34 @@ MENSAJE ACTUAL: ${safeMessage}${imageParts.length > 0 ? " (El cliente también e
 INVENTARIO ACTUAL:
 ${JSON.stringify(products)}
 
-RECUERDA: Analiza al cliente como un experto en ventas. Devuelve JSON. 
-IMPORTANTE: Sé extremadamente breve y directo. Evita explicaciones largas. El cliente quiere comprar rápido.
-ESTADO ACTUAL DEL EMBUDO: Utiliza los campos intencion, probabilidad_compra, urgencia, objeciones, nivel_interes y siguiente_mejor_accion, basado en si ha dado direccion, etc.`;
+⚠️ REGLA DE SALIDA ULTRA-ESTRICTA (OBLIGATORIA):
+DEBES RESPONDER EXCLUSIVAMENTE CON UN OBJETO JSON VÁLIDO.
+NO incluyas explicaciones antes o después del JSON. NO uses formato markdown fuera del JSON.
+El JSON debe cumplir ESTRICTAMENTE con la siguiente estructura de campos (no inventes otras llaves):
+
+{
+  "accion": "respuesta" | "notificar_admin" | "confirmar_pedido",
+  "mensaje": "Mensaje en español (estilo paisa si aplica, breve y persuasivo de máximo 1-2 párrafos cortos, con emojis abundantes)",
+  "producto": "Nombre del producto interesado si aplica",
+  "intencion": "intención detectada",
+  "nivel_interes": "alto" | "medio" | "bajo",
+  "objeciones": "objeciones o 'ninguna'",
+  "urgencia": "nivel de urgencia",
+  "probabilidad_compra": 0, // Número entero de 0 a 100
+  "siguiente_mejor_accion": "próxima acción",
+  "datos_pedido": {
+    "nombre": "Nombre completo del cliente",
+    "direccion": "Dirección exacta de entrega",
+    "telefono": "Teléfono de contacto",
+    "ciudad": "Ciudad de Colombia",
+    "referencia": "Punto de referencia o descripción de la casa",
+    "valor": 0, // Precio/valor acordado como número entero
+    "notes": "Notas adicionales"
+  },
+  "imageUrl": "URL pública de imagen del producto si aplica"
+}
+
+Asegúrate de que la propiedad "mensaje" contenga tu respuesta real dirigida al cliente.`;
 
     let result: any = null;
 
@@ -943,7 +968,8 @@ ESTADO ACTUAL DEL EMBUDO: Utiliza los campos intencion, probabilidad_compra, urg
           messages: buildMessages(isVisionModel),
           temperature: 0.2,
           max_tokens: 1024,
-          top_p: 0.7
+          top_p: 0.7,
+          response_format: { type: "json_object" }
         },
         {
           headers: {
