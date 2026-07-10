@@ -342,12 +342,120 @@ export default function LandingPage() {
 
   const formRef = useRef<HTMLDivElement>(null);
 
+  // Pixel IDs States
+  const [metaPixelId, setMetaPixelId] = useState("");
+  const [tiktokPixelId, setTiktokPixelId] = useState("");
+
+  // --- Pixel Initialization and Tracking Functions ---
+  const initMetaPixel = (pixelId: string) => {
+    if (!pixelId) return;
+    const w = window as any;
+    if (w.fbq) {
+      w.fbq('init', pixelId);
+      w.fbq('track', 'PageView');
+      return;
+    }
+    
+    // Facebook Pixel standard initialization code
+    (function (f: any, b: Document, e: string, v: string, n?: any, t?: any, s?: any) {
+      if (f.fbq) return;
+      n = f.fbq = function () {
+        n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
+      };
+      if (!f._fbq) f._fbq = n;
+      n.push = n;
+      n.loaded = !0;
+      n.version = '2.0';
+      n.queue = [];
+      t = b.createElement(e);
+      t.async = !0;
+      t.src = v;
+      s = b.getElementsByTagName(e)[0];
+      s.parentNode?.insertBefore(t, s);
+    })(w, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
+
+    w.fbq('init', pixelId);
+    w.fbq('track', 'PageView');
+    console.log(`[Meta Pixel]: Inicializado con ID ${pixelId}`);
+  };
+
+  const initTiktokPixel = (pixelId: string) => {
+    if (!pixelId) return;
+    const w = window as any;
+    if (w.ttq) {
+      w.ttq.load(pixelId);
+      w.ttq.page();
+      return;
+    }
+
+    // TikTok Pixel standard initialization code
+    (function (win: any, d: Document, t: string) {
+      win.TiktokSdkObject = t;
+      var ttq = (win[t] = win[t] || []);
+      ttq.methods = [
+        "page", "track", "identify", "instances", "debug", "on", "off", "once", "ready", "alias", "group", "enableCookie", "disableCookie"
+      ];
+      ttq.setAndDefer = function (e: any, t: string) {
+        win[t].push([t].concat(Array.prototype.slice.call(arguments, 0)));
+      };
+      for (var i = 0; i < ttq.methods.length; i++) {
+        ttq.setAndDefer(ttq, ttq.methods[i]);
+      }
+      ttq.instance = function (e: any) {
+        for (var t = ttq._i[e] || [], n = 0; n < ttq.methods.length; n++) {
+          ttq.setAndDefer(win[t], win[t].methods[n]);
+        }
+        return t;
+      };
+      ttq._i = {};
+      ttq._f = {};
+      ttq._b = {};
+      ttq._v = "1.2.1";
+      ttq.loaded = !0;
+      var s = d.createElement("script") as any;
+      s.type = "text/javascript";
+      s.async = !0;
+      s.src = "https://analytics.tiktok.com/i18n/pixel/events.js?sdkid=" + pixelId;
+      var a = d.getElementsByTagName("script")[0];
+      a.parentNode?.insertBefore(s, a);
+    })(w, document, "ttq");
+
+    w.ttq.load(pixelId);
+    w.ttq.page();
+    console.log(`[TikTok Pixel]: Inicializado con ID ${pixelId}`);
+  };
+
+  // Tracking Helpers
+  const trackMetaEvent = (eventName: string, params?: any) => {
+    if ((window as any).fbq) {
+      (window as any).fbq('track', eventName, params);
+      console.log(`[Meta Pixel Tracking]: ${eventName}`, params);
+    }
+  };
+
+  const trackTiktokEvent = (eventName: string, params?: any) => {
+    if ((window as any).ttq) {
+      (window as any).ttq.track(eventName, params);
+      console.log(`[TikTok Pixel Tracking]: ${eventName}`, params);
+    }
+  };
+
   // ── Effects ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     fetch("/api/public/config")
       .then((res) => res.json())
-      .then((data) => { if (data.whatsappNumber) setOfficialBotNumber(data.whatsappNumber); })
-      .catch(() => {});
+      .then((data) => { 
+        if (data.whatsappNumber) setOfficialBotNumber(data.whatsappNumber); 
+        if (data.metaPixelId) {
+          setMetaPixelId(data.metaPixelId);
+          initMetaPixel(data.metaPixelId);
+        }
+        if (data.tiktokPixelId) {
+          setTiktokPixelId(data.tiktokPixelId);
+          initTiktokPixel(data.tiktokPixelId);
+        }
+      })
+      .catch((err) => console.error("Error al cargar configuración de píxeles:", err));
 
     const timerInterval = setInterval(() => {
       setTimeLeft((prev) => (prev <= 1 ? 600 : prev - 1));
@@ -400,6 +508,25 @@ export default function LandingPage() {
       return [...prev, { product, quantity: 1 }];
     });
     if (!silent) setIsCartOpen(true);
+
+    // Track AddToCart Event
+    trackMetaEvent("AddToCart", {
+      content_name: product.name,
+      content_ids: [product.id],
+      content_type: "product",
+      value: product.price,
+      currency: "COP"
+    });
+    trackTiktokEvent("AddToCart", {
+      contents: [{
+        content_id: product.id,
+        content_name: product.name,
+        quantity: 1,
+        price: product.price
+      }],
+      value: product.price,
+      currency: "COP"
+    });
   };
 
   const removeFromCart = (productId: string) => {
@@ -443,6 +570,23 @@ export default function LandingPage() {
     setIsCartOpen(false);
     setCheckoutMode("formulario");
     setTimeout(() => { formRef.current?.scrollIntoView({ behavior: "smooth" }); }, 150);
+
+    // Track InitiateCheckout Event
+    trackMetaEvent("InitiateCheckout", {
+      num_items: totalQty,
+      value: finalTotal,
+      currency: "COP"
+    });
+    trackTiktokEvent("InitiateCheckout", {
+      contents: cart.map(item => ({
+        content_id: item.product.id,
+        content_name: item.product.name,
+        quantity: item.quantity,
+        price: item.product.price
+      })),
+      value: finalTotal,
+      currency: "COP"
+    });
   };
 
   const handleInstantBuy = (product: typeof TRENDING_PRODUCTS[0]) => {
@@ -454,6 +598,42 @@ export default function LandingPage() {
     setCheckoutMode("formulario");
     toast.success(`¡Configura tu despacho para ${product.name}! 📦`, { icon: "⚡" });
     setTimeout(() => { formRef.current?.scrollIntoView({ behavior: "smooth" }); }, 100);
+
+    // Track ViewContent & InitiateCheckout
+    trackMetaEvent("ViewContent", {
+      content_name: product.name,
+      content_ids: [product.id],
+      content_type: "product",
+      value: product.price,
+      currency: "COP"
+    });
+    trackMetaEvent("InitiateCheckout", {
+      content_name: product.name,
+      content_ids: [product.id],
+      content_type: "product",
+      value: product.price,
+      currency: "COP"
+    });
+    trackTiktokEvent("ViewContent", {
+      contents: [{
+        content_id: product.id,
+        content_name: product.name,
+        quantity: 1,
+        price: product.price
+      }],
+      value: product.price,
+      currency: "COP"
+    });
+    trackTiktokEvent("InitiateCheckout", {
+      contents: [{
+        content_id: product.id,
+        content_name: product.name,
+        quantity: 1,
+        price: product.price
+      }],
+      value: product.price,
+      currency: "COP"
+    });
   };
 
   const handleWhatsAppOrder = (directPaymentMode?: "contraentrega" | "anticipado") => {
@@ -468,6 +648,17 @@ export default function LandingPage() {
     const msg = `¡Hola Jan Sel Shop! 👋 Quiero realizar el siguiente pedido desde la Landing Page:\n\n🛒 *CARRITO:*\n${itemsText}\n\n⚙️ *DESGLOSE:*\n• *Subtotal:* $${subtotal.toLocaleString()} COP${discountText}${prepayText}\n🚚 *Envío:* ¡COMPLETAMENTE GRATIS! 🇨🇴\n💰 *TOTAL:* $${finalTotal.toLocaleString()} COP\n\n💳 *PAGO:* ${modeLabel}\n\n👤 *DATOS:*\n• *Nombre:* ${formData.customerName || "Por confirmar"}\n• *Celular:* ${formData.customerPhone || "Por confirmar"}\n• *Ciudad:* ${formData.city || "Por confirmar"}\n• *Dirección:* ${formData.address || "Por confirmar"}\n• *Indicaciones:* ${formData.addressIndicator || "Ninguna"}\n\n¡Por favor agendar mi despacho hoy! 🚀`;
     const phone = officialBotNumber || "14155238886";
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+
+    // Track Contact Event
+    trackMetaEvent("Contact", {
+      method: "WhatsApp Direct Order",
+      value: finalTotal,
+      currency: "COP"
+    });
+    trackTiktokEvent("Contact", {
+      value: finalTotal,
+      currency: "COP"
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -504,6 +695,25 @@ export default function LandingPage() {
       });
       const data = await res.json();
       if (data.success) {
+        // Track Purchase Event
+        trackMetaEvent("Purchase", {
+          content_ids: cart.map(item => item.product.id),
+          content_type: "product",
+          value: finalTotal,
+          currency: "COP",
+          num_items: totalQty
+        });
+        trackTiktokEvent("CompletePayment", {
+          contents: cart.map(item => ({
+            content_id: item.product.id,
+            content_name: item.product.name,
+            quantity: item.quantity,
+            price: item.product.price
+          })),
+          value: finalTotal,
+          currency: "COP"
+        });
+
         setOrderCompleted({ ...data.order, cartItems: [...cart], paymentMethodMode: paymentMethod });
         toast.success("¡Pedido registrado! 🎉");
         setCart([]);
@@ -876,17 +1086,16 @@ export default function LandingPage() {
                 </div>
 
                 {/* Product image */}
-                <div className="relative h-52 bg-gradient-to-b from-slate-900 to-[#0d0f1a] overflow-hidden">
+                <div className="relative h-64 sm:h-56 md:h-64 lg:h-60 bg-[#06070c] flex items-center justify-center p-3 overflow-hidden border-b border-white/5">
                   <img
                     src={getProxiedImageUrl(p.imageUrl)}
                     alt={p.name}
                     referrerPolicy="no-referrer"
-                    className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500 ease-out"
+                    className="max-w-full max-h-full w-auto h-auto object-contain transition-transform duration-500 ease-out select-none"
                     style={{ transform: "scale(1)" }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLImageElement).style.transform = "scale(1.07)"; }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLImageElement).style.transform = "scale(1.05)"; }}
                     onMouseLeave={(e) => { (e.currentTarget as HTMLImageElement).style.transform = "scale(1)"; }}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0d0f1a] via-transparent to-transparent opacity-70" />
                 </div>
 
                 {/* Card content */}
@@ -1913,6 +2122,15 @@ export default function LandingPage() {
                       const url = `https://wa.me/${phone}?text=${encodeURIComponent(opt.text)}`;
                       window.open(url, "_blank");
                       setIsSupportOpen(false);
+
+                      // Track Contact Event
+                      trackMetaEvent("Contact", {
+                        method: "WhatsApp Floating Support Widget",
+                        option: opt.label
+                      });
+                      trackTiktokEvent("Contact", {
+                        method: "WhatsApp Floating Support Widget"
+                      });
                     }}
                     className="w-full text-left py-3 px-4 rounded-xl bg-white/[0.03] border border-white/5 hover:bg-emerald-500 hover:text-black hover:border-emerald-400 font-extrabold text-xs text-white transition-all duration-200 flex items-center justify-between group cursor-pointer"
                   >

@@ -3195,7 +3195,9 @@ function ConfigTab({ user, userStore, userStores, setUserStore, setUserStores, w
     shopifyAutoSync: userStore?.shopifyAutoSync || false,
     dropiApiKey: userStore?.dropiApiKey || "",
     dropiAutoSync: userStore?.dropiAutoSync || false,
-    dropiPreferredCarrier: userStore?.dropiPreferredCarrier || "Servientrega"
+    dropiPreferredCarrier: userStore?.dropiPreferredCarrier || "Servientrega",
+    metaPixelId: userStore?.metaPixelId || "",
+    tiktokPixelId: userStore?.tiktokPixelId || ""
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isSyncingFromShopify, setIsSyncingFromShopify] = useState(false);
@@ -3270,7 +3272,9 @@ function ConfigTab({ user, userStore, userStores, setUserStore, setUserStores, w
       shopifyAutoSync: userStore?.shopifyAutoSync || false,
       dropiApiKey: userStore?.dropiApiKey || "",
       dropiAutoSync: userStore?.dropiAutoSync || false,
-      dropiPreferredCarrier: userStore?.dropiPreferredCarrier || "Servientrega"
+      dropiPreferredCarrier: userStore?.dropiPreferredCarrier || "Servientrega",
+      metaPixelId: userStore?.metaPixelId || "",
+      tiktokPixelId: userStore?.tiktokPixelId || ""
     });
   }, [userStore]);
 
@@ -3535,6 +3539,38 @@ function ConfigTab({ user, userStore, userStores, setUserStore, setUserStores, w
                   </div>
                </div>
             </div>
+          </div>
+
+          {/* MARKETING PIXELS CARD (META & TIKTOK) */}
+          <div className="bg-neutral-900/50 border border-neutral-800 p-6 rounded-2xl space-y-4">
+             <div className="flex items-center gap-2">
+                <span className="text-amber-400">📊</span>
+                <h5 className="text-[10px] uppercase font-black tracking-widest text-white">Píxeles de Rastreo & Conversiones (Meta / Facebook & TikTok)</h5>
+             </div>
+             <p className="text-[9px] text-neutral-400">Registra automáticamente visitas a tu catálogo, clicks en botones de WhatsApp, inicios de pago y compras completadas para optimizar tus campañas publicitarias.</p>
+             
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-1">
+                   <label className="text-[9px] text-neutral-500 uppercase font-black">Meta / Facebook Pixel ID</label>
+                   <input 
+                      value={storeData.metaPixelId || ""} 
+                      onChange={e => setStoreData({...storeData, metaPixelId: e.target.value})} 
+                      placeholder="Ej: 8371948291039" 
+                      className="w-full bg-black border border-neutral-800 rounded-xl p-3 text-xs text-white font-mono animate-none" 
+                   />
+                   <p className="text-[8px] text-neutral-500">Inyecta el script oficial de Meta Pixel en tu página de manera dinámica y envía eventos de PageView, ViewContent, AddToCart, InitiateCheckout, Purchase y Contact.</p>
+                </div>
+                <div className="space-y-1">
+                   <label className="text-[9px] text-neutral-500 uppercase font-black">TikTok Pixel ID</label>
+                   <input 
+                      value={storeData.tiktokPixelId || ""} 
+                      onChange={e => setStoreData({...storeData, tiktokPixelId: e.target.value})} 
+                      placeholder="Ej: C982189012HK9012" 
+                      className="w-full bg-black border border-neutral-800 rounded-xl p-3 text-xs text-white font-mono animate-none" 
+                   />
+                   <p className="text-[8px] text-neutral-500">Inyecta el script oficial de TikTok Pixel y realiza el seguimiento completo del embudo de conversión publicitario.</p>
+                </div>
+             </div>
           </div>
 
           <button onClick={handleSaveStore} disabled={isSaving} className="w-full bg-dark-accent text-black font-black uppercase text-[10px] tracking-widest py-3 rounded-xl disabled:opacity-50">

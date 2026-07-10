@@ -3311,9 +3311,24 @@ async function startServer() {
     }
   });
 
-  app.get("/api/public/config", (req, res) => {
+  app.get("/api/public/config", async (req, res) => {
+    let metaPixelId = "";
+    let tiktokPixelId = "";
+    try {
+      const storeSnap = await getDoc(doc(db, "stores", "default"));
+      if (storeSnap.exists()) {
+        const storeData = storeSnap.data();
+        metaPixelId = storeData.metaPixelId || "";
+        tiktokPixelId = storeData.tiktokPixelId || "";
+      }
+    } catch (err) {
+      console.error("[Config API] Error loading store config for default:", err);
+    }
+
     res.json({
-      whatsappNumber: process.env.TWILIO_FROM_NUMBER ? process.env.TWILIO_FROM_NUMBER.replace(/\D/g, '') : null
+      whatsappNumber: process.env.TWILIO_FROM_NUMBER ? process.env.TWILIO_FROM_NUMBER.replace(/\D/g, '') : null,
+      metaPixelId,
+      tiktokPixelId
     });
   });
 
