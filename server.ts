@@ -1582,34 +1582,45 @@ async function sendKeepChatPrompt(to: string, from: string): Promise<boolean> {
   }
 }
 
-async function sendCategoryFeaturedProducts(to: string, from: string, category: string, categoryLabel: string, assignedStoreId: string) {
+const CATEGORY_PAGE_SIZE = 9; // dejamos 1 slot libre para el item "Ver más" (límite WhatsApp = 10)
+
+function normalizeCatText(s: string): string {
+  return String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+// `category` puede ser un string (una sola palabra clave) o un array de
+// palabras clave (ej: ["hogar","cocina","aseo"]) para que un solo botón de
+// menú cubra varias categorías reales del catálogo sin dejar productos fuera.
+async function sendCategoryFeaturedProducts(to: string, from: string, category: string | string[], categoryLabel: string, assignedStoreId: string, offset: number = 0) {
   try {
     const products = await loadProductsForStore(assignedStoreId);
-    
-    // Normalizar la categoría para buscar coincidencias
-    const searchCat = category.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    
+    const categories = Array.isArray(category) ? category : [category];
+    const searchCats = categories.map(normalizeCatText);
+
     const matched = products.filter((p: any) => {
       if (!p.category) return false;
-      const prodCat = p.category.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      return prodCat.includes(searchCat) || searchCat.includes(prodCat);
+      const prodCat = normalizeCatText(p.category);
+      return searchCats.some(sc => prodCat.includes(sc) || sc.includes(prodCat));
     });
 
-    // Tomar hasta 10 productos (límite de la lista interactiva de WhatsApp)
-    const featured = matched.slice(0, 10);
+    const page = matched.slice(offset, offset + CATEGORY_PAGE_SIZE);
+    const hasMore = matched.length > offset + CATEGORY_PAGE_SIZE;
 
     let responseText = `✨ *PRODUCTOS DESTACADOS: ${categoryLabel.toUpperCase()}* ✨\n\n`;
 
-    if (featured.length === 0) {
+    if (matched.length === 0) {
       responseText += `Actualmente estamos actualizando esta sección, pero contamos con excelentes opciones. ¡Pregúntame por lo que buscas! 🛒\n\n`;
     } else {
+      if (offset > 0) {
+        responseText += `_Mostrando más opciones (${offset + 1}–${offset + page.length} de ${matched.length})_\n\n`;
+      }
       // Texto CORTO (solo nombre + precio) para no pasarnos del límite de 1600
       // caracteres de WhatsApp/Twilio. El detalle completo de cada producto
       // (descripción, foto, etc.) lo mostramos en la lista interactiva tocable
       // que se envía justo después.
-      featured.forEach((p, idx) => {
+      page.forEach((p, idx) => {
         const formattedPrice = Number(p.price || 0).toLocaleString("es-CO");
-        responseText += `${idx + 1}. *${p.name}* 🌟 — $${formattedPrice} COP\n`;
+        responseText += `${offset + idx + 1}. *${p.name}* 🌟 — $${formattedPrice} COP\n`;
       });
       responseText += `\n👇 Toca la lista que te envío a continuación para ver el detalle y elegir el que quieras.\n\n`;
     }
@@ -1626,14 +1637,23 @@ async function sendCategoryFeaturedProducts(to: string, from: string, category: 
     // Enviar la lista de productos en texto
     await sendWhatsApp(to, responseText, undefined, undefined, from);
 
-    if (featured.length === 0) return;
+    if (matched.length === 0) return;
 
     const cleanClientPhone = to.replace('whatsapp:', '').trim();
     const customerProfileId = `${assignedStoreId}_${cleanClientPhone}`;
 
+    // Guardamos la búsqueda activa (categorías + próximo offset) para poder
+    // resolver el tap en "➡️ Ver más productos" sin tener que codificar todo
+    // en el id del item (que tiene límite de caracteres).
+    await setDoc(doc(db, "customers", customerProfileId), {
+      lastCategorySearch: { categories, categoryLabel, nextOffset: offset + CATEGORY_PAGE_SIZE }
+    }, { merge: true });
+
+    const categoryKey = `${searchCats.join("_")}_p${offset}`;
+
     // Enviar la lista interactiva (tocable) para que elija el producto con un tap
     setTimeout(async () => {
-      const sent = await sendProductListPicker(to, from, featured, category, customerProfileId);
+      const sent = await sendProductListPicker(to, from, page, categoryKey, customerProfileId, hasMore);
       if (!sent) {
         // Fallback: si no se pudo crear/enviar la lista interactiva, seguimos con texto libre
         await sendWhatsApp(to, "¿Cuál de estos productos te interesó para agendar tu despacho hoy mismo con *ENVÍO GRATIS* y *PAGO CONTRA ENTREGA*? 🚛💨 ¡Escríbeme el nombre o número y te lo reservo de una! 🔥", undefined, undefined, from);
@@ -1656,10 +1676,10 @@ async function sendCategoryFeaturedProducts(to: string, from: string, category: 
 // Crea (o reutiliza, si el catálogo no cambió) el Content Template de tipo
 // twilio/list-picker para una categoría específica. Se cachea por hash del
 // contenido para no crear un template nuevo en cada mensaje.
-async function ensureProductListTemplate(categoryKey: string, items: any[]): Promise<string | null> {
+async function ensureProductListTemplate(categoryKey: string, items: any[], hasMore: boolean = false): Promise<string | null> {
   if (!twilioClient) return null;
   try {
-    const hashSource = items.map((p: any) => `${p.name}|${p.price}`).join(";");
+    const hashSource = items.map((p: any) => `${p.name}|${p.price}`).join(";") + `|hasMore=${hasMore}`;
     const hash = crypto.createHash("md5").update(hashSource).digest("hex").slice(0, 12);
     const cfgKey = `productListSid_${categoryKey}`;
     const cfgHashKey = `productListHash_${categoryKey}`;
@@ -1676,9 +1696,17 @@ async function ensureProductListTemplate(categoryKey: string, items: any[]): Pro
       description: `$${Number(p.price || 0).toLocaleString("es-CO")} COP`.slice(0, 72)
     }));
 
+    if (hasMore) {
+      listItems.push({
+        item: "➡️ Ver más productos",
+        id: "MORE_PAGE",
+        description: "Toca aquí para ver más opciones de esta sección"
+      });
+    }
+
     const textFallback = items
       .map((p: any, idx: number) => `${idx + 1}. ${p.name} - $${Number(p.price || 0).toLocaleString("es-CO")}`)
-      .join("\n");
+      .join("\n") + (hasMore ? `\n\nEscribe "más" para ver más opciones.` : "");
 
     const content = await (twilioClient as any).content.v1.contents.create({
       friendlyName: `jan_prodlist_${categoryKey}_${Date.now()}`,
@@ -1707,12 +1735,16 @@ async function ensureProductListTemplate(categoryKey: string, items: any[]): Pro
 
 // Envía la lista interactiva y guarda en el perfil del cliente qué productos se
 // le mostraron (índice -> producto), para poder resolver cuál tocó.
-async function sendProductListPicker(to: string, from: string, products: any[], categoryKey: string, customerProfileId: string): Promise<boolean> {
+async function sendProductListPicker(to: string, from: string, products: any[], categoryKey: string, customerProfileId: string, hasMore: boolean = false): Promise<boolean> {
   if (!twilioClient) return false;
-  const top = products.slice(0, 10);
+  // `products` ya viene paginado (máx 9) por sendCategoryFeaturedProducts; si se
+  // llama desde otro lado con más de 9, igual respetamos el límite de 10 de WhatsApp
+  // dejando espacio para el item "Ver más" cuando aplique.
+  const maxItems = hasMore ? 9 : 10;
+  const top = products.slice(0, maxItems);
   if (top.length === 0) return false;
 
-  const contentSid = await ensureProductListTemplate(categoryKey, top);
+  const contentSid = await ensureProductListTemplate(categoryKey, top, hasMore);
   if (!contentSid) return false;
 
   try {
@@ -3123,7 +3155,12 @@ _El pedido ya se guardó y está listo en tu tablero._`;
     // ==============================================
     // Si el cliente tocó un botón, Twilio manda ButtonPayload con el id que definimos.
     // Esto es 100% determinístico: no pasa por la IA, garantizando velocidad y precisión.
-    const buttonPayload = req.body?.ButtonPayload;
+    // Twilio a veces manda el id del item tocado en ButtonPayload y otras veces
+    // en ListId (según el tipo de template/lista). Aceptamos ambos.
+    const buttonPayload = req.body?.ButtonPayload || req.body?.ListId;
+    if (req.body?.ButtonPayload || req.body?.ListId || req.body?.ButtonText) {
+      console.log("[WhatsApp Webhook] Interacción tipo botón/lista detectada. Body completo:", JSON.stringify(req.body));
+    }
     if (buttonPayload) {
       try {
         const cleanFrom = from.replace('whatsapp:', '').trim();
@@ -3182,15 +3219,24 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
         } else if (buttonPayload === "CHAT_KEEP") {
           await sendWhatsApp(from, "¡Súper! Dime en qué más te puedo colaborar hoy o qué producto estás buscando. 🔎", undefined, undefined, to);
         } else if (buttonPayload === "CAT_TECH") {
-          await sendCategoryFeaturedProducts(from, to, "tecnologia", "Tecnología 💻", assignedStoreId);
+          await sendCategoryFeaturedProducts(from, to, ["tecnologia"], "Tecnología 💻", assignedStoreId);
         } else if (buttonPayload === "CAT_HOME") {
-          await sendCategoryFeaturedProducts(from, to, "hogar", "Hogar, Cocina y Aseo 🧼", assignedStoreId);
+          await sendCategoryFeaturedProducts(from, to, ["hogar", "cocina", "aseo"], "Hogar, Cocina y Aseo 🧼", assignedStoreId);
         } else if (buttonPayload === "CAT_OTHER") {
           await sendOtherCategoriesMenu(from, to);
         } else if (buttonPayload === "CAT_AUTOS") {
-          await sendCategoryFeaturedProducts(from, to, "autos", "Autos y Herramientas 🚗", assignedStoreId);
+          await sendCategoryFeaturedProducts(from, to, ["autos", "herramientas"], "Autos y Herramientas 🚗", assignedStoreId);
         } else if (buttonPayload === "CAT_BEAUTY") {
-          await sendCategoryFeaturedProducts(from, to, "belleza", "Salud y Belleza 🧴", assignedStoreId);
+          await sendCategoryFeaturedProducts(from, to, ["belleza", "salud"], "Salud y Belleza 🧴", assignedStoreId);
+        } else if (buttonPayload === "MORE_PAGE") {
+          // El cliente tocó "➡️ Ver más productos" dentro de una categoría
+          const lastSearch = customerData?.lastCategorySearch;
+          if (!lastSearch || !Array.isArray(lastSearch.categories)) {
+            await sendWhatsApp(from, "Uy, esa búsqueda ya expiró 😅. Elige una categoría de nuevo:", undefined, undefined, to);
+            await sendCategoriesMenu(from, to);
+          } else {
+            await sendCategoryFeaturedProducts(from, to, lastSearch.categories, lastSearch.categoryLabel || "Productos", assignedStoreId, lastSearch.nextOffset || 0);
+          }
         } else if (buttonPayload === "MENU_BACK") {
           await sendMainMenu(from, to);
         } else if (buttonPayload.startsWith("PROD_")) {
@@ -3242,6 +3288,92 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
         return res.status(200).send("");
       } catch (e: any) {
         console.error("[WhatsApp Webhook] Error procesando ButtonPayload:", e.message);
+        try {
+          await sendWhatsApp(from, "Uy, algo falló procesando tu selección 😅. ¿Puedes intentarlo de nuevo o decirme qué producto buscas?", undefined, undefined, to);
+        } catch (sendErr: any) {
+          console.error("[WhatsApp Webhook] Error enviando fallback tras fallo de ButtonPayload:", sendErr.message);
+        }
+        // CRÍTICO: si no retornamos aquí, la ejecución seguía cayendo al flujo
+        // normal de IA usando messageBody (que puede venir vacío o ser el texto
+        // crudo de la lista), generando respuestas duplicadas o genéricas.
+        return res.status(200).send("");
+      }
+    }
+
+    // Respaldo por texto: si Twilio NO mandó ni ButtonPayload ni ListId (por
+    // ejemplo, si el cliente tocó un item pero por algún motivo llegó como
+    // texto plano, o si escribió el nombre del producto/acción a mano),
+    // intentamos resolverlo igual antes de caer en el flujo genérico de IA.
+    if (!buttonPayload && messageBody) {
+      try {
+        const cleanFrom = from.replace('whatsapp:', '').trim();
+        const assignedStoreId = await determineStoreId(cleanFrom, messageBody || "", to);
+        const customerProfileId = `${assignedStoreId}_${cleanFrom}`;
+        const cxSnap = await getDoc(doc(db, "customers", customerProfileId));
+        const customerData = cxSnap.exists() ? cxSnap.data() : null;
+        const normalizedMsg = normalizeCatText(messageBody).trim();
+
+        const lastList: any[] = Array.isArray(customerData?.lastProductList) ? customerData.lastProductList : [];
+
+        // 1) ¿El texto coincide (por número de la lista o por nombre) con un
+        //    producto de la última lista que le mostramos?
+        let matchedIdx = -1;
+        const asNumber = parseInt(normalizedMsg, 10);
+        if (!isNaN(asNumber) && asNumber >= 1 && asNumber <= lastList.length) {
+          matchedIdx = asNumber - 1;
+        } else if (normalizedMsg.length > 2) {
+          matchedIdx = lastList.findIndex((p: any) => {
+            const prodName = normalizeCatText(p?.name || "");
+            return prodName && (prodName.includes(normalizedMsg) || normalizedMsg.includes(prodName));
+          });
+        }
+
+        if (matchedIdx >= 0 && lastList[matchedIdx]) {
+          const picked = lastList[matchedIdx];
+          const currentCart: any[] = Array.isArray(customerData?.cart) ? [...customerData.cart] : [];
+          const existing = currentCart.find((it: any) => it.name === picked.name);
+          if (existing) {
+            existing.cantidad = (existing.cantidad || 1) + 1;
+          } else {
+            currentCart.push({ name: picked.name, price: picked.price, cantidad: 1 });
+          }
+          await updateDoc(doc(db, "customers", customerProfileId), { cart: currentCart });
+
+          const cartSummary = currentCart
+            .map((it: any) => `• ${it.cantidad}x ${it.name} - $${Number(it.price * it.cantidad).toLocaleString("es-CO")}`)
+            .join("\n");
+          const totalCart = currentCart.reduce((sum: number, it: any) => sum + (it.price * it.cantidad), 0);
+
+          const sent = await sendCartActionButtons(from, to, cartSummary, totalCart);
+          if (!sent) {
+            await sendWhatsApp(from, `🛒 Agregado a tu carrito:\n${cartSummary}\n\n💵 Total: $${totalCart.toLocaleString("es-CO")} COP\n\n¿Deseas agregar otro producto? Responde AGREGAR o CONFIRMAR.`, undefined, undefined, to);
+          }
+          return res.status(200).send("");
+        }
+
+        // 2) Palabras clave de acciones de carrito por texto libre
+        if (/\bagregar\b/.test(normalizedMsg)) {
+          await sendCategoriesMenu(from, to);
+          return res.status(200).send("");
+        }
+        if (/\bconfirmar\b/.test(normalizedMsg)) {
+          const currentCart: any[] = Array.isArray(customerData?.cart) ? customerData.cart : [];
+          if (currentCart.length === 0) {
+            await sendWhatsApp(from, "Tu carrito está vacío todavía 🙂. Elige al menos un producto del catálogo.", undefined, undefined, to);
+            await sendCategoriesMenu(from, to);
+          } else {
+            const productoTexto = currentCart.map((it: any) => `${it.cantidad}x ${it.name}`).join(", ");
+            const valorTotal = currentCart.reduce((sum: number, it: any) => sum + (it.price * it.cantidad), 0);
+            await updateDoc(doc(db, "customers", customerProfileId), { cart: null });
+            await startCheckoutFlowFromCart(from, cleanFrom, to, assignedStoreId, productoTexto, valorTotal);
+          }
+          return res.status(200).send("");
+        }
+        // Si no coincide con nada de lo anterior, seguimos normalmente hacia
+        // el flujo de IA de más abajo (no hacemos return).
+      } catch (e: any) {
+        console.error("[WhatsApp Webhook] Error en respaldo por texto (sin ButtonPayload):", e.message);
+        // No retornamos: dejamos que el flujo normal de IA intente responder.
       }
     }
 
