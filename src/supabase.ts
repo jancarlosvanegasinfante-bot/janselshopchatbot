@@ -33,6 +33,28 @@ export interface SupabaseUser {
   providerData: Array<{ providerId: string; email: string | null }>;
 }
 
+// -------------------------------------------------------------
+// 🔒 ACCESO EXCLUSIVO DE ADMINISTRADOR
+// -------------------------------------------------------------
+// Este panel es de un solo dueño: José María / Jan Carlos Vanegas.
+// Sin importar el método de ingreso (SMS/OTP o usuario+contraseña), solo se
+// concede acceso si el número coincide con este. Cualquier otro intento se
+// rechaza ANTES de guardar sesión, así que nunca queda una sesión "a medias"
+// de alguien que no sea el dueño de la tienda.
+const ADMIN_PHONE = "+573133647176";
+
+function normalizePhoneForAuth(raw: string | null | undefined): string {
+  const digits = String(raw || "").replace(/[^\d]/g, "");
+  if (!digits) return "";
+  // Colombia: si vienen 10 dígitos sin indicativo, asumimos +57
+  if (digits.length === 10) return `+57${digits}`;
+  return `+${digits}`;
+}
+
+function isAdminPhone(raw: string | null | undefined): boolean {
+  return normalizePhoneForAuth(raw) === ADMIN_PHONE;
+}
+
 // Global Auth State
 let currentAuthUser: SupabaseUser | null = (() => {
   try {
@@ -133,6 +155,9 @@ export async function signInWithPopup(authObj: any, provider: any): Promise<any>
 // Sign in with Email and Password
 export async function signInWithPhoneOtp(phone: string): Promise<any> {
   console.log(`[Supabase Auth] Sign in with phone OTP: ${phone}`);
+  if (!isAdminPhone(phone)) {
+    throw new Error("Este panel es de acceso exclusivo. El número ingresado no está autorizado.");
+  }
   if (supabase) {
     const { data, error } = await supabase.auth.signInWithOtp({
       phone,
@@ -149,6 +174,9 @@ export async function signInWithPhoneOtp(phone: string): Promise<any> {
 
 export async function verifyPhoneOtp(phone: string, token: string): Promise<any> {
   console.log(`[Supabase Auth] Verify OTP for: ${phone}`);
+  if (!isAdminPhone(phone)) {
+    throw new Error("Este panel es de acceso exclusivo. El número ingresado no está autorizado.");
+  }
   if (supabase) {
     const { data, error } = await supabase.auth.verifyOtp({
       phone,
@@ -157,6 +185,10 @@ export async function verifyPhoneOtp(phone: string, token: string): Promise<any>
     });
     if (error) throw error;
     if (data.user) {
+      if (!isAdminPhone(data.user.phone || phone)) {
+        await supabase.auth.signOut();
+        throw new Error("Este panel es de acceso exclusivo. El número ingresado no está autorizado.");
+      }
       currentAuthUser = {
         uid: data.user.id,
         email: data.user.email || null,
@@ -180,8 +212,8 @@ export async function verifyPhoneOtp(phone: string, token: string): Promise<any>
     currentAuthUser = {
       uid: "usr_emulated_jansel_admin",
       email: "jancarlosvanegasinfante@gmail.com",
-      phone: phone,
-      displayName: phone,
+      phone: ADMIN_PHONE,
+      displayName: "Jan Carlos Vanegas",
       emailVerified: true,
       isAnonymous: false,
       tenantId: null,
@@ -194,17 +226,25 @@ export async function verifyPhoneOtp(phone: string, token: string): Promise<any>
 
 export async function loginWithPhoneOrName(identifier: string, password: string): Promise<any> {
   console.log(`[Auth] Manual login for: ${identifier}`);
-  
+
   if (password.length < 3) {
     throw new Error("La contraseña debe tener al menos 3 caracteres.");
   }
-  
+  if (!isAdminPhone(identifier)) {
+    throw new Error("Este panel es de acceso exclusivo. Ingresa con tu número de administrador registrado.");
+  }
+  const requiredPassword = ((import.meta as any).env?.VITE_ADMIN_PASSWORD as string) || "";
+  if (requiredPassword && password !== requiredPassword) {
+    throw new Error("Contraseña incorrecta.");
+  }
+
   await new Promise(r => setTimeout(r, 600)); // fake delay
-  
+
   currentAuthUser = {
     uid: "usr_emulated_jansel_admin",
     email: "jancarlosvanegasinfante@gmail.com",
-    displayName: identifier,
+    phone: ADMIN_PHONE,
+    displayName: "Jan Carlos Vanegas",
     emailVerified: true,
     isAnonymous: false,
     tenantId: null,

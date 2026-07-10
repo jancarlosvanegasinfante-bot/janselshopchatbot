@@ -195,7 +195,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Catalog from "./components/Catalog";
 
 function JanAdmin() {
-  const [user, setUser] = useState<FirebaseUser | null>({ uid: 'admin_jan_01', email: 'jancarlosvanegasinfante@gmail.com', phone: '+573133647176', displayName: 'Jan Carlos Vanegas' } as any);
+  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -232,10 +233,13 @@ function JanAdmin() {
   }, [activeTab]);
 
   useEffect(() => {
-    // const unsubAuth = onAuthStateChanged(auth, (u) => setUser(u));
+    const unsubAuth = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      setAuthChecked(true);
+    });
     const url = window.location.origin + "/api/webhook/whatsapp";
     setWebhookUrl(url);
-    // return () => unsubAuth();
+    return () => unsubAuth();
   }, []);
 
   useEffect(() => {
@@ -539,6 +543,14 @@ function JanAdmin() {
       setIsResetting(false);
     }
   };
+
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen bg-[#0A0A0A] text-white flex items-center justify-center">
+        <RefreshCw className="w-6 h-6 animate-spin text-dark-accent" />
+      </div>
+    );
+  }
 
   if (!user) {
     return (

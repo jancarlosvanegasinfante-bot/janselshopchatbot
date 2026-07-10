@@ -5,6 +5,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import twilio from "twilio";
 import { readFileSync, existsSync } from "fs";
+import Papa from "papaparse";
 import "dotenv/config";
 
 import { createClient } from "@supabase/supabase-js";
@@ -617,7 +618,7 @@ async function identifyProductKeywordsFromImage(imagePart: { data: string; mimeT
   // Cache por hash del contenido: si Twilio reintenta el webhook (timeouts,
   // reintentos de red) o el cliente reenvía la misma imagen, no pagamos la
   // llamada de visión dos veces.
-  const cacheKey = crypto.createHash("md5").update(imagePart.data.slice(0, 5000)).digest("hex");
+  const cacheKey = crypto.createHash("md5").update(imagePart.data).digest("hex");
   const cached = imageKeywordCache.get(cacheKey);
   if (cached && Date.now() - cached.time < 10 * 60 * 1000) {
     console.log("[Image Product Match] Usando resultado en caché (misma imagen reciente)");
@@ -633,7 +634,7 @@ async function identifyProductKeywordsFromImage(imagePart: { data: string; mimeT
           {
             role: "user",
             content: [
-              { type: "text", text: "Mira esta imagen de un producto. Responde SOLO con 3 a 6 palabras clave en español separadas por coma que describan qué tipo de producto es (categoría, uso, color si aplica). No agregues explicaciones ni frases completas. Ejemplo de respuesta válida: cargador, carro, bateria, inalambrico" },
+              { type: "text", text: "Mira esta imagen de un producto. Responde SOLO con 3 a 6 palabras clave en español separadas por coma que describan qué tipo de producto es (categoría, uso, color si aplica). No agregues explicaciones ni frases completas. Ejemplo de respuesta válida: camisa, ropa, algodon, azul" },
               { type: "image_url", image_url: { url: `data:${imagePart.mimeType};base64,${imagePart.data}` } }
             ]
           }
@@ -647,11 +648,12 @@ async function identifyProductKeywordsFromImage(imagePart: { data: string; mimeT
       }
     );
     const text = resp.data?.choices?.[0]?.message?.content || "";
+    const stopWords = new Set(["para", "con", "del", "los", "las", "una", "unos", "unas", "uso", "que", "como", "esta", "esto", "este"]);
     const keywords = text
-      .split(/[,;\n]/)
-      .map((k: string) => k.trim().toLowerCase())
-      .filter((k: string) => k.length > 2)
-      .slice(0, 6);
+      .split(/[,;\n\s]+/)
+      .map((k: string) => k.trim().toLowerCase().replace(/[^a-z0-9áéíóúñ]/g, ''))
+      .filter((k: string) => k.length > 3 && !stopWords.has(k))
+      .slice(0, 8);
     imageKeywordCache.set(cacheKey, { keywords, time: Date.now() });
     return keywords;
   } catch (e: any) {
@@ -876,6 +878,19 @@ async function seedDatabase(force = false, customCatalog?: any, storeId: string 
  */
 // Tools are imported from janAgent.ts
 
+// Detecta respuestas afirmativas/negativas en texto libre (fallback por si el
+// cliente escribe en vez de tocar el botón). Se usa para el atajo determinístico
+// de "pendingImageOffer" y evita que la IA vuelva a preguntar lo mismo en loop.
+function isAffirmativeText(text: string): boolean {
+  const t = normalizeCatText(text).trim();
+  return /^(si+|s|dale|claro|obvio|de una|listo|ok|okay|vale|me interesa|lo quiero|quiero eso|si porfa|si porfavor|si por favor|si señor|si señora)$/.test(t) ||
+    /^(si|s[ií]),?\s/.test(t);
+}
+function isNegativeText(text: string): boolean {
+  const t = normalizeCatText(text).trim();
+  return /^(no+|no gracias|nel|no porfa|no por ahora|no por favor|nop)$/.test(t);
+}
+
 async function processInferenceOnServer(activityId: string, data: any) {
   try {
     await updateDoc(doc(db, "activities", activityId), { 
@@ -937,6 +952,42 @@ async function processInferenceOnServer(activityId: string, data: any) {
     const customerProfileId = `${assignedStoreId}_${fromPhone}`;
     const cxSnap = await getDoc(doc(db, "customers", customerProfileId));
     const customerProfile = cxSnap.exists() ? cxSnap.data() : null;
+
+    // ==============================================
+    // 🔘 ATAJO DETERMINÍSTICO: respuesta a oferta de producto por imagen
+    // ==============================================
+    // Si el turno anterior identificamos un producto por FOTO y le mandamos
+    // botones (pendingImageOffer), y el cliente responde por TEXTO en vez de
+    // tocar el botón (ej. escribe "SI"), resolvemos acá mismo sin volver a
+    // pasar por la IA. Esto es lo que eliminaba el loop de "¿te interesa?".
+    const hasNewImageThisTurn = Array.isArray(data.mediaItems) && data.mediaItems.some((it: any) => it.mimeType?.startsWith("image/"));
+    if (!hasNewImageThisTurn && customerProfile?.pendingImageOffer?.producto) {
+      const rawText = (data.message || "").trim();
+      if (isAffirmativeText(rawText)) {
+        console.log(`[Server AI] Cliente confirmó por texto el producto identificado por imagen (${customerProfile.pendingImageOffer.producto}). Pasando directo a checkout...`);
+        const cleanFrom = data.from.replace("whatsapp:", "").trim();
+        await updateDoc(doc(db, "customers", customerProfileId), { pendingImageOffer: null });
+        await startCheckoutFlow(data.from, cleanFrom, data.to, assignedStoreId, customerProfile.pendingImageOffer.producto);
+        await updateDoc(doc(db, "activities", activityId), {
+          status: "respondido",
+          response: "[Checkout iniciado desde oferta por imagen confirmada por texto]",
+          respondedAt: serverTimestamp()
+        });
+        return;
+      } else if (isNegativeText(rawText)) {
+        console.log(`[Server AI] Cliente rechazó por texto el producto identificado por imagen.`);
+        await updateDoc(doc(db, "customers", customerProfileId), { pendingImageOffer: null });
+        await sendWhatsApp(data.from, "Tranqui 🙂 ¿Buscas algo más o te muestro otras opciones?", undefined, activityId, data.to);
+        await updateDoc(doc(db, "activities", activityId), {
+          status: "respondido",
+          response: "[Oferta por imagen descartada]",
+          respondedAt: serverTimestamp()
+        });
+        return;
+      }
+      // Si no fue ni sí ni no claro, dejamos que siga el flujo normal (la IA
+      // responderá con el contexto de la foto ya identificada previamente).
+    }
 
     const history = await getCrmContext(data.from, assignedStoreId);
     
@@ -1018,11 +1069,19 @@ async function processInferenceOnServer(activityId: string, data: any) {
     if (imageParts.length > 0 && canProcessMedia(fromPhone)) {
       imageKeywords = await identifyProductKeywordsFromImage(imageParts[0]);
       if (imageKeywords.length > 0) {
-        imageMatchedProducts = products.filter(p => {
+        const scoredProducts = products.map(p => {
           const nameLower = (p.name || "").toLowerCase();
           const catLower = (p.category || "").toLowerCase();
-          return imageKeywords.some(k => nameLower.includes(k) || catLower.includes(k));
-        }).slice(0, 10);
+          let score = 0;
+          for (const k of imageKeywords) {
+            if (nameLower.includes(k)) score += 2;
+            else if (catLower.includes(k)) score += 1;
+          }
+          return { product: p, score };
+        }).filter(item => item.score > 0)
+          .sort((a, b) => b.score - a.score);
+        
+        imageMatchedProducts = scoredProducts.slice(0, 5).map(item => item.product);
         console.log(`[Image Product Match] Palabras clave detectadas: ${imageKeywords.join(", ")} | Coincidencias en catálogo: ${imageMatchedProducts.length}`);
       }
     }
@@ -1081,7 +1140,8 @@ NO incluyas explicaciones antes o después del JSON. NO uses formato markdown fu
 El JSON debe cumplir ESTRICTAMENTE con la siguiente estructura de campos (no inventes otras llaves):
 
 {
-  "accion": "respuesta" | "notificar_admin" | "confirmar_pedido",
+  "accion": "respuesta" | "notificar_admin" | "confirmar_pedido" | "iniciar_checkout",
+  "explicacion_accion": "Usa 'iniciar_checkout' SI el cliente acaba de decir que SÍ quiere comprar o llevar el producto pero NO tienes sus datos de envío. Usa 'confirmar_pedido' SOLO si YA tienes todos sus datos (nombre, dirección, etc.).",
   "mensaje": "Mensaje en español (tono cercano de vendedor colombiano real, natural y variado — evita sonar repetitivo o de guion. Breve y persuasivo, máximo 1-2 párrafos cortos, con emojis con moderación, no en cada frase)",
   "producto": "Nombre del producto interesado si aplica (usa el nombre EXACTO del inventario, nunca inventado)",
   "intencion": "intención detectada",
@@ -1099,7 +1159,7 @@ El JSON debe cumplir ESTRICTAMENTE con la siguiente estructura de campos (no inv
     "valor": 0, // Precio/valor acordado como número entero
     "notes": "Notas adicionales"
   },
-  "imageUrl": "URL pública de imagen del producto si aplica"
+  "imageUrl": "URL pública de imagen del producto si aplica (SOLO devuélvela si el cliente pide una foto explícitamente, o si es la PRIMERA VEZ que le ofreces este producto. NUNCA la devuelvas si él fue quien te envió la foto a ti)"
 }
 
 Asegúrate de que la propiedad "mensaje" contenga tu respuesta real dirigida al cliente.`;
@@ -1362,7 +1422,40 @@ Asegúrate de que la propiedad "mensaje" contenga tu respuesta real dirigida al 
     // y crear el pedido de una, mandamos BOTONES de confirmación (Sí/No) y dejamos el pedido
     // en pendingConfirmation hasta que el cliente toque el botón. Evita pedidos mal-confirmados
     // por una interpretación ambigua de texto libre.
-    if (jsonResponse.accion === "confirmar_pedido") {
+    if (jsonResponse.accion === "iniciar_checkout") {
+      console.log("[Server AI] Intención de comprar detectada por IA. Pasando al flujo determinístico de checkout...");
+      const cleanFrom = data.from.replace("whatsapp:", "").trim();
+      // Si venía de una oferta por imagen pendiente, la limpiamos: ya se resolvió.
+      if (customerProfile?.pendingImageOffer) {
+        await updateDoc(doc(db, "customers", customerProfileId), { pendingImageOffer: null });
+      }
+      await startCheckoutFlow(data.from, cleanFrom, data.to, assignedStoreId, jsonResponse.producto || "");
+      jsonResponse._skipTextReply = true;
+    } else if (imageParts.length > 0 && imageMatchedProducts.length > 0 && jsonResponse.producto && jsonResponse.accion === "respuesta" && data.from.startsWith("whatsapp:")) {
+      // Producto real identificado a partir de la FOTO que envió el cliente.
+      // En vez de dejar la conversación abierta en texto libre (lo que causaba
+      // el loop de "¿te interesa?" repetido), mandamos el mensaje de la IA
+      // seguido de botones Sí/No deterministas, y guardamos pendingImageOffer
+      // para resolver la respuesta del cliente sin margen de error.
+      console.log(`[Server AI] Producto identificado por imagen (${jsonResponse.producto}). Enviando botones de confirmación de interés...`);
+      try {
+        if (jsonResponse.mensaje) {
+          await sendWhatsApp(data.from, jsonResponse.mensaje, undefined, activityId, data.to);
+        }
+        const sentBtns = await sendImageProductButtons(data.from, data.to, jsonResponse.producto);
+        if (sentBtns) {
+          await setDoc(doc(db, "customers", customerProfileId), {
+            pendingImageOffer: {
+              producto: jsonResponse.producto,
+              createdAt: serverTimestamp()
+            }
+          }, { merge: true });
+        }
+        jsonResponse._skipTextReply = true;
+      } catch (e) {
+        console.error("[Server AI] Error en el flujo de botones de producto por imagen:", e);
+      }
+    } else if (jsonResponse.accion === "confirmar_pedido") {
       console.log("[Server AI] Intención de confirmar pedido detectada. Enviando botones de confirmación...");
       try {
         const sent = await sendOrderConfirmationButtons(data.from, data.to, jsonResponse);
@@ -1437,6 +1530,10 @@ Asegúrate de que la propiedad "mensaje" contenga tu respuesta real dirigida al 
     if (!jsonResponse._skipTextReply) {
       if (data.from.startsWith("whatsapp:")) {
         let mediaUrl = jsonResponse.imageUrl || undefined;
+        if (imageParts.length > 0 && mediaUrl) {
+           console.log("[Server AI] Omitiendo mediaUrl porque el cliente acaba de enviar una imagen.");
+           mediaUrl = undefined;
+        }
         await sendWhatsApp(data.from, jsonResponse.mensaje, mediaUrl, activityId, data.to);
       } else if (data.platform === "instagram" || data.platform === "messenger") {
         await sendMetaMessage(data.from, jsonResponse.mensaje, data.platform, data.to);
@@ -1577,6 +1674,75 @@ async function ensureOrderConfirmationTemplate(): Promise<string | null> {
   } catch (e: any) {
     console.error("[WhatsApp Buttons] No se pudo crear/obtener el template de confirmación:", e.message);
     return null;
+  }
+}
+
+// ==============================================
+// 🔘 BOTONES DE INTERÉS SOBRE PRODUCTO IDENTIFICADO POR IMAGEN
+// ==============================================
+// Cuando el cliente envía una FOTO y logramos identificar un producto real del
+// inventario que coincide, en vez de dejar que la IA siga la conversación en
+// texto libre (lo que generaba el loop de "¿te interesa?" -> "SI" -> "¿te
+// interesa?" otra vez), mandamos botones deterministas de Sí/No. Al tocar
+// "Sí", se dispara directo el flujo de checkout sin volver a pasar por la IA.
+const IMG_YES_ID = "JAN_IMG_YES";
+const IMG_NO_ID = "JAN_IMG_NO";
+
+async function ensureImageProductTemplate(): Promise<string | null> {
+  if (!twilioClient) return null;
+  try {
+    const cfgSnap = await getDoc(doc(db, "config", "system"));
+    const existingSid = cfgSnap.exists() ? cfgSnap.data()?.imageProductTemplateSid : null;
+    if (existingSid) {
+      console.log(`[WhatsApp Buttons] Usando template de producto por imagen existente: ${existingSid}`);
+      return existingSid;
+    }
+
+    console.log("[WhatsApp Buttons] No hay template de producto por imagen aún. Creando uno nuevo...");
+    const content = await (twilioClient as any).content.v1.contents.create({
+      friendlyName: `jan_image_product_${Date.now()}`,
+      language: "es",
+      variables: { "1": "Cargador Iniciador de Batería Para Carro" },
+      types: {
+        "twilio/quick-reply": {
+          body: "¿Te interesa el *{{1}}*? 🤔",
+          actions: [
+            { title: "Sí, lo quiero ✅", id: IMG_YES_ID },
+            { title: "No, gracias ❌", id: IMG_NO_ID }
+          ]
+        },
+        "twilio/text": {
+          body: "¿Te interesa el *{{1}}*? Responde SI o NO."
+        }
+      }
+    });
+
+    await setDoc(doc(db, "config", "system"), { imageProductTemplateSid: content.sid }, { merge: true });
+    console.log(`[WhatsApp Buttons] Template de producto por imagen creado y guardado: ${content.sid}`);
+    return content.sid;
+  } catch (e: any) {
+    console.error("[WhatsApp Buttons] No se pudo crear/obtener el template de producto por imagen:", e.message);
+    return null;
+  }
+}
+
+async function sendImageProductButtons(to: string, from: string, productName: string): Promise<boolean> {
+  if (!twilioClient) return false;
+  const contentSid = await ensureImageProductTemplate();
+  if (!contentSid) return false;
+
+  try {
+    await (twilioClient as any).messages.create({
+      from: normalizePhone(from || TWILIO_FROM_NUMBER || "+14155238886"),
+      to: normalizePhone(to),
+      contentSid,
+      contentVariables: JSON.stringify({ "1": String(productName || "este producto").slice(0, 300) })
+    });
+    console.log(`[WhatsApp Buttons] Botones de producto por imagen enviados a ${to}`);
+    return true;
+  } catch (e: any) {
+    console.error("[WhatsApp Buttons] Error enviando botones de producto por imagen:", e.message);
+    return false;
   }
 }
 
@@ -2287,6 +2453,38 @@ async function finalizeOrder(
 // Extraída para reutilizarla tanto en el flujo normal de IA como en la confirmación por botón.
 async function loadProductsForStore(assignedStoreId: string): Promise<any[]> {
   let products: any[] = [];
+  
+  if (process.env.GOOGLE_SHEETS_CSV_URL) {
+    try {
+      const resp = await axios.get(process.env.GOOGLE_SHEETS_CSV_URL);
+      const parsed = Papa.parse(resp.data, { header: true, skipEmptyLines: true });
+      if (parsed.data && parsed.data.length > 0) {
+        products = parsed.data.map((row: any, index: number) => {
+          // Normalizar llaves (para ser tolerante a mayúsculas o espacios en las cabeceras)
+          const getVal = (key: string) => {
+            const foundKey = Object.keys(row).find(k => k.toLowerCase().trim() === key.toLowerCase());
+            return foundKey ? row[foundKey] : undefined;
+          };
+          
+          return {
+            id: getVal("id") || `csv_prod_${index}`,
+            name: getVal("name") || getVal("nombre") || getVal("producto") || "Producto sin nombre",
+            price: parseInt(String(getVal("price") || getVal("precio") || "0").replace(/\D/g, "")) || 0,
+            description: getVal("description") || getVal("descripción") || getVal("descripcion") || "",
+            category: getVal("category") || getVal("categoría") || getVal("categoria") || "General",
+            imageUrl: getVal("imageUrl") || getVal("imagen") || getVal("foto") || getVal("url") || "",
+            storeId: assignedStoreId,
+            stock: parseInt(String(getVal("stock") || getVal("cantidad") || "100").replace(/\D/g, "")) || 100
+          };
+        });
+        console.log(`[CSV Sync] ${products.length} productos cargados dinámicamente de Google Sheets.`);
+        return products;
+      }
+    } catch (e: any) {
+      console.error("[CSV Sync] Error cargando productos del CSV:", e.message);
+    }
+  }
+
   try {
     // UNIFIED MODE: Fetch all products across all stores
     let prodSnap = await getDocs(collection(db, "products"));
@@ -4237,6 +4435,17 @@ _El pedido ya se guardó y está listo en tu tablero._`;
         } else if (buttonPayload === CONFIRM_NO_ID) {
           await updateDoc(doc(db, "customers", customerProfileId), { pendingConfirmation: null });
           await sendWhatsApp(from, "Tranqui, no confirmé nada todavía 🙂 Contame qué querés cambiar y seguimos.", undefined, undefined, to);
+        } else if (buttonPayload === IMG_YES_ID) {
+          const pendingImg = customerData?.pendingImageOffer;
+          if (pendingImg?.producto) {
+            await updateDoc(doc(db, "customers", customerProfileId), { pendingImageOffer: null });
+            await startCheckoutFlow(from, cleanFrom, to, assignedStoreId, pendingImg.producto);
+          } else {
+            await sendWhatsApp(from, "¡Perfecto! Contame qué producto te interesó y seguimos. 😊", undefined, undefined, to);
+          }
+        } else if (buttonPayload === IMG_NO_ID) {
+          await updateDoc(doc(db, "customers", customerProfileId), { pendingImageOffer: null });
+          await sendWhatsApp(from, "Tranqui 🙂 ¿Buscas algo más o te muestro otras opciones?", undefined, undefined, to);
         } else if (buttonPayload === "MENU_CATALOG") {
           await sendCategoriesMenu(from, to);
         } else if (buttonPayload === "MENU_HUMAN") {
@@ -4766,6 +4975,16 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
             }, { merge: true });
             await sendWhatsApp(from, "Tranqui, no he confirmado nada todavía 🙂 Dime qué deseas cambiar o qué producto estás buscando y lo ajustamos.", undefined, activityRef.id, to);
             return res.status(200).send("");
+          } else {
+            // Antes: si la respuesta no era ni "SI" ni "NO" reconocido, el código
+            // seguía de largo hacia los interceptores de más abajo (compra,
+            // catálogo, saludo) sin resolver el pedido pendiente — dejando al
+            // cliente atascado en "confirmacion" sin que nada se lo aclarara,
+            // y con riesgo de que un nuevo "quiero comprar X" pisara los datos
+            // ya capturados. Ahora reforzamos la pregunta y cortamos acá,
+            // igual que en el resto de los pasos de este mismo flujo.
+            await sendWhatsApp(from, "Perdón, no te entendí bien 🙏 ¿Confirmas tu pedido? Responde *SÍ* para confirmar o *NO* si quieres corregir algo.", undefined, activityRef.id, to);
+            return res.status(200).send("");
           }
         }
       }
@@ -4842,21 +5061,17 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
       (cleanMsg.includes("producto") && (cleanMsg.includes("que") || cleanMsg.includes("cual") || cleanMsg.includes("ver") || cleanMsg.includes("mostrar") || cleanMsg.includes("tienen") || cleanMsg.includes("tienes")));
 
       if (isCatalogRequest && from.startsWith("whatsapp:")) {
-        console.log(`[WhatsApp Interceptor] Catalog request detected from ${from}. Replying deterministically with Top 15...`);
-        
-        const TOP_15_CATALOG_MESSAGE = `¡Qué más parce! 👋 Te doy la bienvenida a *Jan Sel Shop*! 💎\n\nTe cuento que aquí tenemos un catálogo gigante con *más de 360 productos espectaculares* para vos. ¡Cualquier cosa que busques o te imagines, te la conseguimos de una! 🚀\n\nY acordate de lo mejor:\n🔥 *ENVÍO GRATIS A TODA COLOMBIA* 🇨🇴\n🚛 *PAGO CONTRA ENTREGA* (Pagas solo cuando recibes en la puerta de tu casa)\n\nPara que no te compliques, aquí tienes nuestro *TOP 15 de Joyas Más Vendidas y Recomendadas* por nuestros clientes en todo el país:\n\n1. 🥇 *Módem Wifi Portátil Pro* 📶\n   💵 Hoy en solo: *$119.900* (Antes ~~165.000~~)\n2. 🥈 *Espejo Retrovisor Cámara Dual* 🚗\n   💵 Hoy en solo: *$139.900* (Antes ~~195.000~~)\n3. 🥉 *Intercomunicador Y10 para Moto* 🏍️\n   💵 Hoy en solo: *$149.900* (Antes ~~210.000~~)\n4. ⚡ *Soporte de Carga Magnética Vehicular* 📱\n   💵 Hoy en solo: *$59.900* (Antes ~~85.000~~)\n5. 🏍️ *Funda Protectora Premium para Moto* 🌧️\n   💵 Hoy en solo: *$49.900* (Antes ~~75.000~~)\n6. 🪛 *Destornillador Atornillador Eléctrico* 🛠️\n   💵 Hoy en solo: *$69.900* (Antes ~~100.000~~)\n7. 🔦 *Linterna Frontal Recargable de Cabeza* 👷\n   💵 Hoy en solo: *$39.900* (Antes ~~60.000~~)\n8. 🔦 *Linterna Multipropósito de Alta Potencia* ⚡\n   💵 Hoy en solo: *$44.900* (Antes ~~65.000~~)\n9. 🏕️ *Bombillo para Camping Recargable* 💡\n   💵 Hoy en solo: *$34.900* (Antes ~~50.000~~)\n10. 💡 *Lámpara LED con Sensor Solar Ever Brite* ☀️\n    💵 Hoy en solo: *$49.900* (Antes ~~70.000~~)\n11. 🔐 *Candado Inteligente con Alarma 110dB* 🚨\n    💵 Hoy en solo: *$54.900* (Antes ~~80.000~~)\n12. 💨 *Compresor / Inflador Digital Portátil* 🚲\n    💵 Hoy en solo: *$109.900* (Antes ~~155.000~~)\n13. 🚿 *Hidrolavadora Inalámbrica Recargable* 💦\n    💵 Hoy en solo: *$129.900* (Antes ~~185.000~~)\n14. 🧹 *Aspiradora Portátil de Alta Succión* 🏎️\n    💵 Hoy en solo: *$59.900* (Antes ~~90.000~~)\n15. 🔌 *Cargador Súper Rápido Dual para Carro* ⚡\n    💵 Hoy en solo: *$29.900* (Antes ~~45.000~~)\n\n⚠️ *¡Últimas unidades disponibles con esta oferta de locura!*`;
+        console.log(`[WhatsApp Interceptor] Catalog request detected from ${from}. Replying deterministically with the interactive menu (no text list)...`);
 
-        const TOP_15_CATALOG_MESSAGE_2 = `👀 *¡Revisa el catálogo interactivo y toca el botón que necesites!*\n\nAquí abajo te dejo nuestras categorías más vendidas para que navegues de una. Si estás buscando algún otro artículo específico (marca, modelo, tipo de producto), ¡escribilo acá mismo en el chat y yo de inmediato te confirmo disponibilidad y precio! 🛒👇`;
+        const CATALOG_SHORT_MESSAGE = `¡Qué más parce! 👋 Te doy la bienvenida a *Jan Sel Shop*! 💎\n\nTenemos un catálogo gigante con *más de 360 productos espectaculares*. Cualquier cosa que busques o te imagines, ¡te la conseguimos de una! 🚀\n\n🔥 *ENVÍO GRATIS A TODA COLOMBIA* 🇨🇴\n🚛 *PAGO CONTRA ENTREGA*\n\n👇 Toca una categoría para ver los productos, o escríbeme directamente qué buscas y te confirmo disponibilidad y precio de una.`;
 
-        await sendWhatsApp(from, TOP_15_CATALOG_MESSAGE, undefined, activityRef.id, to);
-        await new Promise(resolve => setTimeout(resolve, 1200));
-        await sendWhatsApp(from, TOP_15_CATALOG_MESSAGE_2, undefined, activityRef.id, to);
+        await sendWhatsApp(from, CATALOG_SHORT_MESSAGE, undefined, activityRef.id, to);
         await new Promise(resolve => setTimeout(resolve, 1200));
         await sendCategoriesMenu(from, to);
 
         await updateDoc(doc(db, "activities", activityRef.id), {
           status: "respondido",
-          response: TOP_15_CATALOG_MESSAGE + "\n\n" + TOP_15_CATALOG_MESSAGE_2,
+          response: CATALOG_SHORT_MESSAGE,
           respondedAt: serverTimestamp()
         });
 
