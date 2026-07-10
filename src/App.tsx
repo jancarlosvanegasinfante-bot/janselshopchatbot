@@ -242,74 +242,26 @@ function JanAdmin() {
     if (!user) return;
     const loadStore = async () => {
       try {
-        // Fetch all businesses for user
-        const qStore = query(collection(db, "stores"), where("ownerId", "==", user.uid));
-        const snap = await getDocs(qStore);
-        let list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-        const adminEmail = "jancarlosvanegasinfante@gmail.com";
-        const adminPhone = "+573133647176";
-        const cleanPhone = (p: string | null | undefined) => p ? p.replace(/\D/g, "") : "";
-        const targetClean = cleanPhone(adminPhone);
-        
-        const isAdmin = user.email === adminEmail || 
-                        user.uid === "usr_emulated_jansel_admin" ||
-                        cleanPhone(user.phone) === targetClean || 
-                        cleanPhone(user.displayName) === targetClean;
-        
-        console.log("[Store] User:", { uid: user.uid, email: user.email, phone: user.phone, displayName: user.displayName, isAdmin });
-        
-        // Backward compatibility for Jan's original store
-        if (isAdmin && !list.find(s => s.id === "default")) {
-           const defSnap = await getDoc(doc(db, "stores", "default"));
-           let finalStore;
-           if (!defSnap.exists()) {
-              const baseStore = {
-                ownerId: user.uid,
-                name: "JANSEL SHOP",
-                slug: "jansel-shop",
-                botName: "Jan",
-                botTone: "paisa, carismático y respetuoso",
-                botGoal: "persuadir y cerrar ventas rápido",
-                themeColor: "#F27D26"
-              };
-              await setDoc(doc(db, "stores", "default"), baseStore);
-              finalStore = { id: "default", ...baseStore };
-           } else {
-              // Ensure owner mapping (update if it belongs to admin but wrong UID)
-              if (!defSnap.data().ownerId) {
-                await updateDoc(doc(db, "stores", "default"), { ownerId: user.uid });
-              }
-              const fetchDef = await getDoc(doc(db, "stores", "default"));
-              finalStore = { id: "default", ...fetchDef.data() };
-           }
-           list = [finalStore, ...list.filter(s => s.id !== "default")];
-        }
-
-        if (isAdmin) {
-          list.sort((a, b) => a.id === "default" ? -1 : b.id === "default" ? 1 : 0);
-        }
-
-        if (list.length > 0) {
-          setUserStores(list);
-          const defStore = list.find(s => s.id === "default");
-          setUserStore(isAdmin && defStore ? defStore : list[0]);
+        const defSnap = await getDoc(doc(db, "stores", "default"));
+        let finalStore;
+        if (!defSnap.exists()) {
+           const baseStore = {
+             ownerId: user.uid,
+             name: "JANSEL SHOP",
+             slug: "jansel-shop",
+             botName: "Jan",
+             botTone: "paisa, carismático y respetuoso",
+             botGoal: "persuadir y cerrar ventas rápido",
+             themeColor: "#F27D26"
+           };
+           await setDoc(doc(db, "stores", "default"), baseStore);
+           finalStore = { id: "default", ...baseStore };
         } else {
-          const storeId = "store_" + Math.random().toString(36).substring(2, 9);
-          const newStore = {
-            ownerId: user.uid,
-            name: "Mi Tienda",
-            slug: "tienda-" + storeId.substring(6),
-            botName: "Asesor",
-            botTone: "amigable y respetuoso",
-            botGoal: "dar información y agendar ventas",
-            themeColor: "#4F46E5"
-          };
-          await setDoc(doc(db, "stores", storeId), newStore);
-          const finalStore = { id: storeId, ...newStore };
-          setUserStores([finalStore]);
-          setUserStore(finalStore);
+           finalStore = { id: "default", ...defSnap.data() };
         }
+        
+        setUserStores([finalStore]);
+        setUserStore(finalStore);
       } catch(e) {
         console.error("Error loading store", e);
       } finally {
@@ -1262,6 +1214,11 @@ function ReportsTab({
   const [isIntervening, setIsIntervening] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [platformFilter, setPlatformFilter] = useState<'all'|'whatsapp'|'instagram'|'messenger'>('all');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [conversations, selectedUser]);
 
   const selectedConversation = useMemo(() => {
     if (!selectedUser) return null;
@@ -1642,8 +1599,8 @@ function ReportsTab({
                 </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 lg:p-8 flex flex-col-reverse gap-6 custom-scrollbar">
-              {selectedUser && userConversations[selectedUser] && [...userConversations[selectedUser].messages].sort((a,b) => (b.timestamp?.toMillis ? b.timestamp.toMillis() : 0) - (a.timestamp?.toMillis ? a.timestamp.toMillis() : 0)).map((msg) => {
+            <div className="flex-1 overflow-y-auto p-4 lg:p-8 flex flex-col gap-6 custom-scrollbar">
+              {selectedUser && userConversations[selectedUser] && [...userConversations[selectedUser].messages].sort((a,b) => (a.timestamp?.toMillis ? a.timestamp.toMillis() : 0) - (b.timestamp?.toMillis ? b.timestamp.toMillis() : 0)).map((msg) => {
                 const currentPlatform = userConversations[selectedUser]?.platform || 'whatsapp';
                 const isInstagram = currentPlatform === 'instagram';
                 const isMessenger = currentPlatform === 'messenger';
@@ -1771,6 +1728,7 @@ function ReportsTab({
                 </div>
               );
             })}
+              <div ref={messagesEndRef} />
             </div>
 
             {/* Input Area */}

@@ -1920,23 +1920,10 @@ async function sendCategoryFeaturedProducts(to: string, from: string, category: 
     const page = matched.slice(offset, offset + CATEGORY_PAGE_SIZE);
     const hasMore = matched.length > offset + CATEGORY_PAGE_SIZE;
 
-    let responseText = `✨ *PRODUCTOS DESTACADOS: ${categoryLabel.toUpperCase()}* ✨\n\n`;
+    let responseText = ``;
 
     if (matched.length === 0) {
       responseText += `Actualmente estamos actualizando esta sección, pero contamos con excelentes opciones. ¡Pregúntame por lo que buscas! 🛒\n\n`;
-    } else {
-      if (offset > 0) {
-        responseText += `_Mostrando más opciones (${offset + 1}–${offset + page.length} de ${matched.length})_\n\n`;
-      }
-      // Texto CORTO (solo nombre + precio) para no pasarnos del límite de 1600
-      // caracteres de WhatsApp/Twilio. El detalle completo de cada producto
-      // (descripción, foto, etc.) lo mostramos en la lista interactiva tocable
-      // que se envía justo después.
-      page.forEach((p, idx) => {
-        const formattedPrice = Number(p.price || 0).toLocaleString("es-CO");
-        responseText += `${offset + idx + 1}. *${p.name}* 🌟 — $${formattedPrice} COP\n`;
-      });
-      responseText += `\n👇 Toca la lista que te envío a continuación para ver el detalle y elegir el que quieras.\n\n`;
     }
 
     responseText += `⚠️ *RECUERDA:* Vendemos cualquier tipo de producto que imagines. Si buscas algo específico (marca, modelo, tipo de artículo) que no ves aquí, ¡solo pregúntame por él por este chat para confirmar disponibilidad y precio de inmediato! 📲\n`;
