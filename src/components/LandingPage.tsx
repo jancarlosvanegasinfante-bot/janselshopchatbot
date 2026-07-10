@@ -318,6 +318,7 @@ export default function LandingPage() {
     { product: TRENDING_PRODUCTS[0], quantity: 1 },
   ]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"contraentrega" | "anticipado">("contraentrega");
   const [checkoutMode, setCheckoutMode] = useState<"formulario" | "whatsapp">("formulario");
   const [formData, setFormData] = useState({
@@ -1839,7 +1840,7 @@ export default function LandingPage() {
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0, y: 100 }}
             onClick={() => setIsCartOpen(true)}
-            className="fixed bottom-6 right-6 z-40 rounded-full btn-cta-primary text-black shadow-2xl hover:scale-110 active:scale-95 transition-transform flex items-center gap-2.5 cursor-pointer px-5 py-4"
+            className="fixed bottom-24 right-6 z-40 rounded-full btn-cta-primary text-black shadow-2xl hover:scale-110 active:scale-95 transition-transform flex items-center gap-2.5 cursor-pointer px-5 py-4"
           >
             <ShoppingCart size={22} />
             <span className="text-xs font-black uppercase tracking-wide hidden md:inline">Ver Carrito</span>
@@ -1849,6 +1850,118 @@ export default function LandingPage() {
           </motion.button>
         )}
       </AnimatePresence>
+
+      {/* ════════════════════════════════════════════
+          WHATSAPP FLOATING SUPPORT WIDGET
+      ════════════════════════════════════════════ */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+        {/* Support Chat Popover */}
+        <AnimatePresence>
+          {isSupportOpen && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.85, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.85, y: 20 }}
+              className="bg-[#0e111d] border border-white/10 rounded-3xl p-5 shadow-2xl w-80 mb-4 text-left relative overflow-hidden"
+              style={{ transformOrigin: "bottom right" }}
+            >
+              {/* Header inside popover */}
+              <div className="flex items-center gap-3 border-b border-white/5 pb-3 mb-3">
+                <div className="relative">
+                  <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-[#0e111d] z-10" />
+                  <img
+                    src="/src/assets/images/logo.jpeg"
+                    alt="Jansel Shop Logo"
+                    className="w-10 h-10 rounded-xl object-contain border border-white/10"
+                    onError={(e) => { e.currentTarget.style.display = "none"; }}
+                  />
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-sm text-white flex items-center gap-1">
+                    Soporte Jansel Shop
+                    <Sparkles size={12} className="text-amber-400" />
+                  </h4>
+                  <span className="text-[10px] text-emerald-400 font-bold">● En línea · Respuesta inmediata</span>
+                </div>
+              </div>
+
+              {/* Body message */}
+              <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                ¡Hola! Bienvenido a nuestro canal oficial. ¿En qué podemos ayudarte hoy? Elige una opción para iniciar el chat en WhatsApp:
+              </p>
+
+              {/* Options buttons */}
+              <div className="space-y-2.5">
+                {[
+                  {
+                    label: "🛒 Quiero hacer un pedido",
+                    text: "¡Hola! Me gustaría hacer un pedido en Jansel Shop. ¿Me podrías guiar con el catálogo y las ofertas de hoy? 📦",
+                  },
+                  {
+                    label: "🤔 Tengo dudas / Garantía",
+                    text: "¡Hola! Tengo algunas dudas sobre el estado de mi envío o el método de pago contraentrega. ¿Me podrían ayudar? 🚚",
+                  },
+                  {
+                    label: "📞 Solicitar asesoría",
+                    text: "¡Hola! Me gustaría recibir asesoría personalizada para elegir el mejor producto para mí en Jansel Shop. 🌟",
+                  },
+                ].map((opt, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      const phone = officialBotNumber || "14155238886";
+                      const url = `https://wa.me/${phone}?text=${encodeURIComponent(opt.text)}`;
+                      window.open(url, "_blank");
+                      setIsSupportOpen(false);
+                    }}
+                    className="w-full text-left py-3 px-4 rounded-xl bg-white/[0.03] border border-white/5 hover:bg-emerald-500 hover:text-black hover:border-emerald-400 font-extrabold text-xs text-white transition-all duration-200 flex items-center justify-between group cursor-pointer"
+                  >
+                    <span>{opt.label}</span>
+                    <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                  </button>
+                ))}
+              </div>
+
+              {/* Close button on popover corner */}
+              <button
+                onClick={() => setIsSupportOpen(false)}
+                className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors"
+              >
+                <X size={14} />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* WhatsApp Circular Button */}
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setIsSupportOpen(!isSupportOpen)}
+          className={`w-14 h-14 rounded-full flex items-center justify-center shadow-2xl relative cursor-pointer z-50 transition-colors duration-300 ${
+            isSupportOpen ? "bg-red-500 text-white hover:bg-red-600" : "bg-[#25D366] text-white hover:bg-[#20ba59]"
+          }`}
+        >
+          {isSupportOpen ? (
+            <X size={24} />
+          ) : (
+            <svg
+              className="w-8 h-8 fill-current"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.455 5.703 1.456h.008c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+            </svg>
+          )}
+          {/* Notification Badge on WhatsApp icon */}
+          {!isSupportOpen && (
+            <span className="absolute -top-1 -right-1 flex h-4 w-4">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-4 w-4 bg-amber-500 text-[10px] font-black text-black items-center justify-center">1</span>
+            </span>
+          )}
+        </motion.button>
+      </div>
 
       {/* ════════════════════════════════════════════
           SOCIAL PROOF NOTIFICATION
