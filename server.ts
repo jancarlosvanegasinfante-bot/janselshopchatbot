@@ -532,6 +532,135 @@ async function scheduleFollowUp(phone: string, score: number, reason: string, st
 }
 
 /**
+ * Transcribe un audio de WhatsApp usando un modelo multimodal con soporte de
+ * audio vía OpenRouter (NVIDIA NIM no expone modelos de audio en este stack).
+ * Se intenta una pequeña cascada de modelos; si todos fallan, retorna null y
+ * el llamador debe caer al mensaje honesto de "no pude escuchar el audio".
+ *
+ * NOTA IMPORTANTE PARA JOSÉ MARÍA: esto quedó implementado con la mejor
+ * integración disponible (formato estándar OpenAI "input_audio"), pero no lo
+ * pude probar contra la API real sin tus keys desplegadas en Railway. Twilio
+ * manda el audio de WhatsApp como audio/ogg (codec opus). Si el modelo
+ * rechaza el formato "ogg", prueba cambiando `audioFormat` abajo a "mp3" o
+ * "wav" tras revisar qué acepta el modelo elegido, o dime y lo ajustamos
+ * viendo el error real de los logs de Railway.
+ */
+async function transcribeAudioWithAI(base64Audio: string, mimeType: string): Promise<string | null> {
+  if (!OPENROUTER_API_KEY && !process.env.OPENROUTER_API_KEY) {
+    console.warn("[Audio Transcribe] No hay OPENROUTER_API_KEY configurada, no se puede transcribir.");
+    return null;
+  }
+
+  let audioFormat = "ogg";
+  if (mimeType.includes("mpeg") || mimeType.includes("mp3")) audioFormat = "mp3";
+  else if (mimeType.includes("wav")) audioFormat = "wav";
+  else if (mimeType.includes("ogg") || mimeType.includes("oga")) audioFormat = "ogg";
+
+  const candidateModels = [
+    "google/gemini-2.5-flash",
+    "google/gemini-2.0-flash-001"
+  ];
+
+  for (const model of candidateModels) {
+    try {
+      const resp = await axios.post(
+        "https://openrouter.ai/api/v1/chat/completions",
+        {
+          model,
+          messages: [
+            {
+              role: "user",
+              content: [
+                { type: "text", text: "Transcribe exactamente lo que dice este audio en español. Responde SOLO con el texto transcrito, sin explicaciones ni comillas." },
+                { type: "input_audio", input_audio: { data: base64Audio, format: audioFormat } }
+              ]
+            }
+          ],
+          max_tokens: 500,
+          temperature: 0.1
+        },
+        {
+          headers: {
+            "Authorization": `Bearer ${OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY}`,
+            "Content-Type": "application/json"
+          },
+          timeout: 20000
+        }
+      );
+      const text = resp.data?.choices?.[0]?.message?.content;
+      if (text && typeof text === "string" && text.trim().length > 0) {
+        console.log(`[Audio Transcribe] Transcripción exitosa con ${model}`);
+        return text.trim();
+      }
+    } catch (e: any) {
+      console.warn(`[Audio Transcribe] Falló ${model}:`, e?.response?.data?.error?.message || e.message);
+    }
+  }
+  return null;
+}
+
+/**
+ * Cuando el cliente manda una foto de un producto, hacemos una llamada de
+ * visión CORTA Y BARATA (un solo modelo, respuesta breve) solo para sacar
+ * 3-6 palabras clave de lo que se ve (tipo de producto, color, características
+ * visibles). Con esas palabras buscamos coincidencias REALES en el catálogo,
+ * en vez de dejar que el modelo principal invente un producto/precio que no
+ * existe. Si esto falla, simplemente no agrega contexto extra y el flujo
+ * sigue normal (el modelo principal igual recibe la imagen).
+ */
+const imageKeywordCache = new Map<string, { keywords: string[]; time: number }>();
+
+async function identifyProductKeywordsFromImage(imagePart: { data: string; mimeType: string }): Promise<string[]> {
+  const apiKey = NVIDIA_API_KEY || process.env.NVIDIA_API_KEY;
+  if (!apiKey) return [];
+
+  // Cache por hash del contenido: si Twilio reintenta el webhook (timeouts,
+  // reintentos de red) o el cliente reenvía la misma imagen, no pagamos la
+  // llamada de visión dos veces.
+  const cacheKey = crypto.createHash("md5").update(imagePart.data.slice(0, 5000)).digest("hex");
+  const cached = imageKeywordCache.get(cacheKey);
+  if (cached && Date.now() - cached.time < 10 * 60 * 1000) {
+    console.log("[Image Product Match] Usando resultado en caché (misma imagen reciente)");
+    return cached.keywords;
+  }
+
+  try {
+    const resp = await axios.post(
+      "https://integrate.api.nvidia.com/v1/chat/completions",
+      {
+        model: "meta/llama-3.2-11b-vision-instruct",
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "Mira esta imagen de un producto. Responde SOLO con 3 a 6 palabras clave en español separadas por coma que describan qué tipo de producto es (categoría, uso, color si aplica). No agregues explicaciones ni frases completas. Ejemplo de respuesta válida: cargador, carro, bateria, inalambrico" },
+              { type: "image_url", image_url: { url: `data:${imagePart.mimeType};base64,${imagePart.data}` } }
+            ]
+          }
+        ],
+        max_tokens: 60,
+        temperature: 0.1
+      },
+      {
+        headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        timeout: 15000
+      }
+    );
+    const text = resp.data?.choices?.[0]?.message?.content || "";
+    const keywords = text
+      .split(/[,;\n]/)
+      .map((k: string) => k.trim().toLowerCase())
+      .filter((k: string) => k.length > 2)
+      .slice(0, 6);
+    imageKeywordCache.set(cacheKey, { keywords, time: Date.now() });
+    return keywords;
+  } catch (e: any) {
+    console.warn("[Image Product Match] No se pudo identificar el producto de la imagen:", e?.response?.data?.error?.message || e.message);
+    return [];
+  }
+}
+
+/**
  * Downloads media from Twilio for AI analysis (image vision / audio)
  */
 async function downloadMediaAsBase64(url: string): Promise<{ data: string, mimeType: string } | null> {
@@ -564,8 +693,70 @@ async function downloadMediaAsBase64(url: string): Promise<{ data: string, mimeT
 }
 
 /**
- * Anti-spam: Prevents loops and saturated inbox
+ * Valida que un request al webhook realmente venga de Twilio (usando la firma
+ * X-Twilio-Signature + tu Auth Token), y no de cualquiera que descubra la URL
+ * y mande POSTs falsos simulando ser un cliente (gastando tus créditos de IA,
+ * metiendo pedidos falsos, etc.)
+ *
+ * MODO SEGURO POR DEFECTO: por ahora esto solo AUDITA (loguea si la firma no
+ * cuadra) pero NO BLOQUEA nada, para no arriesgarnos a tumbar el bot en
+ * producción por un detalle de URL/dominio que no puedo verificar sin
+ * desplegarlo. Revisa los logs de Railway por unos días buscando
+ * "[Twilio Security] Firma inválida" — si NO aparece para tráfico real de
+ * clientes, activa la variable de entorno STRICT_TWILIO_SIGNATURE_VALIDATION=true
+ * en Railway para que empiece a BLOQUEAR (403) los requests falsos de verdad.
  */
+function validateTwilioWebhookSignature(req: express.Request): boolean {
+  if (!TWILIO_AUTH_TOKEN) {
+    console.warn("[Twilio Security] TWILIO_AUTH_TOKEN no configurado, no se puede validar la firma del webhook.");
+    return true;
+  }
+  const twilioSignature = req.headers["x-twilio-signature"] as string | undefined;
+  if (!twilioSignature) {
+    console.warn(`[Twilio Security] Request sin X-Twilio-Signature. IP: ${req.ip}`);
+    return false;
+  }
+  try {
+    const base = (currentAppUrl || process.env.APP_URL || `${req.protocol}://${req.headers.host}`).replace(/\/$/, "");
+    const fullUrl = `${base}${req.originalUrl}`;
+    const isValid = twilio.validateRequest(TWILIO_AUTH_TOKEN, twilioSignature, fullUrl, req.body || {});
+    if (!isValid) {
+      console.warn(`[Twilio Security] Firma inválida para ${fullUrl}. IP: ${req.ip}`);
+    }
+    return isValid;
+  } catch (e: any) {
+    console.warn("[Twilio Security] Error validando firma:", e.message);
+    return false;
+  }
+}
+
+const STRICT_TWILIO_SIGNATURE_VALIDATION = process.env.STRICT_TWILIO_SIGNATURE_VALIDATION === "true";
+
+/**
+ * Media (audio/imagen) por cliente: límite aparte del rate-limit general de
+ * texto, porque transcribir audio y analizar imágenes cuesta más (llamadas
+ * extra de IA). Evita que alguien queme presupuesto de OpenRouter/NVIDIA
+ * mandando fotos o audios en bucle.
+ */
+const mediaRateLimitCache = new Map<string, { lastTime: number, count: number }>();
+function canProcessMedia(userId: string): boolean {
+  const now = Date.now();
+  const record = mediaRateLimitCache.get(userId) || { lastTime: 0, count: 0 };
+  if (now - record.lastTime > 15 * 60 * 1000) {
+    record.count = 0;
+  }
+  record.count++;
+  record.lastTime = now;
+  mediaRateLimitCache.set(userId, record);
+  // Límite: 8 audios/imágenes por cliente cada 15 minutos
+  if (record.count > 8) {
+    console.warn(`[ANTI-SPAM] ${userId} superó el límite de 8 audios/imágenes en 15 min. Bloqueando análisis de IA extra.`);
+    return false;
+  }
+  return true;
+}
+
+
 function canReply(userId: string): boolean {
   const now = Date.now();
   const record = userRateLimitCache.get(userId) || { lastTime: 0, msgCount: 0 };
@@ -768,27 +959,74 @@ async function processInferenceOnServer(activityId: string, data: any) {
       }
     }
 
-    // Atajo rápido: si el cliente SOLO mandó audio (sin texto ni imagen), respondemos
-    // de una sin gastar tiempo/costos en la cascada de IA, ya que no podemos transcribirlo.
+    // Antes: si el cliente mandaba SOLO audio, respondíamos de una que no
+    // podíamos escucharlo (para no gastar tiempo/costo en una cascada que
+    // igual iba a alucinar). Ahora intentamos transcribirlo de verdad con un
+    // modelo de audio (ver `transcribeAudioWithAI`) y solo si eso falla,
+    // avisamos honestamente al cliente.
     if (hasAudio && imageParts.length === 0 && (!safeMessage || !safeMessage.trim())) {
-      const audioFallbackMsg = "¡Hola! Qué pena, por ahora no puedo escuchar audios 🙉. ¿Me lo escribís por acá porfa? ¡Quedo pendiente!";
-      if (data.from.startsWith("whatsapp:")) {
-        await sendWhatsApp(data.from, audioFallbackMsg, undefined, activityId, data.to);
-      } else if (data.platform === "instagram" || data.platform === "messenger") {
-        await sendMetaMessage(data.from, audioFallbackMsg, data.platform, data.to);
+      const audioItem = data.mediaItems.find((it: any) => it.mimeType?.startsWith("audio/"));
+
+      if (audioItem && !canProcessMedia(fromPhone)) {
+        const rateLimitMsg = "¡Uy! Me has mandado varios audios seguidos y necesito un momentico para ponerme al día 😅. ¿Me das un par de minutos o me escribes directamente?";
+        if (data.from.startsWith("whatsapp:")) {
+          await sendWhatsApp(data.from, rateLimitMsg, undefined, activityId, data.to);
+        } else if (data.platform === "instagram" || data.platform === "messenger") {
+          await sendMetaMessage(data.from, rateLimitMsg, data.platform, data.to);
+        }
+        await updateDoc(doc(db, "activities", activityId), {
+          status: "respondido",
+          response: rateLimitMsg,
+          respondedAt: serverTimestamp()
+        });
+        return;
       }
-      await updateDoc(doc(db, "activities", activityId), {
-        status: "respondido",
-        response: audioFallbackMsg,
-        respondedAt: serverTimestamp()
-      });
-      return;
+
+      const transcript = audioItem ? await transcribeAudioWithAI(audioItem.data, audioItem.mimeType) : null;
+
+      if (transcript) {
+        console.log(`[Server AI] Audio transcrito de ${fromPhone}: "${transcript}"`);
+        safeMessage = transcript;
+        // Sigue el flujo normal más abajo usando este texto transcrito como si
+        // el cliente lo hubiera escrito.
+      } else {
+        const audioFallbackMsg = "¡Hola! Qué pena, no logré entender bien tu audio 🙉. ¿Me lo escribís por acá porfa? ¡Quedo pendiente!";
+        if (data.from.startsWith("whatsapp:")) {
+          await sendWhatsApp(data.from, audioFallbackMsg, undefined, activityId, data.to);
+        } else if (data.platform === "instagram" || data.platform === "messenger") {
+          await sendMetaMessage(data.from, audioFallbackMsg, data.platform, data.to);
+        }
+        await updateDoc(doc(db, "activities", activityId), {
+          status: "respondido",
+          response: audioFallbackMsg,
+          respondedAt: serverTimestamp()
+        });
+        return;
+      }
     }
 
     // Hybrid Smart Context Filter: Select only Top 15 featured products and those matching user keywords
     // to prevent prompt truncation issues and speed up inference significantly!
     let filteredProductsForPrompt: any[] = [];
-    
+
+    // Si mandó una imagen, identificamos palabras clave del producto ANTES de
+    // armar el contexto, para que los productos reales que coinciden con la
+    // foto queden garantizados dentro del inventario que ve la IA (y no se
+    // pierdan en el recorte de 360+ productos).
+    let imageMatchedProducts: any[] = [];
+    let imageKeywords: string[] = [];
+    if (imageParts.length > 0 && canProcessMedia(fromPhone)) {
+      imageKeywords = await identifyProductKeywordsFromImage(imageParts[0]);
+      if (imageKeywords.length > 0) {
+        imageMatchedProducts = products.filter(p => {
+          const nameLower = (p.name || "").toLowerCase();
+          const catLower = (p.category || "").toLowerCase();
+          return imageKeywords.some(k => nameLower.includes(k) || catLower.includes(k));
+        }).slice(0, 10);
+        console.log(`[Image Product Match] Palabras clave detectadas: ${imageKeywords.join(", ")} | Coincidencias en catálogo: ${imageMatchedProducts.length}`);
+      }
+    }
+
     const topKeywords = [
       "modem", "retrovisor", "intercomunicador", "soporte de carga", "funda", 
       "destornillador", "frontal", "linterna", "camping", "ever brite", 
@@ -814,12 +1052,14 @@ async function processInferenceOnServer(activityId: string, data: any) {
     const combinedSet = new Map<string, any>();
     topProducts.forEach(p => combinedSet.set(p.id, p));
     matchedProducts.forEach(p => combinedSet.set(p.id, p));
-    
+    imageMatchedProducts.forEach(p => combinedSet.set(p.id, p));
+
     filteredProductsForPrompt = Array.from(combinedSet.values());
     
     const compactProductsString = filteredProductsForPrompt.map(p => {
       const desc = p.description ? (p.description.length > 80 ? p.description.substring(0, 80) + "..." : p.description) : "";
-      return `- ${p.name} ($${p.price}) [id: ${p.id}]${p.category ? ` [Cat: ${p.category}]` : ""}${desc ? ` - ${desc}` : ""}`;
+      const isImageMatch = imageMatchedProducts.some(imp => imp.id === p.id);
+      return `- ${p.name} ($${p.price}) [id: ${p.id}]${p.category ? ` [Cat: ${p.category}]` : ""}${desc ? ` - ${desc}` : ""}${isImageMatch ? " ⭐ COINCIDE CON LA FOTO QUE ENVIÓ EL CLIENTE" : ""}`;
     }).join("\n");
 
     const promptText = `ESTÁS ATENDIENDO EN LA TIENDA: ${storeConfig.name || "Jan Sel Shop"} (Slug: ${assignedStoreId})
@@ -830,7 +1070,7 @@ INTENCIÓN ANTERIOR: ${customerProfile?.intencion || "Ninguna"}
 HISTORIAL:
 ${history}
 
-MENSAJE ACTUAL: ${safeMessage}${imageParts.length > 0 ? " (El cliente también envió una imagen que adjunto para tu análisis)" : ""}
+MENSAJE ACTUAL: ${safeMessage}${imageParts.length > 0 ? ` (El cliente también envió una imagen que adjunto para tu análisis.${imageMatchedProducts.length > 0 ? ` Ya identificamos posibles coincidencias reales en el inventario, marcadas abajo con ⭐ — si la foto se parece a alguno de esos, ofrécelo con seguridad usando su nombre y precio EXACTOS del inventario, no inventes uno nuevo.` : ` No encontramos una coincidencia exacta en el inventario para esta foto — descríbele lo que ves y pregúntale qué necesita para poder ayudarlo mejor, sin inventar un producto que no existe.`}` : ""}
 
 INVENTARIO ACTUAL (Vista curada de los más vendidos y productos relevantes para esta consulta. Tenemos más de 360 productos en total, si piden algo diferente pregúntale a tu jefe o usa "notificar_admin"):
 ${compactProductsString}
@@ -842,8 +1082,8 @@ El JSON debe cumplir ESTRICTAMENTE con la siguiente estructura de campos (no inv
 
 {
   "accion": "respuesta" | "notificar_admin" | "confirmar_pedido",
-  "mensaje": "Mensaje en español (estilo paisa si aplica, breve y persuasivo de máximo 1-2 párrafos cortos, con emojis abundantes)",
-  "producto": "Nombre del producto interesado si aplica",
+  "mensaje": "Mensaje en español (tono cercano de vendedor colombiano real, natural y variado — evita sonar repetitivo o de guion. Breve y persuasivo, máximo 1-2 párrafos cortos, con emojis con moderación, no en cada frase)",
+  "producto": "Nombre del producto interesado si aplica (usa el nombre EXACTO del inventario, nunca inventado)",
   "intencion": "intención detectada",
   "nivel_interes": "alto" | "medio" | "bajo",
   "objeciones": "objeciones o 'ninguna'",
@@ -981,6 +1221,20 @@ Asegúrate de que la propiedad "mensaje" contenga tu respuesta real dirigida al 
       if (!text) {
         throw new Error(`La respuesta de ${modelObj.provider} no devolvió contenido de texto válido.`);
       }
+
+      // CRÍTICO: algunos modelos (ej. NVIDIA meta/llama-3.1-8b-instruct) ignoran
+      // el response_format:"json_object" y devuelven prosa/markdown en vez de
+      // JSON. Antes esto se aceptaba como "éxito" (solo se validaba que no
+      // viniera vacío) y el texto de prosa terminaba rompiendo el JSON.parse
+      // más abajo, cayendo al mensaje genérico de "me enredé". Ahora validamos
+      // el JSON AQUÍ MISMO: si no parsea, lo tratamos como fallo de este
+      // modelo para que la cascada siga probando el siguiente.
+      try {
+        JSON.parse(text);
+      } catch {
+        throw new Error(`El modelo ${modelObj.name} devolvió texto que no es JSON válido (probablemente prosa/markdown).`);
+      }
+
       console.log(`[Server AI] [${modelObj.provider.toUpperCase()}] Éxito con el modelo ${modelObj.name}`);
       return { text, modelObj };
     }
@@ -1096,6 +1350,13 @@ Asegúrate de que la propiedad "mensaje" contenga tu respuesta real dirigida al 
     if (typeof jsonResponse.mensaje !== "string" || !jsonResponse.mensaje.trim()) {
       jsonResponse.mensaje = "Uy, se me enredó la respuesta 😅. ¿Me repites porfa?";
     }
+
+    // Pausa "humana" antes de responder: un vendedor real no contesta en
+    // 200ms, se demora un poco leyendo/escribiendo. Esto ayuda a que el bot
+    // no se sienta tan robótico. Proporcional al largo del mensaje, con topes
+    // para no hacer esperar de más ni sentirse instantáneo.
+    const humanDelayMs = Math.min(4000, Math.max(1200, jsonResponse.mensaje.length * 25));
+    await new Promise(resolve => setTimeout(resolve, humanDelayMs));
 
     // 3.0 Si la IA detecta intención de confirmar pedido, en vez de mandar el texto normal
     // y crear el pedido de una, mandamos BOTONES de confirmación (Sí/No) y dejamos el pedido
@@ -1354,6 +1615,7 @@ async function ensureAllTemplates(): Promise<{
   mainMenuSid: string | null;
   categoriesSid: string | null;
   otherCategoriesSid: string | null;
+  otherCategories2Sid: string | null;
   keepChatSid: string | null;
 }> {
   const result = {
@@ -1361,6 +1623,7 @@ async function ensureAllTemplates(): Promise<{
     mainMenuSid: null as string | null,
     categoriesSid: null as string | null,
     otherCategoriesSid: null as string | null,
+    otherCategories2Sid: null as string | null,
     keepChatSid: null as string | null
   };
 
@@ -1451,12 +1714,17 @@ async function ensureAllTemplates(): Promise<{
     }
 
     // 4. Other Categories Menu
-    if (d?.otherCategoriesTemplateSid) {
-      result.otherCategoriesSid = d.otherCategoriesTemplateSid;
+    // NOTA: usamos la key "otherCategoriesTemplateSidV2" (no la vieja
+    // "otherCategoriesTemplateSid") a propósito. Este template ya existía en
+    // producción con solo 2 acciones + "Menú Principal"; si seguíamos leyendo
+    // la key vieja, Twilio habría devuelto el SID viejo cacheado en Firestore
+    // y el nuevo botón "Más Secciones ➡️" nunca habría aparecido de verdad.
+    if (d?.otherCategoriesTemplateSidV2) {
+      result.otherCategoriesSid = d.otherCategoriesTemplateSidV2;
     } else {
-      console.log("[WhatsApp Buttons] Creando template de otras categorías...");
+      console.log("[WhatsApp Buttons] Creando template de otras categorías (v2, con Más Secciones)...");
       const content = await (twilioClient as any).content.v1.contents.create({
-        friendlyName: `jan_other_cats_${Date.now()}`,
+        friendlyName: `jan_other_cats_v2_${Date.now()}`,
         language: "es",
         variables: {},
         types: {
@@ -1465,16 +1733,44 @@ async function ensureAllTemplates(): Promise<{
             actions: [
               { title: "Autos y Herram. 🚗", id: "CAT_AUTOS" },
               { title: "Salud y Belleza 🧴", id: "CAT_BEAUTY" },
-              { title: "Menú Principal 🔙", id: "MENU_BACK" }
+              { title: "Más Secciones ➡️", id: "CAT_OTHER2" }
             ]
           },
           "twilio/text": {
-            body: "Otras secciones disponibles:\n\n- Autos y Herram. 🚗\n- Salud y Belleza 🧴\n- Menú Principal 🔙"
+            body: "Otras secciones disponibles:\n\n- Autos y Herram. 🚗\n- Salud y Belleza 🧴\n- Más Secciones ➡️"
           }
         }
       });
       result.otherCategoriesSid = content.sid;
-      await setDoc(doc(db, "config", "system"), { otherCategoriesTemplateSid: content.sid }, { merge: true });
+      await setDoc(doc(db, "config", "system"), { otherCategoriesTemplateSidV2: content.sid }, { merge: true });
+    }
+
+
+    // 4b. Other Categories Menu (nivel 3) — Moda, Mascotas/Bebé/Juguetería, Volver
+    if (d?.otherCategories2TemplateSid) {
+      result.otherCategories2Sid = d.otherCategories2TemplateSid;
+    } else {
+      console.log("[WhatsApp Buttons] Creando template de otras categorías (nivel 3)...");
+      const content = await (twilioClient as any).content.v1.contents.create({
+        friendlyName: `jan_other_cats2_${Date.now()}`,
+        language: "es",
+        variables: {},
+        types: {
+          "twilio/quick-reply": {
+            body: "¡Todavía hay más! Selecciona una opción 👇",
+            actions: [
+              { title: "Moda 👗", id: "CAT_MODA" },
+              { title: "Mascotas y Bebés 🐾", id: "CAT_PETS" },
+              { title: "Menú Principal 🔙", id: "MENU_BACK" }
+            ]
+          },
+          "twilio/text": {
+            body: "Más secciones disponibles:\n\n- Moda 👗\n- Mascotas y Bebés 🐾\n- Menú Principal 🔙"
+          }
+        }
+      });
+      result.otherCategories2Sid = content.sid;
+      await setDoc(doc(db, "config", "system"), { otherCategories2TemplateSid: content.sid }, { merge: true });
     }
 
     // 5. Keep Chatting Menu
@@ -1560,6 +1856,24 @@ async function sendOtherCategoriesMenu(to: string, from: string): Promise<boolea
     return true;
   } catch (e: any) {
     console.error("[WhatsApp Buttons] Error enviando Menú de Otras Categorías:", e.message);
+    return false;
+  }
+}
+
+async function sendOtherCategoriesMenu2(to: string, from: string): Promise<boolean> {
+  if (!twilioClient) return false;
+  const templates = await ensureAllTemplates();
+  if (!templates.otherCategories2Sid) return false;
+  try {
+    await (twilioClient as any).messages.create({
+      from: normalizePhone(from || TWILIO_FROM_NUMBER || "+14155238886"),
+      to: normalizePhone(to),
+      contentSid: templates.otherCategories2Sid
+    });
+    console.log(`[WhatsApp Buttons] Menú de otras categorías (nivel 3) enviado a ${to}`);
+    return true;
+  } catch (e: any) {
+    console.error("[WhatsApp Buttons] Error enviando Menú de Otras Categorías (nivel 3):", e.message);
     return false;
   }
 }
@@ -1771,28 +2085,32 @@ async function ensureCartActionTemplate(): Promise<string | null> {
   if (!twilioClient) return null;
   try {
     const cfgSnap = await getDoc(doc(db, "config", "system"));
-    const existingSid = cfgSnap.exists() ? cfgSnap.data()?.cartActionTemplateSid : null;
+    // Versionado a V2: el template viejo (cacheado en Firestore) solo tenía 2
+    // acciones (Agregar otro / Confirmar). Si seguíamos leyendo la key vieja,
+    // el nuevo botón de "Quitar producto" nunca se habría mostrado de verdad.
+    const existingSid = cfgSnap.exists() ? cfgSnap.data()?.cartActionTemplateSidV2 : null;
     if (existingSid) return existingSid;
 
     const content = await (twilioClient as any).content.v1.contents.create({
-      friendlyName: `jan_cart_action_${Date.now()}`,
+      friendlyName: `jan_cart_action_v2_${Date.now()}`,
       language: "es",
       variables: { "1": "1x Producto - $50.000" },
       types: {
         "twilio/quick-reply": {
-          body: "🛒 *Tu carrito:*\n{{1}}\n\n¿Deseas agregar otro producto o ya confirmamos tu pedido?",
+          body: "🛒 *Tu carrito:*\n{{1}}\n\n¿Qué quieres hacer?",
           actions: [
             { title: "➕ Agregar otro", id: "CART_ADD_MORE" },
-            { title: "✅ Confirmar pedido", id: "CART_CHECKOUT" }
+            { title: "✅ Confirmar pedido", id: "CART_CHECKOUT" },
+            { title: "🗑️ Quitar producto", id: "CART_REMOVE" }
           ]
         },
         "twilio/text": {
-          body: "🛒 Tu carrito:\n{{1}}\n\n¿Deseas agregar otro producto o ya confirmamos tu pedido? Responde AGREGAR o CONFIRMAR."
+          body: "🛒 Tu carrito:\n{{1}}\n\n¿Deseas agregar otro producto, confirmarlo o quitar algo? Responde AGREGAR, CONFIRMAR o QUITAR."
         }
       }
     });
 
-    await setDoc(doc(db, "config", "system"), { cartActionTemplateSid: content.sid }, { merge: true });
+    await setDoc(doc(db, "config", "system"), { cartActionTemplateSidV2: content.sid }, { merge: true });
     return content.sid;
   } catch (e: any) {
     console.error("[WhatsApp Buttons] Error creando template de carrito:", e.message);
@@ -2270,6 +2588,360 @@ async function pushOrderToDropi(orderId: string, orderData: any, storeConfig: an
   return { dropiOrderId, tracking };
 }
 
+// ==============================================
+// 🚚 AUTOMATED TRACKING SYSTEM & ANALYZER (Dropi, Servientrega, etc.)
+// ==============================================
+
+function extractGuideFromUrlOrText(url: string, text: string): string {
+  try {
+    const urlObj = new URL(url);
+    const params = ["id", "guia", "guide", "tracking", "num", "numero", "doc", "code", "ref", "tracking_number", "tracking_id", "id_guia", "documento"];
+    for (const p of params) {
+      const val = urlObj.searchParams.get(p);
+      if (val && /^[A-Za-z0-9-]{6,20}$/.test(val)) {
+        return val;
+      }
+    }
+    const pathSegments = urlObj.pathname.split("/");
+    for (const segment of pathSegments) {
+      if (/^[0-9]{8,15}$/.test(segment)) {
+        return segment;
+      }
+    }
+  } catch (e) {
+    // Ignore URL parse error
+  }
+
+  const patterns = [
+    /(?:guia|guía|tracking|rastreo|documento|remesa|numero|número|no\.?\s*guia|nº\s*guia)[:#\s]+([A-Za-z0-9-]{7,20})/i,
+    /\b([0-9]{9,13})\b/
+  ];
+
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match && match[1]) {
+      return match[1];
+    }
+  }
+
+  return "No detectada";
+}
+
+async function analyzeTrackingUrl(url: string): Promise<{ status: string; comment: string; carrier: string; guide: string }> {
+  try {
+    console.log(`[Tracking Analyzer] Fetching tracking page: ${url}`);
+    
+    // Simple mock check for testing
+    if (url.includes("test") || url.includes("mock") || url.includes("demo")) {
+      return {
+        status: "en_ruta",
+        comment: "El pedido está en camino a la dirección de entrega (Simulado)",
+        carrier: "Servientrega",
+        guide: "9876543210"
+      };
+    }
+
+    const response = await axios.get(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+      },
+      timeout: 15000
+    });
+
+    const html = response.data;
+    if (!html || typeof html !== "string") {
+      throw new Error("No HTML content returned or invalid content type.");
+    }
+
+    // Clean HTML to save token/regex space
+    let textContent = html
+      .replace(/<script[^>]*>([\s\S]*?)<\/script>/gi, '')
+      .replace(/<style[^>]*>([\s\S]*?)<\/style>/gi, '')
+      .replace(/<svg[^>]*>([\s\S]*?)<\/svg>/gi, '')
+      .replace(/<head[^>]*>([\s\S]*?)<\/head>/gi, '')
+      .replace(/<nav[^>]*>([\s\S]*?)<\/nav>/gi, '')
+      .replace(/<footer[^>]*>([\s\S]*?)<\/footer>/gi, '')
+      .replace(/<\/?[a-z][a-z0-9]*[^<>]*>/gi, ' ') // remove HTML tags
+      .replace(/\s+/g, ' ') // normalize whitespace
+      .trim();
+
+    // Limit length to avoid blowing context windows
+    const maxTextLength = 6000;
+    if (textContent.length > maxTextLength) {
+      textContent = textContent.slice(0, maxTextLength);
+    }
+
+    // Attempt AI-based extraction if API keys are available
+    const apiKey = process.env.NVIDIA_API_KEY || process.env.OPENROUTER_API_KEY;
+    if (apiKey) {
+      try {
+        const isNvidia = !!process.env.NVIDIA_API_KEY;
+        const apiUrl = isNvidia
+          ? "https://integrate.api.nvidia.com/v1/chat/completions"
+          : "https://openrouter.ai/api/v1/chat/completions";
+        const modelName = isNvidia ? "meta/llama-3.1-8b-instruct" : "google/gemini-2.5-flash";
+
+        console.log(`[Tracking Analyzer] Asking AI (${modelName}) to analyze tracking text...`);
+        const resp = await axios.post(
+          apiUrl,
+          {
+            model: modelName,
+            messages: [
+              {
+                role: "user",
+                content: `Analiza el siguiente texto extraído de una página de seguimiento/rastreo de envío (en Colombia). Identifica cuál es el estado actual de la entrega de manera precisa.\nDebe ser exactamente uno de los siguientes estados:\n- 'preparacion' (si la guía está generada, en preparación, o en bodega)\n- 'en_ruta' (si ya fue despachado, está en tránsito, en ruta de entrega, o viajando)\n- 'entregado' (si el cliente ya lo recibió)\n- 'novedad' (si hubo un intento fallido de entrega, dirección errónea, rehusado, o necesita reprogramación)\n\nDevuelve una respuesta JSON estricta con el formato:\n{\n  "estado": "preparacion" | "en_ruta" | "entregado" | "novedad",\n  "comentario": "Breve descripción de lo que indica la página (ej: 'El envío se encuentra en camino a Medellín')",\n  "transportadora": "Servientrega" | "Interrapidisimo" | "Coordinadora" | "Envía" | "Dropi" | "Desconocida",\n  "guia": "Número de guía o número de rastreo detectado (ej: '1002345678')"\n}\n\nTexto de la página:\n${textContent}`
+              }
+            ],
+            temperature: 0.1,
+            max_tokens: 300,
+            response_format: { type: "json_object" }
+          },
+          {
+            headers: {
+              "Authorization": `Bearer ${apiKey}`,
+              "Content-Type": "application/json"
+            },
+            timeout: 15000
+          }
+        );
+
+        let aiText = resp.data?.choices?.[0]?.message?.content || "";
+        if (aiText.includes("```json")) {
+          aiText = aiText.split("```json")[1].split("```")[0].trim();
+        } else if (aiText.includes("```")) {
+          aiText = aiText.split("```")[1].split("```")[0].trim();
+        }
+
+        const parsed = JSON.parse(aiText);
+        if (parsed.estado && ["preparacion", "en_ruta", "entregado", "novedad"].includes(parsed.estado)) {
+          console.log(`[Tracking Analyzer] AI extracted: state=${parsed.estado}, carrier=${parsed.transportadora}, guide=${parsed.guia}`);
+          return {
+            status: parsed.estado,
+            comment: parsed.comentario || "Actualizado por IA",
+            carrier: parsed.transportadora || "Desconocida",
+            guide: parsed.guia || extractGuideFromUrlOrText(url, textContent)
+          };
+        }
+      } catch (aiErr: any) {
+        console.warn("[Tracking Analyzer] AI extraction failed, falling back to regex:", aiErr.message);
+      }
+    }
+
+    // REGEX FALLBACK (highly reliable fallback based on common Colombian shipping words)
+    const normalizedText = textContent.toLowerCase();
+    let status = "preparacion";
+    let comment = "En preparación";
+    let carrier = "Desconocida";
+
+    if (normalizedText.includes("servientrega")) carrier = "Servientrega";
+    else if (normalizedText.includes("interrapidisimo") || normalizedText.includes("inter rapidisimo")) carrier = "Interrapidisimo";
+    else if (normalizedText.includes("coordinadora")) carrier = "Coordinadora";
+    else if (normalizedText.includes("envia")) carrier = "Envía";
+    else if (normalizedText.includes("dropi")) carrier = "Dropi";
+
+    if (
+      normalizedText.includes("entregado") ||
+      normalizedText.includes("entrega exitosa") ||
+      normalizedText.includes("recibido") ||
+      normalizedText.includes("finalizado")
+    ) {
+      status = "entregado";
+      comment = "Pedido entregado con éxito.";
+    } else if (
+      normalizedText.includes("novedad") ||
+      normalizedText.includes("devolucion") ||
+      normalizedText.includes("fallido") ||
+      normalizedText.includes("reprogramado") ||
+      normalizedText.includes("no entregado") ||
+      normalizedText.includes("no recibido") ||
+      normalizedText.includes("direccion errada") ||
+      normalizedText.includes("ausente")
+    ) {
+      status = "novedad";
+      comment = "Novedad en la entrega reportada por la transportadora.";
+    } else if (
+      normalizedText.includes("en ruta") ||
+      normalizedText.includes("despachado") ||
+      normalizedText.includes("transito") ||
+      normalizedText.includes("en camino") ||
+      normalizedText.includes("viaje") ||
+      normalizedText.includes("reparto") ||
+      normalizedText.includes("movimiento")
+    ) {
+      status = "en_ruta";
+      comment = "El pedido se encuentra en tránsito o en ruta de reparto.";
+    } else if (
+      normalizedText.includes("recibido en oficina") ||
+      normalizedText.includes("admision") ||
+      normalizedText.includes("preparacion") ||
+      normalizedText.includes("bodega") ||
+      normalizedText.includes("generado") ||
+      normalizedText.includes("alistamiento")
+    ) {
+      status = "preparacion";
+      comment = "Guía generada o en proceso de alistamiento.";
+    }
+
+    const guide = extractGuideFromUrlOrText(url, textContent);
+
+    return { status, comment, carrier, guide };
+  } catch (err: any) {
+    console.error(`[Tracking Analyzer] Error fetching or analyzing URL:`, err.message);
+    // If it completely fails, return 'preparacion' status as safe default
+    return { status: "preparacion", comment: "No se pudo consultar el estado actual en tiempo real.", carrier: "Desconocida", guide: extractGuideFromUrlOrText(url, "") };
+  }
+}
+
+/**
+ * Generates an intelligent, VIP post-purchase cross-sell recommendation using Gemini AI
+ */
+async function generatePostPurchaseUpsell(order: any, customerOrders: any[], products: any[]): Promise<{
+  customerProfile: string;
+  recommendedProductId: string;
+  recommendedProductName: string;
+  suggestedMessage: string;
+  reasoning: string;
+}> {
+  const customerName = order.customerName || "Cliente";
+  const productName = order.productName || "producto";
+  const normalizedProduct = productName.toLowerCase();
+
+  // Create list of catalog products and customer historical purchases
+  const catalogStr = products.map(p => `- ID: "${p.id}", Nombre: "${p.name}", Descripción: "${p.description || 'Sin descripción'}", Categoría: "${p.category || 'Hogar'}", Precio: $${p.price || 0} COP`).join("\n");
+  const purchaseHistoryStr = customerOrders.map(o => `- Producto: "${o.productName}", Cantidad: ${o.quantity}, Precio: $${o.totalPrice} COP, Fecha: ${o.createdAt ? new Date(o.createdAt).toLocaleDateString() : 'N/A'}`).join("\n");
+
+  const systemInstruction = `Eres un consultor experto de E-commerce y especialista en marketing relacional VIP para "Jansel Shop".
+Tu rol es analizar lo que un cliente compró anteriormente, deducir su perfil de intereses, y recomendarle de manera inteligente el MEJOR producto complementario o un COMBO espectacular del catálogo para realizar una venta cruzada (cross-sell).
+
+Pautas:
+1. Analiza el historial de compras para entender qué le gusta. Ejemplo: si compró una hidrolavadora, tiene carro y le gusta cuidar su carro; si compró cremas faciales, le gusta el cuidado personal/belleza, etc.
+2. Selecciona un producto real del catálogo de productos que complemente perfectamente su compra. Si el catálogo no tiene un producto directo, selecciona el más cercano o genera una propuesta de COMBO usando productos del catálogo y nómbralo de forma llamativa (ejemplo: "Combo Limpieza Extrema", "Kit Seguridad Vial").
+3. Escribe un mensaje de WhatsApp amigable, sumamente persuasivo, profesional y personalizado.
+- El tono debe ser de exclusividad: "Como eres cliente VIP de Jansel Shop..." y mencionar que le notificas a él antes que a nadie debido a stock muy limitado.
+- Debe iniciar con un saludo personalizado y preguntar sutilmente cómo le ha ido con su compra anterior (que ya fue entregada hace unos días).
+- Debe ofrecer el producto o combo en promoción con un descuento exclusivo y envío gratis contra entrega.
+- Debe incluir un llamado a la acción claro, directo y conversacional: "Dime si te lo despacho hoy mismo" o "¿Quieres que te asegure uno de los pocos disponibles?".
+- Usa un formato estructurado con emojis apropiados y limpios. No abuses de los emojis.
+
+Devuelve estrictamente un JSON válido con esta estructura exacta:
+{
+  "customerProfile": "Breve análisis de gustos e intereses del cliente.",
+  "recommendedProductId": "ID del producto recomendado del catálogo (o un ID de combo inventado si creas un combo)",
+  "recommendedProductName": "Nombre del producto o combo recomendado",
+  "reasoning": "Explicación lógica de por qué recomendaste esto basado en su compra anterior",
+  "suggestedMessage": "Mensaje de WhatsApp profesional, listo para copiar y enviar."
+}`;
+
+  const prompt = `CLIENTE:
+Nombre: ${customerName}
+Compra reciente entregada: ${productName} (Cantidad: ${order.quantity})
+
+HISTORIAL DE COMPRAS DEL CLIENTE:
+${purchaseHistoryStr || "Ninguna otra compra previa registrada."}
+
+CATÁLOGO DE PRODUCTOS DISPONIBLES EN JANSEL SHOP:
+${catalogStr || "No hay productos adicionales en el catálogo digital."}
+
+Genera la recomendación en JSON respetando la estructura solicitada.`;
+
+  // Try LLM cascade
+  const apiKey = process.env.OPENROUTER_API_KEY || process.env.NVIDIA_API_KEY || process.env.GEMINI_API_KEY;
+  if (apiKey) {
+    try {
+      let responseText = "";
+      if (process.env.OPENROUTER_API_KEY) {
+        const resp = await axios.post("https://openrouter.ai/api/v1/chat/completions", {
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: systemInstruction },
+            { role: "user", content: prompt }
+          ],
+          temperature: 0.3,
+          response_format: { type: "json_object" }
+        }, {
+          headers: {
+            "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+            "Content-Type": "application/json"
+          },
+          timeout: 15000
+        });
+        responseText = resp.data.choices[0].message.content;
+      } else if (process.env.NVIDIA_API_KEY) {
+        const resp = await axios.post("https://integrate.api.nvidia.com/v1/chat/completions", {
+          model: "meta/llama-3.1-8b-instruct",
+          messages: [
+            { role: "system", content: systemInstruction },
+            { role: "user", content: prompt }
+          ],
+          temperature: 0.3,
+          response_format: { type: "json_object" }
+        }, {
+          headers: {
+            "Authorization": `Bearer ${process.env.NVIDIA_API_KEY}`,
+            "Content-Type": "application/json"
+          },
+          timeout: 15000
+        });
+        responseText = resp.data.choices[0].message.content;
+      } else if (process.env.GEMINI_API_KEY) {
+        const resp = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+          contents: [
+            { role: "user", parts: [{ text: `${systemInstruction}\n\n${prompt}` }] }
+          ],
+          generationConfig: {
+            responseMimeType: "application/json",
+            temperature: 0.3
+          }
+        }, {
+          headers: { "Content-Type": "application/json" },
+          timeout: 15000
+        });
+        responseText = resp.data.candidates[0].content.parts[0].text;
+      }
+
+      if (responseText) {
+        const cleaned = responseText.substring(responseText.indexOf("{"), responseText.lastIndexOf("}") + 1);
+        const parsed = JSON.parse(cleaned);
+        if (parsed.suggestedMessage && parsed.recommendedProductName) {
+          return {
+            customerProfile: parsed.customerProfile || "Perfil analizado por IA",
+            recommendedProductId: parsed.recommendedProductId || "custom-recommendation",
+            recommendedProductName: parsed.recommendedProductName,
+            suggestedMessage: parsed.suggestedMessage,
+            reasoning: parsed.reasoning || "Recomendado por IA"
+          };
+        }
+      }
+    } catch (aiErr: any) {
+      console.warn("[Post-Purchase AI] AI generation failed, falling back to procedural rules:", aiErr.message);
+    }
+  }
+
+  // PROCEDURAL RULES FALLBACK (Master fallback if no keys or API failed)
+  let customerProfile = "Interés en optimizar el tiempo, practicidad y soluciones eficientes en el hogar.";
+  let recommendedProductId = "aspiradora-portatil";
+  let recommendedProductName = "Aspiradora Portátil Inalámbrica de Alta Succión";
+  let reasoning = "Se detectó que el cliente valora la limpieza y la practicidad por su compra anterior. La aspiradora inalámbrica ofrece excelente versatilidad tanto para el hogar como para el carro.";
+  let suggestedMessage = `Hola *${customerName}* 👋\n\nHace unos días recibiste tu *${productName}* de Jansel Shop. Esperamos que te haya encantado y esté facilitando tu rutina. ¡Muchas gracias por tu confianza! 🏠✨\n\nComo eres parte de nuestro selecto grupo de *Clientes VIP*, quería contarte que acabamos de recibir pocas unidades en preventa de la nueva *Aspiradora Portátil Inalámbrica de Alta Succión*. 🔋🧹\n\nEstá diseñada tanto para el hogar como para limpiar rincones difíciles del carro sin cables molestos. Por ser VIP, te la ofrecemos hoy con un *15% de descuento especial* y envío gratis con Pago Contra Entrega.\n\n¿Te gustaría que te la despachemos hoy mismo para aprovechar la promoción? ¡Avísame si te aseguro una unidad! 😉`;
+
+  if (normalizedProduct.includes("hidro") || normalizedProduct.includes("lava") || normalizedProduct.includes("car") || normalizedProduct.includes("moto") || normalizedProduct.includes("bateria")) {
+    customerProfile = "Apasionado del cuidado automotriz, le gusta mantener su carro impecable y seguro.";
+    recommendedProductId = "seguro-volante-pro";
+    recommendedProductName = "Seguro para Volante Pro Premium";
+    reasoning = "El cliente compró un artículo para cuidado vehicular. Se deduce que tiene carro y valora su protección. El Seguro para Volante complementa perfectamente ofreciendo máxima seguridad física en sus viajes.";
+    suggestedMessage = `Hola *${customerName}* 👋\n\nHace unos días recibiste tu *${productName}* de Jansel Shop. ¡Esperamos que dejes tu máquina impecable! 🧼🚗💨\n\nComo eres uno de nuestros *Clientes VIP*, queremos consentirte. Hoy nos llegó un lote exclusivo y muy limitado del *Seguro para Volante Antirrobo Pro Premium*.\n\nEs ultra resistente, fácil de instalar en segundos y es la mayor protección física para tu carro. Por ser cliente VIP, te lo ofrecemos hoy con un *precio preferencial de preventa* y envío gratis Contra Entrega. 🔒✨\n\n¿Dime si te lo despachamos hoy mismo para que llegue directo a tu casa? ¡Quedan muy pocas unidades en stock!`;
+  } else if (normalizedProduct.includes("facial") || normalizedProduct.includes("belleza") || normalizedProduct.includes("crema") || normalizedProduct.includes("pelo") || normalizedProduct.includes("cabello") || normalizedProduct.includes("makeup") || normalizedProduct.includes("maquillaje")) {
+    customerProfile = "Persona enfocada en el cuidado personal, belleza y estética de primer nivel.";
+    recommendedProductId = "serum-acido-hialuronico";
+    recommendedProductName = "Sérum Facial de Ácido Hialurónico Anti-Edad";
+    reasoning = "El cliente muestra preferencia por productos cosméticos y de bienestar. Se sugiere complementar su rutina diaria con un Sérum de Ácido Hialurónico de rápida absorción para una hidratación profunda.";
+    suggestedMessage = `Hola *${customerName}* 👋\n\nHace unos días recibiste tu *${productName}* de Jansel Shop. ¡Esperamos que esté transformando tu rutina diaria de cuidado! 🧴✨\n\nComo eres parte de nuestros *Clientes VIP*, hoy te escribimos con un beneficio súper especial. Acabamos de ingresar una edición limitada de nuestro *Sérum Facial de Ácido Hialurónico y Vitamina C*.\n\nEs ideal para rejuvenecer, iluminar y darle una hidratación ultra profunda a tu piel. Por ser VIP, tienes envío gratis hoy y un *descuento exclusivo del 20%*.\n\n¿Dime si te gustaría que te despachemos uno hoy mismo para sumarlo a tu kit? ¡Avísame antes de que se agote! 🌸`;
+  }
+
+  return { customerProfile, recommendedProductId, recommendedProductName, suggestedMessage, reasoning };
+}
+
 /**
  * Notifies administrators (Jan and Tatiana) about new orders via WhatsApp
  */
@@ -2344,6 +3016,12 @@ async function startServer() {
 
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json({ limit: '10mb' }));
+
+  // Railway (y la mayoría de PaaS) terminan TLS en un proxy y reenvían por HTTP
+  // internamente. Sin esto, req.protocol siempre daría "http" y req.ip mostraría
+  // la IP del proxy en vez de la real — ambos necesarios para validar la firma
+  // de Twilio correctamente y para logging/rate-limit por IP real.
+  app.set("trust proxy", true);
 
   // -------------------------------------------------------------
   // 🗄️ SUPABASE / LOCAL DB REST API FOR CLIENT-FRONTEND PROXY
@@ -2694,6 +3372,18 @@ async function startServer() {
       orderInfo.id = newOrderId;
       console.log(`[Landing Order] Saved landing order successfully with ID: ${newOrderId}`);
 
+      // 3b. Send automatic WhatsApp confirmation to customer
+      try {
+        const finalPhone = normalizePhone(orderInfo.customerPhone);
+        const botNum = process.env.TWILIO_FROM_NUMBER || "+14155238886";
+        const formattedBotNum = botNum.startsWith("whatsapp:") ? botNum : `whatsapp:${botNum}`;
+        const customerWelcomeMsg = `¡Hola *${orderInfo.customerName}*! 👋 Muchas gracias por confiar en nosotros en Jansel Shop.\n\nPor este medio te estaré notificando sobre tu pedido de *${orderInfo.productName}*. Te confirmamos que ya se encuentra en *etapa de preparación* 📦 y pronto saldrá en ruta de entrega.\n\n¡Cualquier duda que tengas me puedes escribir por aquí! ✨`;
+        await sendWhatsApp(finalPhone, customerWelcomeMsg, undefined, undefined, formattedBotNum);
+        console.log(`[Landing Order Welcome] Welcomed customer ${finalPhone} successfully.`);
+      } catch (welcomeErr: any) {
+        console.error(`[Landing Order Welcome] Failed to welcome customer:`, welcomeErr.message);
+      }
+
       // 4. Handle Shopify Auto Sync
       if (storeConfig?.shopifyAutoSync && storeConfig?.shopifyDomain && storeConfig?.shopifyAccessToken) {
         console.log("[Landing Order] Shopify Auto Sync activo. Sincronizando pedido...");
@@ -2822,6 +3512,350 @@ _El pedido ya se guardó y está listo en tu tablero._`;
     }
   });
 
+  app.post("/api/integration/orders/:orderId/tracking", express.json(), async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const { trackingUrl } = req.body;
+
+      if (!orderId) {
+        return res.status(400).json({ success: false, error: "Missing orderId" });
+      }
+
+      const orderRef = doc(db, "orders", orderId);
+      const orderSnap = await getDoc(orderRef);
+      if (!orderSnap.exists()) {
+        return res.status(404).json({ success: false, error: "Pedido no encontrado." });
+      }
+
+      const order = orderSnap.data();
+
+      if (trackingUrl === "") {
+        await updateDoc(orderRef, {
+          trackingUrl: null,
+          trackingStatus: null,
+          trackingCarrier: null,
+          trackingComment: null,
+          trackingGuide: null,
+          trackingPaused: null,
+          trackingHistory: null
+        });
+        return res.json({ success: true, message: "Seguimiento de envío restablecido de manera exitosa." });
+      }
+
+      // Immediately run the analysis to get initial carrier state
+      console.log(`[Tracking Setup] Triggering initial analysis for tracking URL: ${trackingUrl}`);
+      const analysis = await analyzeTrackingUrl(trackingUrl);
+
+      const updateData = {
+        trackingUrl,
+        trackingStatus: analysis.status || "preparacion",
+        trackingCarrier: analysis.carrier || "Desconocida",
+        trackingComment: analysis.comment || "Iniciando seguimiento",
+        trackingGuide: analysis.guide || "No detectada",
+        trackingPaused: false,
+        lastTrackedAt: Date.now(),
+        trackingHistory: [
+          {
+            status: analysis.status || "preparacion",
+            comment: analysis.comment || "Iniciando seguimiento",
+            timestamp: Date.now()
+          }
+        ]
+      };
+
+      await updateDoc(orderRef, updateData);
+
+      // Send the immediate WhatsApp message to the customer with the official tracking link!
+      try {
+        const finalPhone = normalizePhone(order.customerPhone);
+        const botNum = process.env.TWILIO_FROM_NUMBER || "+14155238886";
+        const formattedBotNum = botNum.startsWith("whatsapp:") ? botNum : `whatsapp:${botNum}`;
+        
+        const customerMsg = `Hola *${order.customerName}* 👋\n\nTu pedido de *${order.productName}* ya fue despachado. 🚀\n\n🚚 *Transportadora:*\n${analysis.carrier || 'Desconocida'}\n\n📦 *Guía:*\n${analysis.guide || 'No detectada'}\n\nPuedes hacer seguimiento aquí:\n${trackingUrl}\n\nTe estaremos notificando automáticamente cada cambio de estado de tu despacho. ¡Muchas gracias por tu confianza! 🚚💨`;
+        
+        await sendWhatsApp(finalPhone, customerMsg, undefined, undefined, formattedBotNum);
+        console.log(`[Tracking Setup] Sent immediate tracking WhatsApp to ${finalPhone}`);
+      } catch (wsErr: any) {
+        console.error(`[Tracking Setup] Failed to send instant WhatsApp message:`, wsErr.message);
+      }
+
+      res.json({
+        success: true,
+        message: "Enlace de seguimiento configurado y cliente notificado.",
+        order: { ...order, ...updateData }
+      });
+    } catch (err: any) {
+      console.error("[Tracking Endpoint Error]", err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  app.post("/api/integration/orders/:orderId/tracking/scan", async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      if (!orderId) {
+        return res.status(400).json({ success: false, error: "Missing orderId" });
+      }
+
+      const orderRef = doc(db, "orders", orderId);
+      const orderSnap = await getDoc(orderRef);
+      if (!orderSnap.exists()) {
+        return res.status(404).json({ success: false, error: "Pedido no encontrado." });
+      }
+
+      const order = orderSnap.data();
+      if (!order.trackingUrl) {
+        return res.status(400).json({ success: false, error: "Este pedido no tiene enlace de seguimiento configurado." });
+      }
+
+      console.log(`[Manual Scan] Scanning tracking page for order ${orderId}: ${order.trackingUrl}`);
+      const result = await analyzeTrackingUrl(order.trackingUrl);
+
+      const previousStatus = order.trackingStatus || "preparacion";
+      const updateData: any = {
+        lastTrackedAt: Date.now(),
+        trackingComment: result.comment,
+        trackingCarrier: result.carrier,
+        trackingStatus: result.status,
+        trackingGuide: result.guide || order.trackingGuide || "No detectada"
+      };
+
+      if (result.status !== previousStatus) {
+        console.log(`[Manual Scan] State changed from ${previousStatus} to ${result.status}`);
+        
+        // Add tracking history event
+        const history = Array.isArray(order.trackingHistory) ? [...order.trackingHistory] : [];
+        history.push({
+          status: result.status,
+          comment: result.comment,
+          timestamp: Date.now()
+        });
+        updateData.trackingHistory = history;
+
+        // Also sync standard order status
+        if (result.status === "entregado") {
+          updateData.status = "entregado";
+        } else if (result.status === "en_ruta") {
+          updateData.status = "despachado";
+        }
+
+        // Notify client
+        try {
+          const finalPhone = normalizePhone(order.customerPhone);
+          const botNum = process.env.TWILIO_FROM_NUMBER || "+14155238886";
+          const formattedBotNum = botNum.startsWith("whatsapp:") ? botNum : `whatsapp:${botNum}`;
+          let notificationText = "";
+
+          if (result.status === "en_ruta") {
+            notificationText = `📦 *¡Tu pedido de Jansel Shop está en camino!* 🚚💨\n\nHola *${order.customerName}*, te traemos excelentes noticias. Tu pedido de *${order.productName}* ya ha sido entregado a la transportadora (*${result.carrier}*) y se encuentra *En Ruta* de entrega.\n\n📍 Sigue el recorrido oficial aquí en tiempo real: ${order.trackingUrl}\n\nRecuerda tener listo el dinero en efectivo ($${(order.totalPrice || 0).toLocaleString()} COP) para tu Pago Contra Entrega. ¡Muchas gracias por tu compra! ✨`;
+          } else if (result.status === "entregado") {
+            notificationText = `🎉 *¡Tu pedido ha sido entregado con éxito!* 🥳\n\nHola *${order.customerName}*, confirmamos que tu pedido de *${order.productName}* ya fue entregado el día de hoy.\n\nQueremos darte las gracias por confiar en Jansel Shop. Esperamos que disfrutes al máximo de tu producto. ❤️\n\n¿Cómo estuvo tu experiencia? Si nos dejas un comentario por aquí, ¡nos ayudaría muchísimo! 🙏`;
+          } else if (result.status === "novedad") {
+            notificationText = `⚠️ *Actualización importante sobre tu entrega* 🚚\n\nHola *${order.customerName}*, la transportadora (*${result.carrier}*) nos reporta una *Novedad* con la entrega de tu pedido de *${order.productName}* (ej: dirección incompleta o no se encontraba nadie en casa).\n\n🔗 Puedes ver el detalle oficial de la transportadora aquí: ${order.trackingUrl}\n\nNo te preocupes, ¡queremos ayudarte a solucionarlo hoy mismo! Cuéntanos por este chat qué pasó o indícanos si quieres que reprogramemos la entrega para que no se devuelva tu paquete. ¡Quedamos muy atentos! 📲`;
+          }
+
+          if (notificationText) {
+            await sendWhatsApp(finalPhone, notificationText, undefined, undefined, formattedBotNum);
+            console.log(`[Manual Scan] Notified customer ${finalPhone} about state change: ${result.status}`);
+          }
+        } catch (notifErr: any) {
+          console.error(`[Manual Scan] Failed to send WhatsApp update:`, notifErr.message);
+        }
+      }
+
+      await updateDoc(orderRef, updateData);
+
+      res.json({
+        success: true,
+        status: result.status,
+        comment: result.comment,
+        carrier: result.carrier,
+        guide: result.guide,
+        order: { ...order, ...updateData }
+      });
+    } catch (e: any) {
+      console.error("[Manual Scan Error]", e);
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  app.post("/api/integration/orders/:orderId/tracking/toggle-monitoring", express.json(), async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const { paused } = req.body;
+
+      if (!orderId) {
+        return res.status(400).json({ success: false, error: "Missing orderId" });
+      }
+
+      const orderRef = doc(db, "orders", orderId);
+      const orderSnap = await getDoc(orderRef);
+      if (!orderSnap.exists()) {
+        return res.status(404).json({ success: false, error: "Pedido no encontrado." });
+      }
+
+      await updateDoc(orderRef, {
+        trackingPaused: !!paused
+      });
+
+      res.json({
+        success: true,
+        message: `Monitoreo ${paused ? "pausado" : "activado"} correctamente.`,
+        trackingPaused: !!paused
+      });
+    } catch (err: any) {
+      console.error("[Toggle Monitoring Error]", err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // 1. Generate Intelligent Upsell Recommendation
+  app.post("/api/integration/orders/:orderId/generate-upsell", async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      if (!orderId) {
+        return res.status(400).json({ success: false, error: "Missing orderId" });
+      }
+
+      const orderRef = doc(db, "orders", orderId);
+      const orderSnap = await getDoc(orderRef);
+      if (!orderSnap.exists()) {
+        return res.status(404).json({ success: false, error: "Pedido no encontrado." });
+      }
+      const order = orderSnap.data();
+
+      // Fetch customer's full purchase history to "learn" from them
+      const normalizedPhone = order.customerPhone ? order.customerPhone.trim() : "";
+      let customerOrders: any[] = [];
+      if (normalizedPhone) {
+        const qHistory = query(collection(db, "orders"), where("customerPhone", "==", normalizedPhone));
+        const historySnap = await getDocs(qHistory);
+        historySnap.forEach((d: any) => {
+          if (d.id !== orderId) {
+            customerOrders.push({ id: d.id, ...d.data() });
+          }
+        });
+      }
+
+      // Fetch catalog products
+      let prodSnap = await getDocs(collection(db, "products"));
+      const productsList: any[] = [];
+      prodSnap.forEach((d: any) => {
+        productsList.push({ id: d.id, ...d.data() });
+      });
+
+      // Call AI to learn and recommend
+      console.log(`[AI Upsell] Generating post-purchase cross-sell suggestion for ${order.customerName}...`);
+      const result = await generatePostPurchaseUpsell(order, customerOrders, productsList);
+
+      // Save suggestion into the order object so the merchant can review / edit / send
+      const updateData = {
+        upsellProfile: result.customerProfile,
+        upsellRecommendedProductId: result.recommendedProductId,
+        upsellRecommendedProductName: result.recommendedProductName,
+        upsellSuggestedMsg: result.suggestedMessage,
+        upsellReasoning: result.reasoning,
+        upsellStatus: order.upsellStatus || "pendiente",
+        upsellCreatedAt: Date.now()
+      };
+
+      await updateDoc(orderRef, updateData);
+
+      res.json({
+        success: true,
+        data: {
+          id: orderId,
+          ...order,
+          ...updateData
+        }
+      });
+    } catch (err: any) {
+      console.error("[Generate Upsell Error]", err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // 2. Send Intelligent Upsell Message
+  app.post("/api/integration/orders/:orderId/send-upsell", express.json(), async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const { customMessage } = req.body; // Optional override message from admin input
+
+      if (!orderId) {
+        return res.status(400).json({ success: false, error: "Missing orderId" });
+      }
+
+      const orderRef = doc(db, "orders", orderId);
+      const orderSnap = await getDoc(orderRef);
+      if (!orderSnap.exists()) {
+        return res.status(404).json({ success: false, error: "Pedido no encontrado." });
+      }
+      const order = orderSnap.data();
+
+      const messageToSend = customMessage || order.upsellSuggestedMsg;
+      if (!messageToSend) {
+        return res.status(400).json({ success: false, error: "No hay un mensaje sugerido generado todavía para enviar." });
+      }
+
+      // Send via Twilio/WhatsApp
+      const finalPhone = normalizePhone(order.customerPhone);
+      const botNum = process.env.TWILIO_FROM_NUMBER || "+14155238886";
+      const formattedBotNum = botNum.startsWith("whatsapp:") ? botNum : `whatsapp:${botNum}`;
+
+      console.log(`[AI Upsell] Sending WhatsApp cross-sell to ${order.customerName} (${finalPhone})`);
+      
+      const client = twilio(
+        process.env.TWILIO_ACCOUNT_SID || "ACmock",
+        process.env.TWILIO_AUTH_TOKEN || "mock"
+      );
+
+      let sid = "mock-sid";
+      if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && !process.env.TWILIO_ACCOUNT_SID.startsWith("ACmock")) {
+        const twilioRes = await client.messages.create({
+          from: formattedBotNum,
+          to: `whatsapp:${finalPhone}`,
+          body: messageToSend
+        });
+        sid = twilioRes.sid;
+      } else {
+        console.log("[AI Upsell MOCK] Twilio not fully configured. Outputting message body:");
+        console.log("-----------------------------------------");
+        console.log(messageToSend);
+        console.log("-----------------------------------------");
+      }
+
+      // Record activity history
+      await addDoc(collection(db, "activities"), {
+        from: formattedBotNum,
+        to: `+${finalPhone}`,
+        message: messageToSend,
+        status: "respondido",
+        whatsappStatus: "sent",
+        manualAgent: "AI Post-Purchase Followup",
+        createdAt: serverTimestamp(),
+        storeId: order.storeId || ""
+      });
+
+      // Update order status
+      const updateData = {
+        upsellSent: true,
+        upsellSentAt: Date.now(),
+        upsellStatus: "enviado",
+        upsellSuggestedMsg: messageToSend // Keep the actual sent copy
+      };
+      await updateDoc(orderRef, updateData);
+
+      res.json({
+        success: true,
+        message: "¡Oferta de venta cruzada enviada correctamente por WhatsApp!",
+        data: updateData
+      });
+    } catch (err: any) {
+      console.error("[Send Upsell Error]", err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
   app.post("/api/integration/shopify/sync-products", async (req, res) => {
     try {
       const { storeId, direction } = req.body;
@@ -2944,6 +3978,10 @@ _El pedido ya se guardó y está listo en tu tablero._`;
       if (checkGlobalQuota()) {
         return res.sendStatus(200);
       }
+
+      // Solo auditamos (nunca bloqueamos) — este endpoint solo actualiza estados
+      // de mensajes ya enviados, no es tan sensible como el webhook principal.
+      validateTwilioWebhookSignature(req);
 
       const { activityId } = req.query as { activityId: string };
       // Normalizing Twilio params (they can be in body or query depending on Twilio config)
@@ -3111,6 +4149,15 @@ _El pedido ya se guardó y está listo en tu tablero._`;
     }
 
     detectCurrentUrl(req);
+
+    // Seguridad: validamos que este request realmente venga de Twilio (ver
+    // `validateTwilioWebhookSignature` para el detalle del modo audit-only vs strict).
+    const twilioSignatureValid = validateTwilioWebhookSignature(req);
+    if (!twilioSignatureValid && STRICT_TWILIO_SIGNATURE_VALIDATION) {
+      console.error(`[Twilio Security] Bloqueado request con firma inválida. IP: ${req.ip}`);
+      return res.status(403).send("Firma inválida");
+    }
+
     // Log incoming body for debugging
     console.log("[WhatsApp Webhook] Received call. Body keys:", Object.keys(req.body));
     console.log("[WhatsApp Webhook] Incoming From:", req.body?.From, "To:", req.body?.To);
@@ -3228,6 +4275,12 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
           await sendCategoryFeaturedProducts(from, to, ["autos", "herramientas"], "Autos y Herramientas 🚗", assignedStoreId);
         } else if (buttonPayload === "CAT_BEAUTY") {
           await sendCategoryFeaturedProducts(from, to, ["belleza", "salud"], "Salud y Belleza 🧴", assignedStoreId);
+        } else if (buttonPayload === "CAT_OTHER2") {
+          await sendOtherCategoriesMenu2(from, to);
+        } else if (buttonPayload === "CAT_MODA") {
+          await sendCategoryFeaturedProducts(from, to, ["moda"], "Moda 👗", assignedStoreId);
+        } else if (buttonPayload === "CAT_PETS") {
+          await sendCategoryFeaturedProducts(from, to, ["mascotas", "bebe", "jugueteria"], "Mascotas, Bebés y Juguetería 🐾🍼", assignedStoreId);
         } else if (buttonPayload === "MORE_PAGE") {
           // El cliente tocó "➡️ Ver más productos" dentro de una categoría
           const lastSearch = customerData?.lastCategorySearch;
@@ -3281,6 +4334,22 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
             await updateDoc(doc(db, "customers", customerProfileId), { cart: null });
             await startCheckoutFlowFromCart(from, cleanFrom, to, assignedStoreId, productoTexto, valorTotal);
           }
+        } else if (buttonPayload === "CART_REMOVE") {
+          const currentCart: any[] = Array.isArray(customerData?.cart) ? customerData.cart : [];
+          if (currentCart.length === 0) {
+            await sendWhatsApp(from, "Tu carrito ya está vacío 🙂.", undefined, undefined, to);
+          } else if (currentCart.length === 1) {
+            // Solo hay un producto: lo quitamos directo, sin preguntar cuál.
+            await updateDoc(doc(db, "customers", customerProfileId), { cart: [], pendingCartAction: null });
+            await sendWhatsApp(from, `🗑️ Listo, quité *${currentCart[0].name}* de tu carrito. ¿Quieres ver el catálogo de nuevo?`, undefined, undefined, to);
+            await sendCategoriesMenu(from, to);
+          } else {
+            const listText = currentCart
+              .map((it: any, idx: number) => `${idx + 1}. ${it.cantidad}x ${it.name} - $${Number(it.price * it.cantidad).toLocaleString("es-CO")}`)
+              .join("\n");
+            await updateDoc(doc(db, "customers", customerProfileId), { pendingCartAction: "remove" });
+            await sendWhatsApp(from, `🗑️ ¿Cuál quieres quitar? Escríbeme el número:\n\n${listText}\n\nO escribe "todos" para vaciar el carrito completo.`, undefined, undefined, to);
+          }
         } else {
           console.warn(`[WhatsApp Webhook] ButtonPayload desconocido: ${buttonPayload}`);
         }
@@ -3312,6 +4381,43 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
         const cxSnap = await getDoc(doc(db, "customers", customerProfileId));
         const customerData = cxSnap.exists() ? cxSnap.data() : null;
         const normalizedMsg = normalizeCatText(messageBody).trim();
+
+        // 0) ¿Está en medio de un flujo de "quitar producto" que arrancó con
+        //    el botón 🗑️? Si es así, resolvemos ESO primero, antes que
+        //    cualquier otra interpretación del texto (evita ambigüedad).
+        if (customerData?.pendingCartAction === "remove") {
+          const cartNow: any[] = Array.isArray(customerData?.cart) ? [...customerData.cart] : [];
+          if (/^todos?$/i.test(normalizedMsg) || /vaciar/.test(normalizedMsg)) {
+            await updateDoc(doc(db, "customers", customerProfileId), { cart: [], pendingCartAction: null });
+            await sendWhatsApp(from, "🗑️ Listo, vacié todo tu carrito. ¿Vemos el catálogo de nuevo?", undefined, undefined, to);
+            await sendCategoriesMenu(from, to);
+            return res.status(200).send("");
+          }
+          const removeIdx = parseInt(normalizedMsg, 10);
+          if (!isNaN(removeIdx) && removeIdx >= 1 && removeIdx <= cartNow.length) {
+            const removed = cartNow.splice(removeIdx - 1, 1)[0];
+            await updateDoc(doc(db, "customers", customerProfileId), { cart: cartNow, pendingCartAction: null });
+            if (cartNow.length === 0) {
+              await sendWhatsApp(from, `🗑️ Quité *${removed.name}*. Tu carrito quedó vacío. ¿Vemos el catálogo?`, undefined, undefined, to);
+              await sendCategoriesMenu(from, to);
+            } else {
+              const cartSummary = cartNow
+                .map((it: any) => `• ${it.cantidad}x ${it.name} - $${Number(it.price * it.cantidad).toLocaleString("es-CO")}`)
+                .join("\n");
+              const totalCart = cartNow.reduce((sum: number, it: any) => sum + (it.price * it.cantidad), 0);
+              await sendWhatsApp(from, `🗑️ Quité *${removed.name}* de tu carrito.`, undefined, undefined, to);
+              const sent = await sendCartActionButtons(from, to, cartSummary, totalCart);
+              if (!sent) {
+                await sendWhatsApp(from, `🛒 Tu carrito ahora:\n${cartSummary}\n\n💵 Total: $${totalCart.toLocaleString("es-CO")} COP`, undefined, undefined, to);
+              }
+            }
+            return res.status(200).send("");
+          }
+          // No entendimos la respuesta: le recordamos el formato esperado y
+          // NO seguimos al resto del flujo (para no confundir más).
+          await sendWhatsApp(from, `No entendí cuál 😅. Responde con el número (ej: 1) o escribe "todos" para vaciar el carrito.`, undefined, undefined, to);
+          return res.status(200).send("");
+        }
 
         const lastList: any[] = Array.isArray(customerData?.lastProductList) ? customerData.lastProductList : [];
 
@@ -4190,6 +5296,218 @@ NO RESPONDAS EN JSON, RESPONDE SOLO EL TEXTO DEL MENSAJE.`;
       console.error("[Follow-up Engine] Error:", e);
     }
   }, 60000); // Check every minute
+
+  // ==============================================
+  // 🚚 BACKGROUND TRACKING SCANNER ENGINE
+  // ==============================================
+  let trackingCheckInterval: NodeJS.Timeout | null = null;
+
+  function startBackgroundTrackingChecker() {
+    if (trackingCheckInterval) return;
+    
+    console.log("[Tracking System] Starting background tracking status checker (every 10 minutes)...");
+    
+    // Run check every 10 minutes
+    trackingCheckInterval = setInterval(async () => {
+      try {
+        console.log("[Tracking System] Checking active orders with tracking links...");
+        const dbRef = db;
+        
+        // Fetch all active orders
+        const q = query(collection(dbRef, "orders"));
+        const snapshot = await getDocs(q);
+        
+        const now = Date.now();
+        const fifteenDaysMs = 15 * 24 * 60 * 60 * 1000;
+        
+        for (const orderDoc of snapshot.docs) {
+          const order = orderDoc.data();
+          const orderId = orderDoc.id;
+          
+          // Skip if no trackingUrl, already entregado / cancelled, or if monitoring is paused
+          if (!order.trackingUrl || order.trackingStatus === "entregado" || order.status === "entregado" || order.trackingPaused === true) {
+            continue;
+          }
+          
+          // Skip orders older than 15 days to save resources
+          const createdAt = order.createdAt ? (order.createdAt.seconds * 1000 || order.createdAt) : now;
+          if (now - createdAt > fifteenDaysMs) {
+            continue;
+          }
+          
+          // Throttle check: only analyze every 30 minutes in background per order
+          const lastChecked = order.lastTrackedAt || 0;
+          if (now - lastChecked < 30 * 60 * 1000) {
+            continue;
+          }
+          
+          console.log(`[Tracking System] Scanning order ${orderId} (${order.customerName}) tracking page: ${order.trackingUrl}`);
+          const result = await analyzeTrackingUrl(order.trackingUrl);
+          
+          const previousStatus = order.trackingStatus || "preparacion";
+          
+          // Update database with latest scan info
+          const updateData: any = {
+            lastTrackedAt: now,
+            trackingComment: result.comment,
+            trackingCarrier: result.carrier,
+            trackingGuide: result.guide || order.trackingGuide || "No detectada"
+          };
+          
+          if (result.status !== previousStatus) {
+            console.log(`[Tracking System] Order ${orderId} changed state: ${previousStatus} -> ${result.status}`);
+            updateData.trackingStatus = result.status;
+            
+            // Add tracking history event
+            const history = Array.isArray(order.trackingHistory) ? [...order.trackingHistory] : [];
+            history.push({
+              status: result.status,
+              comment: result.comment,
+              timestamp: now
+            });
+            updateData.trackingHistory = history;
+            
+            // Also sync with the standard order status if appropriate
+            if (result.status === "entregado") {
+              updateData.status = "entregado";
+            } else if (result.status === "en_ruta") {
+              updateData.status = "despachado";
+            }
+            
+            // Send WhatsApp Notification to the customer!
+            try {
+              const finalPhone = normalizePhone(order.customerPhone);
+              const botNum = process.env.TWILIO_FROM_NUMBER || "+14155238886";
+              const formattedBotNum = botNum.startsWith("whatsapp:") ? botNum : `whatsapp:${botNum}`;
+              let notificationText = "";
+              
+              if (result.status === "en_ruta") {
+                notificationText = `📦 *¡Tu pedido de Jansel Shop está en camino!* 🚚💨\n\nHola *${order.customerName}*, te traemos excelentes noticias. Tu pedido de *${order.productName}* ya ha sido entregado a la transportadora (*${result.carrier}*) y se encuentra *En Ruta* de entrega.\n\n📍 Sigue el recorrido oficial aquí en tiempo real: ${order.trackingUrl}\n\nRecuerda tener listo el dinero en efectivo ($${(order.totalPrice || 0).toLocaleString()} COP) para tu Pago Contra Entrega. ¡Muchas gracias por tu compra! ✨`;
+              } else if (result.status === "entregado") {
+                notificationText = `🎉 *¡Tu pedido ha sido entregado con éxito!* 🥳\n\nHola *${order.customerName}*, confirmamos que tu pedido de *${order.productName}* ya fue entregado el día de hoy.\n\nQueremos darte las gracias por confiar en Jansel Shop. Esperamos que disfrutes al máximo de tu producto. ❤️\n\n¿Cómo estuvo tu experiencia? Si nos dejas un comentario por aquí, ¡nos ayudaría muchísimo! 🙏`;
+              } else if (result.status === "novedad") {
+                notificationText = `⚠️ *Actualización importante sobre tu entrega* 🚚\n\nHola *${order.customerName}*, la transportadora (*${result.carrier}*) nos reporta una *Novedad* con la entrega de tu pedido de *${order.productName}* (ej: dirección incompleta o no se encontraba nadie en casa).\n\n🔗 Puedes ver el detalle oficial de la transportadora aquí: ${order.trackingUrl}\n\nNo te preocupes, ¡queremos ayudarte a solucionarlo hoy mismo! Cuéntanos por este chat qué pasó o indícanos si quieres que reprogramemos la entrega para que no se devuelva tu paquete. ¡Quedamos muy atentos! 📲`;
+              }
+              
+              if (notificationText) {
+                await sendWhatsApp(finalPhone, notificationText, undefined, undefined, formattedBotNum);
+                console.log(`[Tracking System] Notified customer ${finalPhone} about state change: ${result.status}`);
+              }
+            } catch (notifErr: any) {
+              console.error(`[Tracking System] Failed to send WhatsApp update for order ${orderId}: ${notifErr.message}`);
+            }
+          }
+          
+          await updateDoc(doc(dbRef, "orders", orderId), updateData);
+        }
+
+        // ==============================================
+        // 🛍️ AUTOMATIC POST-PURCHASE AI UPSELL CHECKER
+        // ==============================================
+        console.log("[AI Upsell System] Checking delivered orders for automatic post-purchase recommendations...");
+        for (const orderDoc of snapshot.docs) {
+          const order = orderDoc.data();
+          const orderId = orderDoc.id;
+
+          // Only process orders that are delivered ('entregado')
+          if (order.status !== "entregado" && order.trackingStatus !== "entregado") {
+            continue;
+          }
+
+          // Skip if already sent or if upsell is paused/ignored
+          if (order.upsellSent === true || order.upsellPaused === true) {
+            continue;
+          }
+
+          // Trigger condition: Delivered at least 7 days ago.
+          // To make it friendly for testing, we also support "triggerUpsellImmediately" flag
+          const deliveredAt = order.lastTrackedAt || order.createdAt || now;
+          const ageInDays = (now - deliveredAt) / (24 * 60 * 60 * 1000);
+
+          // We'll auto-trigger if it has been 7 days, OR if they have manual test flags
+          if (ageInDays >= 7 || order.triggerUpsellImmediately === true) {
+            console.log(`[AI Upsell System] Order ${orderId} (${order.customerName}) is eligible for auto-upsell (Age: ${ageInDays.toFixed(2)} days). Triggering AI...`);
+            
+            try {
+              // 1. Fetch other customer orders
+              const normalizedPhone = order.customerPhone ? order.customerPhone.trim() : "";
+              let customerOrders: any[] = [];
+              if (normalizedPhone) {
+                const qHistory = query(collection(dbRef, "orders"), where("customerPhone", "==", normalizedPhone));
+                const historySnap = await getDocs(qHistory);
+                historySnap.forEach((d: any) => {
+                  if (d.id !== orderId) customerOrders.push({ id: d.id, ...d.data() });
+                });
+              }
+
+              // 2. Fetch products
+              let prodSnap = await getDocs(collection(dbRef, "products"));
+              const productsList: any[] = [];
+              prodSnap.forEach((d: any) => {
+                productsList.push({ id: d.id, ...d.data() });
+              });
+
+              // 3. Generate suggestion
+              const result = await generatePostPurchaseUpsell(order, customerOrders, productsList);
+
+              // 4. Send via Twilio/WhatsApp automatically!
+              const finalPhone = normalizePhone(order.customerPhone);
+              const botNum = process.env.TWILIO_FROM_NUMBER || "+14155238886";
+              const formattedBotNum = botNum.startsWith("whatsapp:") ? botNum : `whatsapp:${botNum}`;
+
+              console.log(`[AI Upsell System] AUTO-SENDING WhatsApp cross-sell to ${order.customerName} (${finalPhone}): ${result.recommendedProductName}`);
+              
+              const client = twilio(
+                process.env.TWILIO_ACCOUNT_SID || "ACmock",
+                process.env.TWILIO_AUTH_TOKEN || "mock"
+              );
+
+              if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && !process.env.TWILIO_ACCOUNT_SID.startsWith("ACmock")) {
+                await client.messages.create({
+                  from: formattedBotNum,
+                  to: `whatsapp:${finalPhone}`,
+                  body: result.suggestedMessage
+                });
+              }
+
+              // Record activity history
+              await addDoc(collection(dbRef, "activities"), {
+                from: formattedBotNum,
+                to: `+${finalPhone}`,
+                message: result.suggestedMessage,
+                status: "respondido",
+                whatsappStatus: "sent",
+                manualAgent: "AI Post-Purchase Automatic Followup",
+                createdAt: serverTimestamp(),
+                storeId: order.storeId || ""
+              });
+
+              // Save into Firestore
+              await updateDoc(doc(dbRef, "orders", orderId), {
+                upsellProfile: result.customerProfile,
+                upsellRecommendedProductId: result.recommendedProductId,
+                upsellRecommendedProductName: result.recommendedProductName,
+                upsellSuggestedMsg: result.suggestedMessage,
+                upsellReasoning: result.reasoning,
+                upsellSent: true,
+                upsellSentAt: Date.now(),
+                upsellStatus: "enviado",
+                triggerUpsellImmediately: false // Reset flag
+              });
+
+            } catch (upsellErr: any) {
+              console.error(`[AI Upsell System] Failed automatic upsell for order ${orderId}:`, upsellErr.message);
+            }
+          }
+        }
+      } catch (err: any) {
+        console.error("[Tracking System] Error in background scanner interval:", err.message);
+      }
+    }, 10 * 60 * 1000); // 10 minutes
+  }
+
+  // Launch background tracking scanner
+  startBackgroundTrackingChecker();
 
   // Handle server errors (like port in use) gracefully
   server.on("error", (err: any) => {

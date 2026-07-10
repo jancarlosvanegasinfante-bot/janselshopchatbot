@@ -1826,6 +1826,11 @@ function ReportsTab({
 function OrdersTab({ orders, onUpdateStatus, userStore }: { orders: Order[], onUpdateStatus: (id: string, s: Order['status']) => void, userStore?: any, key?: string }) {
   const [syncingOrderId, setSyncingOrderId] = useState<string | null>(null);
 
+  // States for AI Post-Purchase Cross-Sell VIP system
+  const [editedMessages, setEditedMessages] = useState<Record<string, string>>({});
+  const [generatingUpsellId, setGeneratingUpsellId] = useState<string | null>(null);
+  const [sendingUpsellId, setSendingUpsellId] = useState<string | null>(null);
+
   const handlePushToPlatform = async (orderId: string, platform: 'shopify' | 'dropi') => {
     setSyncingOrderId(orderId + '_' + platform);
     try {
@@ -2012,6 +2017,411 @@ function OrdersTab({ orders, onUpdateStatus, userStore }: { orders: Order[], onU
                               <span>ENVIAR</span>
                               <Send size={8} className={syncingOrderId === `${o.id}_dropi` ? "animate-spin" : ""} />
                             </button>
+                          )}
+                        </div>
+
+                        {/* SEGUIMIENTO AUTOMATIZADO */}
+                        <div className="flex flex-col gap-2 bg-neutral-900/60 border border-neutral-850 p-2 rounded-lg mt-1 w-full max-w-[200px]">
+                          <div className="flex justify-between items-center border-b border-neutral-800 pb-1">
+                            <span className="text-[9px] font-black tracking-wider text-neutral-400 uppercase">SEGUIMIENTO</span>
+                            {(o as any).trackingUrl && (
+                              <button 
+                                onClick={async () => {
+                                  if (confirm("¿Seguro que quieres remover el enlace de seguimiento?")) {
+                                    try {
+                                      toast.loading("Restableciendo...", { id: "track_reset" });
+                                      const res = await fetch(`/api/integration/orders/${o.id}/tracking`, {
+                                        method: "POST",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ trackingUrl: "" })
+                                      });
+                                      const data = await res.json();
+                                      if (data.success) {
+                                        toast.success("Enlace restablecido.", { id: "track_reset" });
+                                      } else {
+                                        toast.error(data.error, { id: "track_reset" });
+                                      }
+                                    } catch (err: any) {
+                                      toast.error(err.message, { id: "track_reset" });
+                                    }
+                                  }
+                                }}
+                                className="text-red-500 hover:text-red-400 text-[8px] underline"
+                              >
+                                Remover
+                              </button>
+                            )}
+                          </div>
+
+                          {/* URL Input or active link */}
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[8px] font-mono text-neutral-500">URL de seguimiento</span>
+                            {(o as any).trackingUrl ? (
+                              <a 
+                                href={(o as any).trackingUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="text-[8px] text-blue-400 font-bold hover:underline truncate w-full"
+                                title={(o as any).trackingUrl}
+                              >
+                                🔗 Ver Ruta Oficial
+                              </a>
+                            ) : (
+                              <div className="flex gap-1 mt-0.5">
+                                <input 
+                                  type="text"
+                                  placeholder="Pegar URL de ruta..."
+                                  className="bg-black/45 border border-neutral-800 text-[8px] text-white px-1 py-0.5 rounded outline-none w-full"
+                                  id={`tracking_url_${o.id}`}
+                                />
+                                <button
+                                  onClick={async () => {
+                                    const input = document.getElementById(`tracking_url_${o.id}`) as HTMLInputElement;
+                                    if (!input || !input.value.trim()) {
+                                      toast.error("Por favor pega la URL de ruta de Dropi o transportadora.");
+                                      return;
+                                    }
+                                    try {
+                                      toast.loading("Configurando...", { id: "track_save_" + o.id });
+                                      const res = await fetch(`/api/integration/orders/${o.id}/tracking`, {
+                                        method: "POST",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ trackingUrl: input.value.trim() })
+                                      });
+                                      const data = await res.json();
+                                      if (data.success) {
+                                        toast.success("¡Ruta guardada y cliente notificado!", { id: "track_save_" + o.id });
+                                        input.value = "";
+                                      } else {
+                                        toast.error("Error: " + data.error, { id: "track_save_" + o.id });
+                                      }
+                                    } catch (e: any) {
+                                      toast.error("Error: " + e.message, { id: "track_save_" + o.id });
+                                    }
+                                  }}
+                                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[8px] px-1.5 py-0.5 rounded uppercase"
+                                >
+                                  Guardar
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* [ ESCANEAR ] Button */}
+                          {(o as any).trackingUrl && (
+                            <button
+                              onClick={async () => {
+                                try {
+                                  toast.loading("Escanenando en tiempo real...", { id: "track_scan_" + o.id });
+                                  const res = await fetch(`/api/integration/orders/${o.id}/tracking/scan`, {
+                                    method: "POST"
+                                  });
+                                  const data = await res.json();
+                                  if (data.success) {
+                                    toast.success(`Estado actual: ${data.status.toUpperCase()}`, { id: "track_scan_" + o.id });
+                                  } else {
+                                    toast.error("Error: " + data.error, { id: "track_scan_" + o.id });
+                                  }
+                                } catch (e: any) {
+                                  toast.error("Error: " + e.message, { id: "track_scan_" + o.id });
+                                }
+                              }}
+                              className="w-full bg-neutral-850 hover:bg-neutral-800 text-neutral-200 hover:text-white text-[8px] font-black uppercase py-1 px-1.5 rounded transition-all active:scale-95 flex items-center justify-center gap-1 font-mono border border-neutral-700"
+                              title="Escanear en tiempo real con IA"
+                            >
+                              <RefreshCw size={8} />
+                              ESCANEAR
+                            </button>
+                          )}
+
+                          {/* Estado */}
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[8px] font-mono text-neutral-500">Estado:</span>
+                            <span className={cn(
+                              "text-[8px] font-bold px-1.5 py-0.5 rounded border w-fit uppercase font-mono",
+                              (o as any).trackingStatus === "entregado" ? "text-green-400 bg-green-500/10 border-green-500/20" :
+                              (o as any).trackingStatus === "novedad" ? "text-red-400 bg-red-500/10 border-red-500/20" :
+                              (o as any).trackingStatus === "en_ruta" ? "text-blue-400 bg-blue-500/10 border-blue-500/20" :
+                              "text-amber-400 bg-amber-500/10 border-amber-500/20"
+                            )}>
+                              {(o as any).trackingStatus === "preparacion" ? "Pendiente" : 
+                               (o as any).trackingStatus === "en_ruta" ? "En tránsito" : 
+                               (o as any).trackingStatus === "entregado" ? "Entregado" : 
+                               (o as any).trackingStatus === "novedad" ? "Novedad" : "Pendiente"}
+                            </span>
+                          </div>
+
+                          {/* Transportadora */}
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[8px] font-mono text-neutral-500">Transportadora:</span>
+                            <span className="text-[8px] font-black text-neutral-300">
+                              {(o as any).trackingCarrier || "-"}
+                            </span>
+                          </div>
+
+                          {/* Guía */}
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[8px] font-mono text-neutral-500">Guía:</span>
+                            <span className="text-[8px] font-black text-neutral-300 font-mono select-all">
+                              {(o as any).trackingGuide || "-"}
+                            </span>
+                          </div>
+
+                          {/* Última revisión */}
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[8px] font-mono text-neutral-500">Última revisión:</span>
+                            <span className="text-[7px] text-neutral-400 font-mono">
+                              {(o as any).lastTrackedAt ? new Date((o as any).lastTrackedAt).toLocaleString() : "-"}
+                            </span>
+                          </div>
+
+                          {/* Monitoreo: Activo / Pausado */}
+                          {(o as any).trackingUrl && (
+                            <div className="flex flex-col gap-1 border-t border-neutral-800 pt-1.5">
+                              <span className="text-[8px] font-mono text-neutral-500">Monitoreo:</span>
+                              <div className="flex items-center gap-3">
+                                <label className="flex items-center gap-1 cursor-pointer text-[8px] font-bold text-neutral-300">
+                                  <input 
+                                    type="radio" 
+                                    name={`monitoring_${o.id}`} 
+                                    checked={!(o as any).trackingPaused}
+                                    onChange={async () => {
+                                      try {
+                                        toast.loading("Activando monitoreo...", { id: "track_mon_" + o.id });
+                                        const res = await fetch(`/api/integration/orders/${o.id}/tracking/toggle-monitoring`, {
+                                          method: "POST",
+                                          headers: { "Content-Type": "application/json" },
+                                          body: JSON.stringify({ paused: false })
+                                        });
+                                        const data = await res.json();
+                                        if (data.success) {
+                                          toast.success("Monitoreo activo.", { id: "track_mon_" + o.id });
+                                        } else {
+                                          toast.error(data.error, { id: "track_mon_" + o.id });
+                                        }
+                                      } catch (err: any) {
+                                        toast.error(err.message, { id: "track_mon_" + o.id });
+                                      }
+                                    }}
+                                    className="accent-emerald-500"
+                                  />
+                                  <span>Activo</span>
+                                </label>
+                                <label className="flex items-center gap-1 cursor-pointer text-[8px] font-bold text-neutral-300">
+                                  <input 
+                                    type="radio" 
+                                    name={`monitoring_${o.id}`} 
+                                    checked={!!(o as any).trackingPaused}
+                                    onChange={async () => {
+                                      try {
+                                        toast.loading("Pausando monitoreo...", { id: "track_mon_" + o.id });
+                                        const res = await fetch(`/api/integration/orders/${o.id}/tracking/toggle-monitoring`, {
+                                          method: "POST",
+                                          headers: { "Content-Type": "application/json" },
+                                          body: JSON.stringify({ paused: true })
+                                        });
+                                        const data = await res.json();
+                                        if (data.success) {
+                                          toast.success("Monitoreo pausado.", { id: "track_mon_" + o.id });
+                                        } else {
+                                          toast.error(data.error, { id: "track_mon_" + o.id });
+                                        }
+                                      } catch (err: any) {
+                                        toast.error(err.message, { id: "track_mon_" + o.id });
+                                      }
+                                    }}
+                                    className="accent-amber-500"
+                                  />
+                                  <span>Pausado</span>
+                                </label>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* 🛍️ MARKETING POST-VENTA (CROSS-SELL IA) */}
+                        <div className="flex flex-col gap-2 bg-neutral-900/60 border border-neutral-850 p-2 rounded-lg mt-2 w-full max-w-[200px]">
+                          <div className="flex justify-between items-center border-b border-neutral-850 pb-1">
+                            <span className="text-[9px] font-black tracking-wider text-amber-400 uppercase flex items-center gap-1">
+                              <span>🛍️ CROSS-SELL IA</span>
+                            </span>
+                            {/* Toggle pause automatic flow */}
+                            <button
+                              onClick={async () => {
+                                const newPaused = !(o as any).upsellPaused;
+                                try {
+                                  toast.loading(newPaused ? "Pausando..." : "Activando...", { id: "upsell_pause_" + o.id });
+                                  await updateDoc(doc(db, "orders", o.id), { upsellPaused: newPaused });
+                                  toast.success(newPaused ? "Flujo pausado" : "Flujo automático activo", { id: "upsell_pause_" + o.id });
+                                } catch (err: any) {
+                                  toast.error(err.message, { id: "upsell_pause_" + o.id });
+                                }
+                              }}
+                              className={cn(
+                                "text-[7px] px-1 py-0.5 rounded font-bold uppercase transition-all",
+                                (o as any).upsellPaused 
+                                  ? "bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30" 
+                                  : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30"
+                              )}
+                              title={(o as any).upsellPaused ? "Activar flujo de marketing de 7-15 días" : "Pausar flujo de marketing"}
+                            >
+                              {(o as any).upsellPaused ? "Pausado" : "Auto"}
+                            </button>
+                          </div>
+
+                          {!(o as any).upsellProfile ? (
+                            <div className="flex flex-col gap-1.5 py-1">
+                              <p className="text-[7.5px] text-neutral-400 leading-tight">
+                                La IA aprenderá de sus compras y creará ofertas VIP personalizadas tras la entrega.
+                              </p>
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    setGeneratingUpsellId(o.id);
+                                    toast.loading("IA analizando y aprendiendo del cliente...", { id: "upsell_gen_" + o.id });
+                                    const res = await fetch(`/api/integration/orders/${o.id}/generate-upsell`, {
+                                      method: "POST"
+                                    });
+                                    const data = await res.json();
+                                    if (data.success) {
+                                      toast.success("¡Análisis y recomendación listos!", { id: "upsell_gen_" + o.id });
+                                    } else {
+                                      toast.error("Error: " + data.error, { id: "upsell_gen_" + o.id });
+                                    }
+                                  } catch (err: any) {
+                                    toast.error("Error: " + err.message, { id: "upsell_gen_" + o.id });
+                                  } finally {
+                                    setGeneratingUpsellId(null);
+                                  }
+                                }}
+                                disabled={generatingUpsellId === o.id}
+                                className="w-full bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-black font-black text-[8px] uppercase py-1 px-1.5 rounded transition-all active:scale-95 flex items-center justify-center gap-1 font-mono"
+                              >
+                                {generatingUpsellId === o.id ? "Analizando..." : "✨ GENERAR OFERTA IA"}
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col gap-1.5 text-left">
+                              {/* Customer Profile analysis */}
+                              <div className="bg-neutral-950/70 p-1 rounded border border-neutral-850">
+                                <span className="text-[7px] font-mono text-neutral-500 block uppercase font-bold mb-0.5">Perfil Deducción (IA):</span>
+                                <p className="text-[7.5px] text-neutral-300 italic leading-snug">
+                                  "{(o as any).upsellProfile}"
+                                </p>
+                              </div>
+
+                              {/* Recommended product */}
+                              <div className="bg-amber-500/5 p-1 rounded border border-amber-500/20">
+                                <span className="text-[7px] font-mono text-amber-500 block uppercase font-bold">Ofrecer:</span>
+                                <span className="text-[8px] font-black text-amber-400">
+                                  🎁 {(o as any).upsellRecommendedProductName}
+                                </span>
+                              </div>
+
+                              {/* Suggested message edit */}
+                              <div className="flex flex-col gap-0.5">
+                                <span className="text-[7px] font-mono text-neutral-500 uppercase font-bold">Mensaje sugerido (Editable):</span>
+                                <textarea
+                                  value={editedMessages[o.id] !== undefined ? editedMessages[o.id] : ((o as any).upsellSuggestedMsg || "")}
+                                  onChange={(e) => {
+                                    setEditedMessages({
+                                      ...editedMessages,
+                                      [o.id]: e.target.value
+                                    });
+                                  }}
+                                  className="w-full bg-black/55 border border-neutral-800 text-[8.5px] text-neutral-100 p-1 rounded outline-none h-16 resize-none font-sans leading-tight focus:border-amber-500"
+                                />
+                              </div>
+
+                              {/* Action Buttons */}
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      setGeneratingUpsellId(o.id);
+                                      toast.loading("Re-generando recomendación...", { id: "upsell_gen_" + o.id });
+                                      const res = await fetch(`/api/integration/orders/${o.id}/generate-upsell`, {
+                                        method: "POST"
+                                      });
+                                      const data = await res.json();
+                                      if (data.success) {
+                                        toast.success("¡Recomendación actualizada!", { id: "upsell_gen_" + o.id });
+                                        // Reset edited message for this order to pull the new one
+                                        const nextEdited = { ...editedMessages };
+                                        delete nextEdited[o.id];
+                                        setEditedMessages(nextEdited);
+                                      } else {
+                                        toast.error("Error: " + data.error, { id: "upsell_gen_" + o.id });
+                                      }
+                                    } catch (err: any) {
+                                      toast.error("Error: " + err.message, { id: "upsell_gen_" + o.id });
+                                    } finally {
+                                      setGeneratingUpsellId(null);
+                                    }
+                                  }}
+                                  disabled={generatingUpsellId === o.id}
+                                  className="w-1/3 bg-neutral-800 hover:bg-neutral-750 text-neutral-300 font-bold text-[8px] uppercase py-1 rounded transition-all text-center flex items-center justify-center gap-0.5"
+                                  title="Re-generar oferta"
+                                >
+                                  🔄 RE-GEN
+                                </button>
+
+                                <button
+                                  onClick={async () => {
+                                    const currentMsg = editedMessages[o.id] !== undefined ? editedMessages[o.id] : ((o as any).upsellSuggestedMsg || "");
+                                    try {
+                                      setSendingUpsellId(o.id);
+                                      toast.loading("Enviando WhatsApp...", { id: "upsell_send_" + o.id });
+                                      const res = await fetch(`/api/integration/orders/${o.id}/send-upsell`, {
+                                        method: "POST",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ customMessage: currentMsg })
+                                      });
+                                      const data = await res.json();
+                                      if (data.success) {
+                                        toast.success("¡Oferta VIP enviada correctamente!", { id: "upsell_send_" + o.id });
+                                      } else {
+                                        toast.error("Error: " + data.error, { id: "upsell_send_" + o.id });
+                                      }
+                                    } catch (err: any) {
+                                      toast.error("Error: " + err.message, { id: "upsell_send_" + o.id });
+                                    } finally {
+                                      setSendingUpsellId(null);
+                                    }
+                                  }}
+                                  disabled={sendingUpsellId === o.id}
+                                  className="w-2/3 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[8px] uppercase py-1 rounded transition-all text-center flex items-center justify-center gap-0.5"
+                                >
+                                  💬 ENVIAR VIP
+                                </button>
+                              </div>
+
+                              {/* Status indicators */}
+                              <div className="flex justify-between items-center mt-1 border-t border-neutral-850 pt-1 text-[7px] font-mono">
+                                <span className="text-neutral-500">Estado de Envío:</span>
+                                {(o as any).upsellSent ? (
+                                  <span className="text-green-400 font-bold uppercase flex items-center gap-0.5">
+                                    <span>● ENVIADO</span>
+                                  </span>
+                                ) : (
+                                  <button
+                                    onClick={async () => {
+                                      try {
+                                        toast.loading("Configurando trigger...", { id: "upsell_trig_" + o.id });
+                                        await updateDoc(doc(db, "orders", o.id), { triggerUpsellImmediately: true });
+                                        toast.success("¡Trigger inmediato configurado! La IA lo enviará en su próximo escaneo.", { id: "upsell_trig_" + o.id });
+                                      } catch (err: any) {
+                                        toast.error(err.message, { id: "upsell_trig_" + o.id });
+                                      }
+                                    }}
+                                    className="text-amber-400 font-bold hover:underline uppercase"
+                                    title="Disparar inmediatamente en el próximo chequeo en segundo plano"
+                                  >
+                                    ⏳ PROGRAMADO (DISPARAR)
+                                  </button>
+                                )}
+                              </div>
+                            </div>
                           )}
                         </div>
                       </div>
