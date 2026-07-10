@@ -5,7 +5,6 @@ import path from "path";
 import { fileURLToPath } from "url";
 import twilio from "twilio";
 import { readFileSync, existsSync } from "fs";
-import Papa from "papaparse";
 import "dotenv/config";
 
 import { createClient } from "@supabase/supabase-js";
@@ -1157,6 +1156,7 @@ El JSON debe cumplir ESTRICTAMENTE con la siguiente estructura de campos (no inv
     "ciudad": "Ciudad de Colombia",
     "referencia": "Punto de referencia o descripción de la casa",
     "valor": 0, // Precio/valor acordado como número entero
+    "cantidad": 1, // Cantidad de unidades pedidas (número entero, por defecto 1 si el cliente no especifica)
     "notes": "Notas adicionales"
   },
   "imageUrl": "URL pública de imagen del producto si aplica (SOLO devuélvela si el cliente pide una foto explícitamente, o si es la PRIMERA VEZ que le ofreces este producto. NUNCA la devuelvas si él fue quien te envió la foto a ti)"
@@ -1753,6 +1753,167 @@ function buildOrderSummaryLine(jsonResponse: any): string {
   const direccion = jsonResponse.datos_pedido?.direccion || "";
   const ciudad = jsonResponse.datos_pedido?.ciudad || "";
   return [producto, valor, [direccion, ciudad].filter(Boolean).join(", ")].filter(Boolean).join(" - ").slice(0, 300);
+}
+
+// Construye y envía (o reenvía, tras una corrección puntual) el resumen del
+// pedido en el flujo determinístico de checkout, guardando el
+// pendingConfirmation en Firestore y adjuntando la foto del producto si la
+// encontramos en el catálogo, para darle más confianza al cliente.
+async function sendCheckoutSummaryAndButtons(
+  customerPhone: string,
+  botPhone: string,
+  customerProfileId: string,
+  checkoutData: any,
+  activityId: string | undefined,
+  assignedStoreId: string
+): Promise<void> {
+  if (!checkoutData.valor || checkoutData.valor <= 0) {
+    const products = await loadProductsForStore(assignedStoreId);
+    const checkProd = (checkoutData.producto || "").toLowerCase();
+    const match = products.find((p: any) =>
+      (p.name && p.name.toLowerCase().includes(checkProd)) ||
+      (p.name && checkProd.includes(p.name.toLowerCase()))
+    );
+    if (match && match.price) checkoutData.valor = match.price;
+  }
+
+  const cantidad = checkoutData.cantidad && checkoutData.cantidad > 0 ? checkoutData.cantidad : 1;
+  const totalPagar = Number(checkoutData.valor || 0) * cantidad;
+
+  await setDoc(doc(db, "customers", customerProfileId), {
+    checkoutStep: "confirmacion",
+    checkoutData: checkoutData,
+    pendingConfirmation: {
+      jsonResponse: {
+        accion: "confirmar_pedido",
+        producto: checkoutData.producto,
+        datos_pedido: {
+          nombre: checkoutData.nombre,
+          telefono: checkoutData.telefono,
+          ciudad: checkoutData.ciudad,
+          direccion: checkoutData.direccion,
+          referencia: checkoutData.referencia,
+          valor: checkoutData.valor,
+          cantidad: cantidad,
+          notas: `Pedido capturado por flujo determinístico de Checkout.`
+        }
+      },
+      storeId: assignedStoreId,
+      createdAt: serverTimestamp()
+    }
+  }, { merge: true });
+
+  const fakeJsonResponse = {
+    producto: checkoutData.producto,
+    datos_pedido: {
+      valor: totalPagar,
+      direccion: checkoutData.direccion,
+      ciudad: checkoutData.ciudad
+    }
+  };
+
+  // Buscar imagen del producto en el catálogo para adjuntarla al resumen
+  let productImageUrl: string | undefined;
+  try {
+    const products = await loadProductsForStore(assignedStoreId);
+    const checkProd = (checkoutData.producto || "").toLowerCase();
+    const match = products.find((p: any) =>
+      (p.name && p.name.toLowerCase() === checkProd) ||
+      (p.name && p.name.toLowerCase().includes(checkProd)) ||
+      (p.name && checkProd.includes(p.name.toLowerCase()))
+    );
+    if (match && match.imageUrl && !String(match.imageUrl).startsWith("/")) {
+      productImageUrl = match.imageUrl;
+    }
+  } catch (e) {
+    console.error("[Checkout Summary] No se pudo buscar la imagen del producto:", e);
+  }
+
+  const summaryText = `🚨 *RESUMEN DE TU PEDIDO* 🚨\n\n📦 *Producto:* ${checkoutData.producto}\n🔢 *Cantidad:* ${cantidad}\n💵 *Total a Pagar:* $${totalPagar.toLocaleString("es-CO")} *(Pagas al recibir)*\n👤 *Nombre:* ${checkoutData.nombre}\n📞 *Teléfono:* ${checkoutData.telefono}\n🇨🇴 *Destino:* ${checkoutData.ciudad}\n🏠 *Dirección:* ${checkoutData.direccion}\n📍 *Referencia:* ${checkoutData.referencia}\n\n🔥 *¡El envío es 100% GRATIS!*`;
+  await sendWhatsApp(customerPhone, summaryText, productImageUrl, activityId, botPhone);
+
+  await new Promise(resolve => setTimeout(resolve, 1200));
+
+  const buttonsSent = await sendOrderConfirmationButtons(customerPhone, botPhone, fakeJsonResponse);
+  if (!buttonsSent) {
+    await sendWhatsApp(customerPhone, `¿Confirmas que todos tus datos están correctos para proceder con el despacho? Escribe *SÍ* para confirmar o *NO* para corregir.`, undefined, activityId, botPhone);
+  }
+}
+
+
+// Reenvía la pregunta correspondiente al paso de checkout donde el cliente
+// se quedó, usado cuando retoma desde el botón "Continuar mi pedido" de un
+// follow-up de carrito abandonado.
+async function resendCurrentCheckoutStepPrompt(customerPhone: string, botPhone: string, customerData: any): Promise<void> {
+  const step = customerData?.checkoutStep;
+  const cd = customerData?.checkoutData || {};
+  const prompts: Record<string, string> = {
+    producto: "¡Retomemos! ¿Qué producto deseas pedir? 📦",
+    cantidad: `¡Seguimos con tu pedido de *${cd.producto || "tu producto"}*! ¿Cuántas *unidades* deseas? 🔢`,
+    nombre: "¡Seguimos! ¿Cuál es tu *Nombre y Apellido completo*? 📝",
+    telefono: "¡Seguimos! ¿A qué *número de teléfono* te contactamos? 📞",
+    ciudad: "¡Seguimos! ¿A qué *ciudad o municipio* enviamos tu pedido? 🇨🇴",
+    direccion: "¡Seguimos! ¿Cuál es tu *dirección exacta de entrega*? 🏠",
+    referencia: "¡Seguimos! ¿Alguna *referencia* de la dirección? 📍 (o escribe *ninguna*)",
+  };
+  if (step === "confirmacion") {
+    await sendCheckoutSummaryAndButtons(customerPhone, botPhone, `${customerData?.storeId || "default"}_${customerPhone.replace("whatsapp:", "")}`, cd, undefined, customerData?.storeId || "default");
+    return;
+  }
+  const msg = prompts[step] || "¡Seguimos con tu pedido! Cuéntame en qué íbamos. 😊";
+  await sendWhatsApp(customerPhone, msg, undefined, undefined, botPhone);
+}
+
+async function ensureResumeCheckoutTemplate(): Promise<string | null> {
+  if (!twilioClient) return null;
+  try {
+    const cfgSnap = await getDoc(doc(db, "config", "system"));
+    const existingSid = cfgSnap.exists() ? cfgSnap.data()?.resumeCheckoutTemplateSid : null;
+    if (existingSid) return existingSid;
+
+    const content = await (twilioClient as any).content.v1.contents.create({
+      friendlyName: `jan_resume_checkout_${Date.now()}`,
+      language: "es",
+      variables: { "1": "tu pedido" },
+      types: {
+        "twilio/quick-reply": {
+          body: "¡Hola de nuevo! 👋 Veo que quedaste a mitad de registrar {{1}}. ¿Seguimos donde quedamos?",
+          actions: [
+            { title: "🛒 Continuar mi pedido", id: "RESUME_CHECKOUT" },
+            { title: "❌ No, gracias", id: "RESUME_CHECKOUT_NO" }
+          ]
+        },
+        "twilio/text": {
+          body: "¡Hola de nuevo! 👋 Veo que quedaste a mitad de registrar {{1}}. Responde CONTINUAR para seguir donde quedamos, o NO GRACIAS si prefieres dejarlo así."
+        }
+      }
+    });
+
+    await setDoc(doc(db, "config", "system"), { resumeCheckoutTemplateSid: content.sid }, { merge: true });
+    return content.sid;
+  } catch (e: any) {
+    console.error("[WhatsApp Buttons] Error creando template de retomar checkout:", e.message);
+    return null;
+  }
+}
+
+async function sendResumeCheckoutButtons(to: string, from: string, productoTexto: string): Promise<boolean> {
+  if (!twilioClient) return false;
+  const contentSid = await ensureResumeCheckoutTemplate();
+  if (!contentSid) return false;
+
+  try {
+    await (twilioClient as any).messages.create({
+      from: normalizePhone(from || TWILIO_FROM_NUMBER || "+14155238886"),
+      to: normalizePhone(to),
+      contentSid,
+      contentVariables: JSON.stringify({ "1": (productoTexto || "tu pedido").slice(0, 100) })
+    });
+    return true;
+  } catch (e: any) {
+    console.error("[WhatsApp Buttons] Error enviando botones de retomar checkout:", e.message);
+    return false;
+  }
 }
 
 async function sendOrderConfirmationButtons(to: string, from: string, jsonResponse: any): Promise<boolean> {
@@ -2391,14 +2552,18 @@ async function finalizeOrder(
       if (match && (match as any).price) finalPrice = (match as any).price;
     }
 
+    let quantity = parseInt(jsonResponse.datos_pedido?.cantidad, 10);
+    if (!quantity || isNaN(quantity) || quantity < 1) quantity = 1;
+    if (quantity > 20) quantity = 20; // límite razonable anti-error de digitación
+
     const orderInfo = {
       storeId: assignedStoreId,
       customerName: jsonResponse.datos_pedido?.nombre || customerProfile?.name || fromPhone,
       customerPhone: jsonResponse.datos_pedido?.telefono || fromPhone,
       productName: jsonResponse.producto || "No especificado",
       productId: "manual",
-      quantity: 1,
-      totalPrice: finalPrice,
+      quantity,
+      totalPrice: finalPrice * quantity,
       address: jsonResponse.datos_pedido?.direccion || "No especificada",
       city: jsonResponse.datos_pedido?.ciudad || "No especificada",
       addressIndicator: jsonResponse.datos_pedido?.referencia || "N/A",
@@ -2449,42 +2614,142 @@ async function finalizeOrder(
   }
 }
 
+/**
+ * SINCRONIZACIÓN EN VIVO DE IMÁGENES/CATÁLOGO DESDE GOOGLE SHEETS (CSV PUBLICADO)
+ * ---------------------------------------------------------------------------
+ * José María va pegando enlaces de imágenes a medida que los consigue, y
+ * necesita que el bot los tome en cuenta sin tener que redeployar. OneDrive
+ * bloquea la descarga automatizada de archivos, así que la solución estable
+ * es: publicar la hoja de Google Sheets como CSV (Archivo > Compartir >
+ * Publicar en la web > Valores separados por comas) y poner ese link en la
+ * variable de entorno GOOGLE_SHEETS_CATALOG_CSV_URL. Este bloque lee la hoja
+ * cada cierto tiempo y actualiza SOLO los campos imageUrl (y opcionalmente
+ * price/stock si vienen en la hoja) de los productos ya existentes en
+ * Firestore, buscando por "id" y si no hay match, por "name".
+ *
+ * Columnas esperadas (nombres flexibles, sin importar mayúsculas/acentos):
+ * id | name (o nombre) | imageUrl (o imagen/foto). Opcionales: price, stock.
+ */
+function parseCsvLine(line: string): string[] {
+  const out: string[] = [];
+  let cur = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (line[i + 1] === '"') { cur += '"'; i++; }
+        else inQuotes = false;
+      } else {
+        cur += ch;
+      }
+    } else {
+      if (ch === '"') inQuotes = true;
+      else if (ch === ',') { out.push(cur); cur = ""; }
+      else cur += ch;
+    }
+  }
+  out.push(cur);
+  return out.map(s => s.trim());
+}
+
+function normalizeHeader(h: string): string {
+  return h.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+}
+
+let lastCatalogSyncSummary = { lastRun: null as string | null, updated: 0, matched: 0, rows: 0, error: null as string | null };
+
+async function syncCatalogFromSheet(): Promise<void> {
+  const csvUrl = process.env.GOOGLE_SHEETS_CATALOG_CSV_URL;
+  if (!csvUrl) return; // Feature apagada si no hay variable configurada
+
+  try {
+    const response = await axios.get(csvUrl, { responseType: "text", timeout: 15000 });
+    const raw: string = typeof response.data === "string" ? response.data : String(response.data);
+    const lines = raw.split(/\r?\n/).filter(l => l.trim().length > 0);
+    if (lines.length < 2) {
+      lastCatalogSyncSummary = { lastRun: new Date().toISOString(), updated: 0, matched: 0, rows: 0, error: "CSV vacío o sin filas de datos" };
+      return;
+    }
+
+    const headers = parseCsvLine(lines[0]).map(normalizeHeader);
+    const idIdx = headers.findIndex(h => h === "id" || h === "sku" || h === "productid");
+    const nameIdx = headers.findIndex(h => h === "name" || h === "nombre" || h === "producto");
+    const imgIdx = headers.findIndex(h => h === "imageurl" || h === "imagen" || h === "imagenurl" || h === "image" || h === "foto" || h === "linkimagen" || h === "vinculoimagen" || h === "vinculo" || h === "linkfoto");
+    const priceIdx = headers.findIndex(h => h === "price" || h === "precio");
+    const stockIdx = headers.findIndex(h => h === "stock" || h === "existencias" || h === "inventario");
+
+    if (imgIdx === -1 || (idIdx === -1 && nameIdx === -1)) {
+      lastCatalogSyncSummary = { lastRun: new Date().toISOString(), updated: 0, matched: 0, rows: lines.length - 1, error: "No se encontraron columnas 'id'/'name' y 'imageUrl' en la hoja" };
+      console.error("[Catalog Sync] Encabezados no reconocidos:", headers);
+      return;
+    }
+
+    const prodSnap = await getDocs(collection(db, "products"));
+    const allProducts = prodSnap.docs.map(d => ({ docId: d.id, ...(d.data() as any) }));
+
+    let matched = 0;
+    let updated = 0;
+
+    for (let i = 1; i < lines.length; i++) {
+      const cols = parseCsvLine(lines[i]);
+      const rowId = idIdx !== -1 ? (cols[idIdx] || "").trim() : "";
+      const rowName = nameIdx !== -1 ? (cols[nameIdx] || "").trim() : "";
+      const rowImg = (cols[imgIdx] || "").trim();
+      if (!rowImg || (!rowId && !rowName)) continue;
+
+      // chatgpt.com/s/... son links para ABRIR una conversación de ChatGPT,
+      // no imágenes reales — si se detectan, se ignora esa fila para no
+      // guardar un "imageUrl" que rompería el envío de fotos por WhatsApp.
+      if (/chatgpt\.com\/s\//i.test(rowImg)) {
+        console.warn(`[Catalog Sync] Fila ignorada: el link no es una imagen real (chatgpt.com/s/...) para "${rowName || rowId}"`);
+        continue;
+      }
+
+      let match = rowId ? allProducts.find(p => (p.id || "").toLowerCase() === rowId.toLowerCase()) : null;
+      if (!match && rowName) {
+        const rn = rowName.toLowerCase();
+        match = allProducts.find(p => (p.name || "").toLowerCase() === rn)
+          || allProducts.find(p => (p.name || "").toLowerCase().includes(rn) || rn.includes((p.name || "").toLowerCase()));
+      }
+      if (!match) continue;
+      matched++;
+
+      const updatePayload: any = {};
+      if (rowImg && rowImg !== match.imageUrl) updatePayload.imageUrl = rowImg;
+      if (priceIdx !== -1 && cols[priceIdx]) {
+        const p = Number(String(cols[priceIdx]).replace(/[^0-9.]/g, ""));
+        if (!isNaN(p) && p > 0 && p !== match.price) updatePayload.price = p;
+      }
+      if (stockIdx !== -1 && cols[stockIdx] !== undefined && cols[stockIdx] !== "") {
+        const s = Number(String(cols[stockIdx]).replace(/[^0-9]/g, ""));
+        if (!isNaN(s) && s !== match.stock) updatePayload.stock = s;
+      }
+
+      if (Object.keys(updatePayload).length > 0) {
+        try {
+          await updateDoc(doc(db, "products", match.docId), updatePayload);
+          updated++;
+        } catch (e: any) {
+          console.error(`[Catalog Sync] Error actualizando producto ${match.docId}:`, e.message);
+        }
+      }
+    }
+
+    lastCatalogSyncSummary = { lastRun: new Date().toISOString(), updated, matched, rows: lines.length - 1, error: null };
+    if (updated > 0) {
+      console.log(`[Catalog Sync] ${updated} producto(s) actualizado(s) desde Google Sheets (${matched} coincidencias de ${lines.length - 1} filas).`);
+    }
+  } catch (e: any) {
+    lastCatalogSyncSummary = { lastRun: new Date().toISOString(), updated: 0, matched: 0, rows: 0, error: e.message };
+    console.error("[Catalog Sync] Error leyendo/procesando el CSV:", e.message);
+  }
+}
+
 // Carga el catálogo de productos de una tienda (con fallback a JSON local si Supabase falla).
 // Extraída para reutilizarla tanto en el flujo normal de IA como en la confirmación por botón.
 async function loadProductsForStore(assignedStoreId: string): Promise<any[]> {
   let products: any[] = [];
-  
-  if (process.env.GOOGLE_SHEETS_CSV_URL) {
-    try {
-      const resp = await axios.get(process.env.GOOGLE_SHEETS_CSV_URL);
-      const parsed = Papa.parse(resp.data, { header: true, skipEmptyLines: true });
-      if (parsed.data && parsed.data.length > 0) {
-        products = parsed.data.map((row: any, index: number) => {
-          // Normalizar llaves (para ser tolerante a mayúsculas o espacios en las cabeceras)
-          const getVal = (key: string) => {
-            const foundKey = Object.keys(row).find(k => k.toLowerCase().trim() === key.toLowerCase());
-            return foundKey ? row[foundKey] : undefined;
-          };
-          
-          return {
-            id: getVal("id") || `csv_prod_${index}`,
-            name: getVal("name") || getVal("nombre") || getVal("producto") || "Producto sin nombre",
-            price: parseInt(String(getVal("price") || getVal("precio") || "0").replace(/\D/g, "")) || 0,
-            description: getVal("description") || getVal("descripción") || getVal("descripcion") || "",
-            category: getVal("category") || getVal("categoría") || getVal("categoria") || "General",
-            imageUrl: getVal("imageUrl") || getVal("imagen") || getVal("foto") || getVal("url") || "",
-            storeId: assignedStoreId,
-            stock: parseInt(String(getVal("stock") || getVal("cantidad") || "100").replace(/\D/g, "")) || 100
-          };
-        });
-        console.log(`[CSV Sync] ${products.length} productos cargados dinámicamente de Google Sheets.`);
-        return products;
-      }
-    } catch (e: any) {
-      console.error("[CSV Sync] Error cargando productos del CSV:", e.message);
-    }
-  }
-
   try {
     // UNIFIED MODE: Fetch all products across all stores
     let prodSnap = await getDocs(collection(db, "products"));
@@ -3425,6 +3690,19 @@ async function startServer() {
         details: JSON.stringify(e, null, 2)
       });
     }
+  });
+
+  // Sincronización manual de imágenes/catálogo desde Google Sheets (o consultar el último estado)
+  app.post("/api/admin/sync-catalog-images", async (req, res) => {
+    try {
+      await syncCatalogFromSheet();
+      res.json({ success: true, summary: lastCatalogSyncSummary });
+    } catch (e: any) {
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+  app.get("/api/admin/sync-catalog-images", (req, res) => {
+    res.json({ success: true, summary: lastCatalogSyncSummary, configured: !!process.env.GOOGLE_SHEETS_CATALOG_CSV_URL });
   });
 
   // Toggle AI
@@ -4467,6 +4745,16 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
             }
           }
           await sendWhatsApp(from, "¡Perfecto! Ya le he avisado a un asesor humano 🙋‍♂️. Te escribirá en un momento. Mientras tanto, si tienes otra duda, puedes escribirme por acá. 😊", undefined, undefined, to);
+        } else if (buttonPayload === "RESUME_CHECKOUT") {
+          await resendCurrentCheckoutStepPrompt(from, to, customerData);
+        } else if (buttonPayload === "RESUME_CHECKOUT_NO") {
+          await setDoc(doc(db, "customers", customerProfileId), {
+            checkoutStep: null,
+            checkoutData: null,
+            pendingConfirmation: null,
+            etapa: "interesado"
+          }, { merge: true });
+          await sendWhatsApp(from, "¡Listo, sin problema! Aquí estaré si cambias de idea. 😊 ¿En qué más te puedo colaborar?", undefined, undefined, to);
         } else if (buttonPayload === "MENU_END" || buttonPayload === "CHAT_END") {
           await updateDoc(doc(db, "customers", customerProfileId), { 
             pendingConfirmation: null,
@@ -4789,6 +5077,85 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
       const customerData = cxSnap.exists() ? cxSnap.data() : null;
 
       // ==============================================
+      // 0.A INTERCEPTOR GLOBAL: PEDIR ASESOR HUMANO (funciona en cualquier punto)
+      // ==============================================
+      // Antes, "Hablar con Asesor" solo era un botón que aparecía en ciertos
+      // menús. Ahora cualquier frase que claramente pida un humano dispara lo
+      // mismo sin importar en qué parte del flujo esté el cliente (catálogo,
+      // checkout, etc.), salvo que ya haya un asesor activo para no repetir.
+      const advisorPhrases = [
+        "hablar con asesor", "hablar con alguien", "hablar con una persona",
+        "hablar con un humano", "quiero un asesor", "necesito un asesor",
+        "atencion al cliente", "persona real", "hablar con soporte",
+        "quiero hablar con una persona", "asesor humano", "un humano por favor"
+      ];
+      const wantsAdvisor = advisorPhrases.some(p => cleanMsg.includes(p)) ||
+        (cleanMsg.includes("asesor") && !cleanMsg.includes("no quiero"));
+
+      if (wantsAdvisor && from.startsWith("whatsapp:") && customerData?.etapa !== "asesoria_solicitada") {
+        await setDoc(doc(db, "customers", customerProfileId), { etapa: "asesoria_solicitada" }, { merge: true });
+        try {
+          let storeConfig: any = {};
+          const storeSnap = await getDoc(doc(db, "stores", assignedStoreId));
+          if (storeSnap.exists()) storeConfig = storeSnap.data();
+          await notifyAdmins({
+            customerName: customerData?.name || cleanFrom,
+            customerPhone: cleanFrom,
+            productName: "Solicitud de asesor humano",
+            totalPrice: 0
+          }, storeConfig?.name || "Jan Vanegas", storeConfig);
+        } catch (e) {
+          console.error("[Advisor Interceptor] Error notificando asesoría:", e);
+        }
+        await sendWhatsApp(from, "¡Perfecto! Ya le he avisado a un asesor humano 🙋‍♂️. Te escribirá en un momento. Mientras tanto, si tienes otra duda, puedes escribirme por acá. 😊", undefined, activityRef.id, to);
+        return res.status(200).send("");
+      }
+
+      // ==============================================
+      // 0.B INTERCEPTOR GLOBAL: SEGUIMIENTO / "¿DÓNDE VA MI PEDIDO?"
+      // ==============================================
+      const trackingPhrases = [
+        "donde va mi pedido", "donde esta mi pedido", "estado de mi pedido",
+        "seguimiento de mi pedido", "seguimiento del pedido", "rastrear mi pedido",
+        "numero de guia", "guia de envio", "mi pedido va", "ver mi pedido",
+        "donde viene mi pedido", "cuando llega mi pedido"
+      ];
+      const wantsTracking = trackingPhrases.some(p => cleanMsg.includes(p));
+
+      if (wantsTracking && from.startsWith("whatsapp:")) {
+        try {
+          const ordersQ = query(
+            collection(db, "orders"),
+            where("customerPhone", "==", cleanFrom),
+            orderBy("createdAt", "desc"),
+            limit(1)
+          );
+          const ordersSnap = await getDocs(ordersQ);
+          if (ordersSnap.empty) {
+            await sendWhatsApp(from, "No encuentro ningún pedido asociado a tu número todavía. 🙁 Si ya hiciste uno, cuéntame el nombre con el que lo registraste y te ayudo a buscarlo.", undefined, activityRef.id, to);
+            return res.status(200).send("");
+          }
+          const order = ordersSnap.docs[0].data() as any;
+          const statusLabel: Record<string, string> = {
+            preparacion: "🟡 En preparación, aún no ha sido despachado",
+            en_ruta: "🔵 En tránsito, va en camino",
+            entregado: "🟢 ¡Ya fue entregado!",
+            novedad: "🔴 Tiene una novedad, un asesor te contactará"
+          };
+          const label = statusLabel[order.trackingStatus] || "🟡 En preparación, aún no ha sido despachado";
+          let msg = `📦 *Estado de tu pedido:* ${order.productName || ""}\n\n${label}`;
+          if (order.trackingGuide) msg += `\n\n🚚 *Guía:* ${order.trackingGuide}`;
+          if (order.trackingUrl) msg += `\n🔗 *Rastrear aquí:* ${order.trackingUrl}`;
+          if (!order.trackingUrl) msg += `\n\nApenas se despache te mandaremos el número de guía automáticamente. 😊`;
+          await sendWhatsApp(from, msg, undefined, activityRef.id, to);
+        } catch (e) {
+          console.error("[Tracking Interceptor] Error buscando pedido:", e);
+          await sendWhatsApp(from, "Tuve un problema buscando tu pedido. Un asesor te va a confirmar el estado en un momento. 🙏", undefined, activityRef.id, to);
+        }
+        return res.status(200).send("");
+      }
+
+      // ==============================================
       // 1. ACTIVE CHECKOUT STATE MACHINE (DETERMINISTIC)
       // ==============================================
       if (customerData && customerData.checkoutStep && from.startsWith("whatsapp:")) {
@@ -4810,6 +5177,13 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
           return res.status(200).send("");
         }
 
+        // Retomar checkout tras un follow-up de carrito abandonado (por si el
+        // botón no llegó y el cliente escribió "continuar" en texto plano)
+        if (["continuar", "seguir", "continuar pedido", "seguir pedido"].some(k => cleanMsg === k || cleanMsg.startsWith(k))) {
+          await resendCurrentCheckoutStepPrompt(from, to, customerData);
+          return res.status(200).send("");
+        }
+
         if (currentStep === "producto") {
           checkoutData.producto = finalMessage;
           
@@ -4825,17 +5199,52 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
           }
           checkoutData.valor = matchedPrice;
 
+          if (checkoutData._editing === true) {
+            delete checkoutData._editing;
+            await sendCheckoutSummaryAndButtons(from, to, customerProfileId, checkoutData, activityRef.id, assignedStoreId);
+            return res.status(200).send("");
+          }
+
+          await setDoc(doc(db, "customers", customerProfileId), {
+            checkoutStep: "cantidad",
+            checkoutData: checkoutData
+          }, { merge: true });
+
+          await sendWhatsApp(from, `¡Perfecto! Vamos a registrar tu pedido para: *${checkoutData.producto}*. 📦\n\n¿Cuántas *unidades* deseas? (Escribe un número, o *1* si solo quieres una) 🔢`, undefined, activityRef.id, to);
+          return res.status(200).send("");
+        }
+
+        if (currentStep === "cantidad") {
+          let qty = parseInt(finalMessage.replace(/[^0-9]/g, ""), 10);
+          if (!qty || isNaN(qty) || qty < 1) qty = 1;
+          if (qty > 20) qty = 20;
+          checkoutData.cantidad = qty;
+
+          const isEditing = checkoutData._editing === true;
+          if (isEditing) {
+            delete checkoutData._editing;
+            await sendCheckoutSummaryAndButtons(from, to, customerProfileId, checkoutData, activityRef.id, assignedStoreId);
+            return res.status(200).send("");
+          }
+
           await setDoc(doc(db, "customers", customerProfileId), {
             checkoutStep: "nombre",
             checkoutData: checkoutData
           }, { merge: true });
 
-          await sendWhatsApp(from, `¡Perfecto! Vamos a registrar tu pedido para: *${checkoutData.producto}*. 📦\n\nAhora, por favor dime tu *Nombre y Apellido completo* para la guía de envío de tu pedido: 📝`, undefined, activityRef.id, to);
+          await sendWhatsApp(from, `¡Listo, *${qty}* unidad${qty > 1 ? "es" : ""}! Ahora, por favor dime tu *Nombre y Apellido completo* para la guía de envío de tu pedido: 📝`, undefined, activityRef.id, to);
           return res.status(200).send("");
         }
 
         if (currentStep === "nombre") {
           checkoutData.nombre = finalMessage;
+
+          const isEditingNombre = checkoutData._editing === true;
+          if (isEditingNombre) {
+            delete checkoutData._editing;
+            await sendCheckoutSummaryAndButtons(from, to, customerProfileId, checkoutData, activityRef.id, assignedStoreId);
+            return res.status(200).send("");
+          }
 
           await setDoc(doc(db, "customers", customerProfileId), {
             checkoutStep: "telefono",
@@ -4853,6 +5262,12 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
           }
           checkoutData.telefono = phoneVal;
 
+          if (checkoutData._editing === true) {
+            delete checkoutData._editing;
+            await sendCheckoutSummaryAndButtons(from, to, customerProfileId, checkoutData, activityRef.id, assignedStoreId);
+            return res.status(200).send("");
+          }
+
           await setDoc(doc(db, "customers", customerProfileId), {
             checkoutStep: "ciudad",
             checkoutData: checkoutData
@@ -4864,6 +5279,12 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
 
         if (currentStep === "ciudad") {
           checkoutData.ciudad = finalMessage;
+
+          if (checkoutData._editing === true) {
+            delete checkoutData._editing;
+            await sendCheckoutSummaryAndButtons(from, to, customerProfileId, checkoutData, activityRef.id, assignedStoreId);
+            return res.status(200).send("");
+          }
 
           await setDoc(doc(db, "customers", customerProfileId), {
             checkoutStep: "direccion",
@@ -4877,6 +5298,12 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
         if (currentStep === "direccion") {
           checkoutData.direccion = finalMessage;
 
+          if (checkoutData._editing === true) {
+            delete checkoutData._editing;
+            await sendCheckoutSummaryAndButtons(from, to, customerProfileId, checkoutData, activityRef.id, assignedStoreId);
+            return res.status(200).send("");
+          }
+
           await setDoc(doc(db, "customers", customerProfileId), {
             checkoutStep: "referencia",
             checkoutData: checkoutData
@@ -4889,62 +5316,48 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
         if (currentStep === "referencia") {
           checkoutData.referencia = finalMessage;
 
-          if (!checkoutData.valor || checkoutData.valor <= 0) {
-            const products = await loadProductsForStore(assignedStoreId);
-            const checkProd = (checkoutData.producto || "").toLowerCase();
-            const match = products.find((p: any) =>
-              (p.name && p.name.toLowerCase().includes(checkProd)) ||
-              (p.name && checkProd.includes(p.name.toLowerCase()))
-            );
-            if (match && match.price) checkoutData.valor = match.price;
+          if (checkoutData._editing === true) {
+            delete checkoutData._editing;
           }
 
-          await setDoc(doc(db, "customers", customerProfileId), {
-            checkoutStep: "confirmacion",
-            checkoutData: checkoutData,
-            pendingConfirmation: {
-              jsonResponse: {
-                accion: "confirmar_pedido",
-                producto: checkoutData.producto,
-                datos_pedido: {
-                  nombre: checkoutData.nombre,
-                  telefono: checkoutData.telefono,
-                  ciudad: checkoutData.ciudad,
-                  direccion: checkoutData.direccion,
-                  referencia: checkoutData.referencia,
-                  valor: checkoutData.valor,
-                  notas: `Pedido capturado por flujo determinístico de Checkout.`
-                }
-              },
-              storeId: assignedStoreId,
-              createdAt: serverTimestamp()
-            }
-          }, { merge: true });
-
-          const fakeJsonResponse = {
-            producto: checkoutData.producto,
-            datos_pedido: {
-              valor: checkoutData.valor,
-              direccion: checkoutData.direccion,
-              ciudad: checkoutData.ciudad
-            }
-          };
-
-          const summaryText = `🚨 *RESUMEN DE TU PEDIDO* 🚨\n\n📦 *Producto:* ${checkoutData.producto}\n💵 *Total a Pagar:* $${Number(checkoutData.valor || 0).toLocaleString("es-CO")} *(Pagas al recibir)*\n👤 *Nombre:* ${checkoutData.nombre}\n📞 *Teléfono:* ${checkoutData.telefono}\n🇨🇴 *Destino:* ${checkoutData.ciudad}\n🏠 *Dirección:* ${checkoutData.direccion}\n📍 *Referencia:* ${checkoutData.referencia}\n\n🔥 *¡El envío es 100% GRATIS!*`;
-          await sendWhatsApp(from, summaryText, undefined, activityRef.id, to);
-
-          await new Promise(resolve => setTimeout(resolve, 1200));
-
-          const buttonsSent = await sendOrderConfirmationButtons(from, to, fakeJsonResponse);
-          if (!buttonsSent) {
-            await sendWhatsApp(from, `¿Confirmas que todos tus datos están correctos para proceder con el despacho? Escribe *SÍ* para confirmar o *NO* para corregir.`, undefined, activityRef.id, to);
-          }
-
+          await sendCheckoutSummaryAndButtons(from, to, customerProfileId, checkoutData, activityRef.id, assignedStoreId);
           return res.status(200).send("");
         }
 
         if (currentStep === "confirmacion") {
           const normConfirm = cleanMsg.replace(/[^a-z]/g, "");
+
+          // Si el cliente estaba corrigiendo un campo puntual y responde algo
+          // que coincide con el nombre de un campo, lo mandamos directo a
+          // capturar ese campo en vez de tratarlo como SI/NO.
+          const fieldMap: Record<string, string> = {
+            nombre: "nombre", telefono: "telefono", numero: "telefono",
+            ciudad: "ciudad", direccion: "direccion", referencia: "referencia",
+            producto: "producto", cantidad: "cantidad"
+          };
+          const fieldRequested = Object.keys(fieldMap).find(k => normConfirm === k || normConfirm.includes(k));
+
+          if (customerData.checkoutData?._awaitingFieldChoice && fieldRequested) {
+            const targetStep = fieldMap[fieldRequested];
+            const cd = { ...checkoutData, _editing: true };
+            delete cd._awaitingFieldChoice;
+            await setDoc(doc(db, "customers", customerProfileId), {
+              checkoutStep: targetStep,
+              checkoutData: cd
+            }, { merge: true });
+            const prompts: Record<string, string> = {
+              nombre: "¡Dale! ¿Cuál es el *nombre y apellido* correcto? 📝",
+              telefono: "¡Dale! ¿Cuál es el *teléfono* correcto? 📞",
+              ciudad: "¡Dale! ¿Cuál es la *ciudad/municipio* correcta? 🇨🇴",
+              direccion: "¡Dale! ¿Cuál es la *dirección exacta* correcta? 🏠",
+              referencia: "¡Dale! ¿Cuál es la *referencia* correcta? 📍",
+              producto: "¡Dale! ¿Cuál es el *producto* correcto? 📦",
+              cantidad: "¡Dale! ¿Cuántas *unidades* correctas quieres? 🔢"
+            };
+            await sendWhatsApp(from, prompts[targetStep], undefined, activityRef.id, to);
+            return res.status(200).send("");
+          }
+
           if (["si", "sii", "sigo", "correcto", "confirmar", "confirmo", "deuna", "dale", "yes"].some(k => normConfirm === k || normConfirm.startsWith(k))) {
             const pending = customerData.pendingConfirmation;
             if (pending && pending.jsonResponse) {
@@ -4967,13 +5380,14 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
             }
             return res.status(200).send("");
           } else if (["no", "cancelar", "cambiar", "corregir", "incorrecto"].some(k => normConfirm === k || normConfirm.startsWith(k))) {
-            await setDoc(doc(db, "customers", customerProfileId), { 
-              pendingConfirmation: null, 
-              checkoutStep: null, 
-              checkoutData: null,
-              etapa: "interesado"
+            // Antes esto borraba TODOS los datos capturados y obligaba a
+            // empezar de cero. Ahora preguntamos puntualmente qué campo
+            // quiere corregir, y solo reiniciamos ese campo.
+            await setDoc(doc(db, "customers", customerProfileId), {
+              checkoutStep: "confirmacion",
+              checkoutData: { ...checkoutData, _awaitingFieldChoice: true }
             }, { merge: true });
-            await sendWhatsApp(from, "Tranqui, no he confirmado nada todavía 🙂 Dime qué deseas cambiar o qué producto estás buscando y lo ajustamos.", undefined, activityRef.id, to);
+            await sendWhatsApp(from, `Tranqui, no he confirmado nada todavía 🙂 ¿Qué deseas corregir? Responde una de estas palabras:\n\n📦 *producto*\n🔢 *cantidad*\n👤 *nombre*\n📞 *telefono*\n🇨🇴 *ciudad*\n🏠 *direccion*\n📍 *referencia*\n\nO escribe *cancelar* si prefieres cancelar todo el pedido.`, undefined, activityRef.id, to);
             return res.status(200).send("");
           } else {
             // Antes: si la respuesta no era ni "SI" ni "NO" reconocido, el código
@@ -5097,9 +5511,29 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
 
       if (isGreeting && from.startsWith("whatsapp:")) {
         console.log(`[WhatsApp Greeting Interceptor] Greeting detected from ${from}. Replying deterministically...`);
-        
-        const WELCOME_MESSAGE = `¡Qué más parce! 👋 Te doy la bienvenida a *Jan Sel Shop*! 💎\n\n¿Cómo vas? Contame en qué te puedo colaborar hoy o qué estás buscando de nuestro catálogo. ¡Aquí abajo te dejo unas opciones rápidas para empezar de una! 👇`;
-        
+
+        // Saludo personalizado si es cliente recurrente con pedido anterior
+        let WELCOME_MESSAGE = `¡Qué más parce! 👋 Te doy la bienvenida a *Jan Sel Shop*! 💎\n\n¿Cómo vas? Contame en qué te puedo colaborar hoy o qué estás buscando de nuestro catálogo. ¡Aquí abajo te dejo unas opciones rápidas para empezar de una! 👇`;
+
+        try {
+          if (customerData?.name) {
+            const prevOrdersQ = query(
+              collection(db, "orders"),
+              where("customerPhone", "==", cleanFrom),
+              orderBy("createdAt", "desc"),
+              limit(1)
+            );
+            const prevOrdersSnap = await getDocs(prevOrdersQ);
+            if (!prevOrdersSnap.empty) {
+              const lastOrder = prevOrdersSnap.docs[0].data() as any;
+              const firstName = String(customerData.name).split(" ")[0];
+              WELCOME_MESSAGE = `¡Hola de nuevo, *${firstName}*! 👋 Qué gusto verte otra vez por *Jan Sel Shop* 💎\n\n¿Cómo te fue con tu *${lastOrder.productName || "pedido anterior"}*? Cuéntame en qué te puedo colaborar hoy. 👇`;
+            }
+          }
+        } catch (e) {
+          console.error("[Greeting Interceptor] Error buscando historial para saludo personalizado:", e);
+        }
+
         await sendWhatsApp(from, WELCOME_MESSAGE, undefined, activityRef.id, to);
         await new Promise(resolve => setTimeout(resolve, 1200));
         await sendMainMenu(from, to);
@@ -5304,6 +5738,15 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
   });
 
   /**
+   * SINCRONIZACIÓN DE IMÁGENES/CATÁLOGO DESDE GOOGLE SHEETS (en vivo)
+   * Corre apenas arranca el server y luego cada 90 segundos. Si no hay
+   * GOOGLE_SHEETS_CATALOG_CSV_URL configurada, la función simplemente no
+   * hace nada (ver syncCatalogFromSheet).
+   */
+  syncCatalogFromSheet();
+  setInterval(() => { syncCatalogFromSheet(); }, 90 * 1000);
+
+  /**
    * FOLLOW-UP ENGINE (individual per customer)
    */
   setInterval(async () => {
@@ -5483,8 +5926,18 @@ NO RESPONDAS EN JSON, RESPONDE SOLO EL TEXTO DEL MENSAJE.`;
 
           console.log(`[Follow-up] Sending nudge to ${phone}: ${nudgeMsg}`);
           
-          // 3. Send
-          await sendWhatsApp(formattedPhone, nudgeMsg);
+          // 3. Send — si el cliente quedó a mitad de un checkout, mandamos un
+          // botón directo para retomar exactamente donde quedó, en vez de
+          // solo un mensaje de texto que lo obligue a escribir de nuevo.
+          if (profile?.checkoutStep && profile.checkoutStep !== "confirmacion") {
+            const productoTexto = profile?.checkoutData?.producto || "tu pedido";
+            const buttonsSent = await sendResumeCheckoutButtons(formattedPhone, TWILIO_FROM_NUMBER || "whatsapp:+14155238886", productoTexto);
+            if (!buttonsSent) {
+              await sendWhatsApp(formattedPhone, `¡Hola de nuevo! 👋 Quedaste a mitad de registrar *${productoTexto}*. Escribe *continuar* para seguir donde quedamos. 🛒`);
+            }
+          } else {
+            await sendWhatsApp(formattedPhone, nudgeMsg);
+          }
           
           // 4. Log as activity
           await addDoc(collection(db, "activities"), {
