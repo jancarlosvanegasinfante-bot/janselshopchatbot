@@ -353,9 +353,9 @@ export function writeBatch(dbObj?: any) {
 }
 
 // Robust Environment Variable Detection (Railway & Google Cloud compat)
-const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID || process.env.SID_DE_CUENTA_TWILIO;
-const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN || process.env.TOKEN_DE_AUTORIZACION_DE_TWILIO;
-const TWILIO_FROM_NUMBER = process.env.TWILIO_FROM_NUMBER || process.env.TWILIO_DESDE_NÚMERO || process.env.TWILIO_NUMBER;
+const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID || process.env.SID_DE_CUENTA_TWILIO || process.env.VITE_TWILIO_ACCOUNT_SID;
+const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN || process.env.TOKEN_DE_AUTORIZACION_DE_TWILIO || process.env.VITE_TWILIO_AUTH_TOKEN;
+const TWILIO_FROM_NUMBER = process.env.TWILIO_FROM_NUMBER || process.env.TWILIO_DESDE_NÚMERO || process.env.TWILIO_NUMBER || process.env.VITE_TWILIO_FROM_NUMBER;
 const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
@@ -3931,11 +3931,17 @@ async function startServer() {
       // 3b. Send automatic WhatsApp confirmation to customer
       try {
         const finalPhone = normalizePhone(orderInfo.customerPhone);
-        const botNum = process.env.TWILIO_FROM_NUMBER || "+14155238886";
+        const botNum = TWILIO_FROM_NUMBER || "+14155238886";
         const formattedBotNum = botNum.startsWith("whatsapp:") ? botNum : `whatsapp:${botNum}`;
         const customerWelcomeMsg = `¡Hola *${orderInfo.customerName}*! 👋 Muchas gracias por confiar en nosotros en Jansel Shop.\n\nPor este medio te estaré notificando sobre tu pedido de *${orderInfo.productName}*. Te confirmamos que ya se encuentra en *etapa de preparación* 📦 y pronto saldrá en ruta de entrega.\n\n¡Cualquier duda que tengas me puedes escribir por aquí! ✨`;
-        await sendWhatsApp(finalPhone, customerWelcomeMsg, undefined, undefined, formattedBotNum);
-        console.log(`[Landing Order Welcome] Welcomed customer ${finalPhone} successfully.`);
+        
+        console.log(`[Landing Order Welcome] Initializing customer notification. From: ${formattedBotNum} To: ${finalPhone}`);
+        if (!twilioClient) {
+          console.warn("[Landing Order Welcome] TWILIO IS NOT INITIALIZED! Cannot send welcome message. Please verify TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN and TWILIO_FROM_NUMBER environment variables.");
+        } else {
+          await sendWhatsApp(finalPhone, customerWelcomeMsg, undefined, undefined, formattedBotNum);
+          console.log(`[Landing Order Welcome] Welcomed customer ${finalPhone} successfully.`);
+        }
       } catch (welcomeErr: any) {
         console.error(`[Landing Order Welcome] Failed to welcome customer:`, welcomeErr.message);
       }
@@ -3987,13 +3993,19 @@ _El pedido ya se guardó y está listo en tu tablero._`;
       // Modify the standard notification phone if config exists
       const adminNumbers = getAdminNumbers(storeConfig);
 
+      console.log(`[Landing Order Notify] Preparing admin notifications for: ${adminNumbers.join(", ")}`);
       for (const num of adminNumbers) {
         try {
           const formattedNum = num.startsWith("whatsapp:") ? num : `whatsapp:${num}`;
-          const botNum = process.env.TWILIO_FROM_NUMBER || "+14155238886";
+          const botNum = TWILIO_FROM_NUMBER || "+14155238886";
           const formattedBotNum = botNum.startsWith("whatsapp:") ? botNum : `whatsapp:${botNum}`;
-          await sendWhatsApp(formattedNum, customMessage, undefined, undefined, formattedBotNum);
-          console.log(`[Landing Order Notify] Admin ${formattedNum} notified successfully.`);
+          
+          if (!twilioClient) {
+            console.warn(`[Landing Order Notify] TWILIO IS NOT INITIALIZED! Cannot notify admin ${formattedNum}. Please verify your environment variables.`);
+          } else {
+            await sendWhatsApp(formattedNum, customMessage, undefined, undefined, formattedBotNum);
+            console.log(`[Landing Order Notify] Admin ${formattedNum} notified successfully.`);
+          }
         } catch (notifyErr: any) {
           console.error(`[Landing Order Notify] Failed to notify ${num}:`, notifyErr.message);
         }
