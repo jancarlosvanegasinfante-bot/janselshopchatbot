@@ -1964,11 +1964,34 @@ async function sendCheckoutSummaryAndButtons(
   const summaryText = `🚨 *RESUMEN DE TU PEDIDO* 🚨\n\n📦 *Producto:* ${checkoutData.producto}\n🔢 *Cantidad:* ${cantidad}\n💵 *Total a Pagar:* $${totalPagar.toLocaleString("es-CO")} *(Pagas al recibir)*\n👤 *Nombre:* ${checkoutData.nombre}\n📞 *Teléfono:* ${checkoutData.telefono}\n🇨🇴 *Destino:* ${checkoutData.ciudad}\n🏠 *Dirección:* ${checkoutData.direccion}\n📍 *Referencia:* ${checkoutData.referencia}\n\n🔥 *¡El envío es 100% GRATIS!*`;
   await sendWhatsApp(customerPhone, summaryText, productImageUrl, activityId, botPhone);
 
+  if (activityId) {
+    await updateDoc(doc(db, "activities", activityId), {
+      status: "respondido",
+      response: summaryText,
+      respondedAt: serverTimestamp()
+    });
+  }
+
   await new Promise(resolve => setTimeout(resolve, 1200));
 
   const buttonsSent = await sendOrderConfirmationButtons(customerPhone, botPhone, fakeJsonResponse);
   if (!buttonsSent) {
     await sendWhatsApp(customerPhone, `¿Confirmas que todos tus datos están correctos para proceder con el despacho? Escribe *SÍ* para confirmar o *NO* para corregir.`, undefined, activityId, botPhone);
+    if (activityId) {
+      await updateDoc(doc(db, "activities", activityId), {
+        status: "respondido",
+        response: summaryText + "\n\n¿Confirmas que todos tus datos están correctos para proceder con el despacho? Escribe *SÍ* para confirmar o *NO* para corregir.",
+        respondedAt: serverTimestamp()
+      });
+    }
+  } else {
+    if (activityId) {
+      await updateDoc(doc(db, "activities", activityId), {
+        status: "respondido",
+        response: summaryText + "\n\n[Botones de confirmación de pedido enviados]",
+        respondedAt: serverTimestamp()
+      });
+    }
   }
 }
 
@@ -1976,7 +1999,7 @@ async function sendCheckoutSummaryAndButtons(
 // Reenvía la pregunta correspondiente al paso de checkout donde el cliente
 // se quedó, usado cuando retoma desde el botón "Continuar mi pedido" de un
 // follow-up de carrito abandonado.
-async function resendCurrentCheckoutStepPrompt(customerPhone: string, botPhone: string, customerData: any): Promise<void> {
+async function resendCurrentCheckoutStepPrompt(customerPhone: string, botPhone: string, customerData: any, activityId?: string): Promise<void> {
   const step = customerData?.checkoutStep;
   const cd = customerData?.checkoutData || {};
   const prompts: Record<string, string> = {
@@ -1989,11 +2012,18 @@ async function resendCurrentCheckoutStepPrompt(customerPhone: string, botPhone: 
     referencia: "¡Seguimos! ¿Alguna *referencia* de la dirección? 📍 (o escribe *ninguna*)",
   };
   if (step === "confirmacion") {
-    await sendCheckoutSummaryAndButtons(customerPhone, botPhone, `${customerData?.storeId || "default"}_${customerPhone.replace("whatsapp:", "")}`, cd, undefined, customerData?.storeId || "default");
+    await sendCheckoutSummaryAndButtons(customerPhone, botPhone, `${customerData?.storeId || "default"}_${customerPhone.replace("whatsapp:", "")}`, cd, activityId, customerData?.storeId || "default");
     return;
   }
   const msg = prompts[step] || "¡Seguimos con tu pedido! Cuéntame en qué íbamos. 😊";
-  await sendWhatsApp(customerPhone, msg, undefined, undefined, botPhone);
+  await sendWhatsApp(customerPhone, msg, undefined, activityId, botPhone);
+  if (activityId) {
+    await updateDoc(doc(db, "activities", activityId), {
+      status: "respondido",
+      response: msg,
+      respondedAt: serverTimestamp()
+    });
+  }
 }
 
 async function ensureResumeCheckoutTemplate(): Promise<string | null> {
@@ -2586,7 +2616,7 @@ async function sendCartActionButtons(to: string, from: string, cartSummary: stri
 
 // Variante de startCheckoutFlow que arranca directamente desde un carrito ya
 // armado (varios productos), en vez de un solo producto suelto.
-async function startCheckoutFlowFromCart(from: string, cleanFrom: string, to: string, assignedStoreId: string, productoTexto: string, valorTotal: number) {
+async function startCheckoutFlowFromCart(from: string, cleanFrom: string, to: string, assignedStoreId: string, productoTexto: string, valorTotal: number, activityId?: string) {
   try {
     const customerProfileId = `${assignedStoreId}_${cleanFrom}`;
     const checkoutData = {
@@ -2606,7 +2636,15 @@ async function startCheckoutFlowFromCart(from: string, cleanFrom: string, to: st
       lastInteractionAt: serverTimestamp()
     }, { merge: true });
 
-    await sendWhatsApp(from, `¡Excelente elección! 🛒 Tu pedido quedó así:\n\n📦 *${productoTexto}*\n💵 *Total: $${valorTotal.toLocaleString("es-CO")} COP*\n\nPor favor dime tu *Nombre y Apellido completo* para la guía de despacho: 📝`, undefined, undefined, to);
+    const msg = `¡Excelente elección! 🛒 Tu pedido quedó así:\n\n📦 *${productoTexto}*\n💵 *Total: $${valorTotal.toLocaleString("es-CO")} COP*\n\nPor favor dime tu *Nombre y Apellido completo* para la guía de despacho: 📝`;
+    await sendWhatsApp(from, msg, undefined, activityId, to);
+    if (activityId) {
+      await updateDoc(doc(db, "activities", activityId), {
+        status: "respondido",
+        response: msg,
+        respondedAt: serverTimestamp()
+      });
+    }
     return true;
   } catch (e: any) {
     console.error(`[startCheckoutFlowFromCart] Error:`, e.message);
@@ -2614,7 +2652,7 @@ async function startCheckoutFlowFromCart(from: string, cleanFrom: string, to: st
   }
 }
 
-async function startCheckoutFlow(from: string, cleanFrom: string, to: string, assignedStoreId: string, initialProduct: string = "") {
+async function startCheckoutFlow(from: string, cleanFrom: string, to: string, assignedStoreId: string, initialProduct: string = "", activityId?: string) {
   try {
     const customerProfileId = `${assignedStoreId}_${cleanFrom}`;
     const step = initialProduct ? "nombre" : "producto";
@@ -2648,10 +2686,19 @@ async function startCheckoutFlow(from: string, cleanFrom: string, to: string, as
       lastInteractionAt: serverTimestamp()
     }, { merge: true });
 
+    let msg = "";
     if (!initialProduct) {
-      await sendWhatsApp(from, `¡Excelente decisión! 🛒 Vamos a registrar tu pedido de una, sin demoras y súper profesional.\n\nContame: ¿Qué producto(s) de nuestro catálogo deseas ordenar hoy? 🔎 (Escríbelo por acá 👇)`, undefined, undefined, to);
+      msg = `¡Excelente decisión! 🛒 Vamos a registrar tu pedido de una, sin demoras y súper profesional.\n\nContame: ¿Qué producto(s) de nuestro catálogo deseas ordenar hoy? 🔎 (Escríbelo por acá 👇)`;
     } else {
-      await sendWhatsApp(from, `¡Excelente decisión! 🛒 Vamos a registrar tu pedido para *${checkoutData.producto || initialProduct}* súper rápido.\n\nPor favor dime tu *Nombre y Apellido completo* para la guía de despacho de tu pedido: 📝`, undefined, undefined, to);
+      msg = `¡Excelente decisión! 🛒 Vamos a registrar tu pedido para *${checkoutData.producto || initialProduct}* súper rápido.\n\nPor favor dime tu *Nombre y Apellido completo* para la guía de despacho de tu pedido: 📝`;
+    }
+    await sendWhatsApp(from, msg, undefined, activityId, to);
+    if (activityId) {
+      await updateDoc(doc(db, "activities", activityId), {
+        status: "respondido",
+        response: msg,
+        respondedAt: serverTimestamp()
+      });
     }
     return true;
   } catch (e: any) {
@@ -4841,313 +4888,6 @@ _El pedido ya se guardó y está listo en tu tablero._`;
       return res.status(200).send("");
     }
 
-    // ==============================================
-    // 🔘 RESPUESTA A BOTONES INTERACTIVOS (MENÚS Y CONFIRMACIÓN)
-    // ==============================================
-    // Si el cliente tocó un botón, Twilio manda ButtonPayload con el id que definimos.
-    // Esto es 100% determinístico: no pasa por la IA, garantizando velocidad y precisión.
-    // Twilio a veces manda el id del item tocado en ButtonPayload y otras veces
-    // en ListId (según el tipo de template/lista). Aceptamos ambos.
-    const buttonPayload = req.body?.ButtonPayload || req.body?.ListId;
-    if (req.body?.ButtonPayload || req.body?.ListId || req.body?.ButtonText) {
-      console.log("[WhatsApp Webhook] Interacción tipo botón/lista detectada. Body completo:", JSON.stringify(req.body));
-    }
-    if (buttonPayload) {
-      try {
-        const cleanFrom = from.replace('whatsapp:', '').trim();
-        const assignedStoreId = await determineStoreId(cleanFrom, messageBody || "", to);
-        const customerProfileId = `${assignedStoreId}_${cleanFrom}`;
-        const cxSnap = await getDoc(doc(db, "customers", customerProfileId));
-        const customerData = cxSnap.exists() ? cxSnap.data() : null;
-        const pending = customerData?.pendingConfirmation;
-
-        await cancelPendingFollowUps(from, assignedStoreId);
-
-        if (buttonPayload === CONFIRM_YES_ID) {
-          if (pending && pending.jsonResponse) {
-            let storeConfig: any = {};
-            const storeSnap = await getDoc(doc(db, "stores", assignedStoreId));
-            if (storeSnap.exists()) storeConfig = storeSnap.data();
-            const products = await loadProductsForStore(assignedStoreId);
-
-            await finalizeOrder(pending.jsonResponse, storeConfig, customerData, cleanFrom, assignedStoreId, products, db);
-            await updateDoc(doc(db, "customers", customerProfileId), { pendingConfirmation: null });
-            await sendWhatsApp(from, "¡Listo! 🎉 Tu pedido quedó confirmado, ya te lo estamos alistando. ¡Gracias por tu compra!", undefined, undefined, to);
-          } else {
-            await sendWhatsApp(from, "No encontramos ningún pedido pendiente de confirmación. 😊 ¿En qué más te puedo ayudar?", undefined, undefined, to);
-          }
-        } else if (buttonPayload === CONFIRM_NO_ID) {
-          await updateDoc(doc(db, "customers", customerProfileId), { pendingConfirmation: null });
-          await sendWhatsApp(from, "Tranqui, no confirmé nada todavía 🙂 Contame qué querés cambiar y seguimos.", undefined, undefined, to);
-        } else if (buttonPayload === IMG_YES_ID) {
-          const pendingImg = customerData?.pendingImageOffer;
-          if (pendingImg?.producto) {
-            await updateDoc(doc(db, "customers", customerProfileId), { pendingImageOffer: null });
-            await startCheckoutFlow(from, cleanFrom, to, assignedStoreId, pendingImg.producto);
-          } else {
-            await sendWhatsApp(from, "¡Perfecto! Contame qué producto te interesó y seguimos. 😊", undefined, undefined, to);
-          }
-        } else if (buttonPayload === IMG_NO_ID) {
-          await updateDoc(doc(db, "customers", customerProfileId), { pendingImageOffer: null });
-          await sendWhatsApp(from, "Tranqui 🙂 ¿Buscas algo más o te muestro otras opciones?", undefined, undefined, to);
-        } else if (buttonPayload === "MENU_CATALOG") {
-          await sendCategoriesMenu(from, to);
-        } else if (buttonPayload === "MENU_HUMAN") {
-          await updateDoc(doc(db, "customers", customerProfileId), { etapa: "asesoria_solicitada" });
-          
-          // Notificar a los administradores
-          const adminMessage = `🚨 *ASESORÍA HUMANA SOLICITADA*
-Cliente: ${customerData?.name || cleanFrom} (${cleanFrom})
-Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
-          
-          const adminNumbersRaw = process.env.ADMIN_WHATSAPP_NUMBERS || "";
-          const adminNumbers = adminNumbersRaw.split(",").filter(n => n.trim().length > 0);
-          for (const num of adminNumbers) {
-            try {
-              const target = num.trim().startsWith("whatsapp:") ? num.trim() : `whatsapp:${num.trim()}`;
-              await sendWhatsApp(target, adminMessage);
-            } catch (e) {
-              console.error("[Server AI] Error notificando asesoría de botón:", e);
-            }
-          }
-          await sendWhatsApp(from, "¡Perfecto! Ya le he avisado a un asesor humano 🙋‍♂️. Te escribirá en un momento. Mientras tanto, si tienes otra duda, puedes escribirme por acá. 😊", undefined, undefined, to);
-        } else if (buttonPayload === "RESUME_CHECKOUT") {
-          await resendCurrentCheckoutStepPrompt(from, to, customerData);
-        } else if (buttonPayload === "RESUME_CHECKOUT_NO") {
-          await setDoc(doc(db, "customers", customerProfileId), {
-            checkoutStep: null,
-            checkoutData: null,
-            pendingConfirmation: null,
-            etapa: "interesado"
-          }, { merge: true });
-          await sendWhatsApp(from, "¡Listo, sin problema! Aquí estaré si cambias de idea. 😊 ¿En qué más te puedo colaborar?", undefined, undefined, to);
-        } else if (buttonPayload === "MENU_END" || buttonPayload === "CHAT_END") {
-          await updateDoc(doc(db, "customers", customerProfileId), { 
-            pendingConfirmation: null,
-            etapa: "finalizado",
-            score: 0 
-          });
-          await sendWhatsApp(from, "¡Fue un gusto ayudarte! 😊 Una vez vuelvas a escribir, iniciaremos una nueva conversación. ¡Te espero de regreso! 👋", undefined, undefined, to);
-        } else if (buttonPayload === "CHAT_KEEP") {
-          await sendWhatsApp(from, "¡Súper! Dime en qué más te puedo colaborar hoy o qué producto estás buscando. 🔎", undefined, undefined, to);
-        } else if (buttonPayload === "CAT_TECH") {
-          await sendCategoryFeaturedProducts(from, to, ["tecnologia"], "Tecnología 💻", assignedStoreId);
-        } else if (buttonPayload === "CAT_HOME") {
-          await sendCategoryFeaturedProducts(from, to, ["hogar", "cocina", "aseo"], "Hogar, Cocina y Aseo 🧼", assignedStoreId);
-        } else if (buttonPayload === "CAT_OTHER") {
-          await sendOtherCategoriesMenu(from, to);
-        } else if (buttonPayload === "CAT_AUTOS") {
-          await sendCategoryFeaturedProducts(from, to, ["autos", "herramientas"], "Autos y Herramientas 🚗", assignedStoreId);
-        } else if (buttonPayload === "CAT_BEAUTY") {
-          await sendCategoryFeaturedProducts(from, to, ["belleza", "salud"], "Salud y Belleza 🧴", assignedStoreId);
-        } else if (buttonPayload === "CAT_OTHER2") {
-          await sendOtherCategoriesMenu2(from, to);
-        } else if (buttonPayload === "CAT_MODA") {
-          await sendCategoryFeaturedProducts(from, to, ["moda"], "Moda 👗", assignedStoreId);
-        } else if (buttonPayload === "CAT_PETS") {
-          await sendCategoryFeaturedProducts(from, to, ["mascotas", "bebe", "jugueteria"], "Mascotas, Bebés y Juguetería 🐾🍼", assignedStoreId);
-        } else if (buttonPayload === "MORE_PAGE") {
-          // El cliente tocó "➡️ Ver más productos" dentro de una categoría
-          const lastSearch = customerData?.lastCategorySearch;
-          if (!lastSearch || !Array.isArray(lastSearch.categories)) {
-            await sendWhatsApp(from, "Uy, esa búsqueda ya expiró 😅. Elige una categoría de nuevo:", undefined, undefined, to);
-            await sendCategoriesMenu(from, to);
-          } else {
-            await sendCategoryFeaturedProducts(from, to, lastSearch.categories, lastSearch.categoryLabel || "Productos", assignedStoreId, lastSearch.nextOffset || 0);
-          }
-        } else if (buttonPayload === "MENU_BACK") {
-          await sendMainMenu(from, to);
-        } else if (buttonPayload.startsWith("PROD_")) {
-          // El cliente tocó un producto de la lista interactiva
-          const idx = parseInt(buttonPayload.replace("PROD_", ""), 10);
-          const lastList = customerData?.lastProductList || [];
-          const picked = lastList[idx];
-
-          if (!picked) {
-            await sendWhatsApp(from, "Uy, esa opción ya no está disponible 😅. Volvamos al catálogo:", undefined, undefined, to);
-            await sendCategoriesMenu(from, to);
-          } else {
-            const currentCart: any[] = Array.isArray(customerData?.cart) ? [...customerData.cart] : [];
-            const existing = currentCart.find((it: any) => it.name === picked.name);
-            if (existing) {
-              existing.cantidad = (existing.cantidad || 1) + 1;
-            } else {
-              currentCart.push({ name: picked.name, price: picked.price, cantidad: 1 });
-            }
-            await updateDoc(doc(db, "customers", customerProfileId), { cart: currentCart });
-
-            const cartSummary = currentCart
-              .map((it: any) => `• ${it.cantidad}x ${it.name} - $${Number(it.price * it.cantidad).toLocaleString("es-CO")}`)
-              .join("\n");
-            const totalCart = currentCart.reduce((sum: number, it: any) => sum + (it.price * it.cantidad), 0);
-
-            const sent = await sendCartActionButtons(from, to, cartSummary, totalCart);
-            if (!sent) {
-              await sendWhatsApp(from, `🛒 Agregado a tu carrito:\n${cartSummary}\n\n💵 Total: $${totalCart.toLocaleString("es-CO")} COP\n\n¿Deseas agregar otro producto? Responde AGREGAR o CONFIRMAR.`, undefined, undefined, to);
-            }
-          }
-        } else if (buttonPayload === "CART_ADD_MORE") {
-          await sendCategoriesMenu(from, to);
-        } else if (buttonPayload === "CART_CHECKOUT") {
-          const currentCart: any[] = Array.isArray(customerData?.cart) ? customerData.cart : [];
-          if (currentCart.length === 0) {
-            await sendWhatsApp(from, "Tu carrito está vacío todavía 🙂. Elige al menos un producto del catálogo.", undefined, undefined, to);
-            await sendCategoriesMenu(from, to);
-          } else {
-            const productoTexto = currentCart.map((it: any) => `${it.cantidad}x ${it.name}`).join(", ");
-            const valorTotal = currentCart.reduce((sum: number, it: any) => sum + (it.price * it.cantidad), 0);
-            await updateDoc(doc(db, "customers", customerProfileId), { cart: null });
-            await startCheckoutFlowFromCart(from, cleanFrom, to, assignedStoreId, productoTexto, valorTotal);
-          }
-        } else if (buttonPayload === "CART_REMOVE") {
-          const currentCart: any[] = Array.isArray(customerData?.cart) ? customerData.cart : [];
-          if (currentCart.length === 0) {
-            await sendWhatsApp(from, "Tu carrito ya está vacío 🙂.", undefined, undefined, to);
-          } else if (currentCart.length === 1) {
-            // Solo hay un producto: lo quitamos directo, sin preguntar cuál.
-            await updateDoc(doc(db, "customers", customerProfileId), { cart: [], pendingCartAction: null });
-            await sendWhatsApp(from, `🗑️ Listo, quité *${currentCart[0].name}* de tu carrito. ¿Quieres ver el catálogo de nuevo?`, undefined, undefined, to);
-            await sendCategoriesMenu(from, to);
-          } else {
-            const listText = currentCart
-              .map((it: any, idx: number) => `${idx + 1}. ${it.cantidad}x ${it.name} - $${Number(it.price * it.cantidad).toLocaleString("es-CO")}`)
-              .join("\n");
-            await updateDoc(doc(db, "customers", customerProfileId), { pendingCartAction: "remove" });
-            await sendWhatsApp(from, `🗑️ ¿Cuál quieres quitar? Escríbeme el número:\n\n${listText}\n\nO escribe "todos" para vaciar el carrito completo.`, undefined, undefined, to);
-          }
-        } else {
-          console.warn(`[WhatsApp Webhook] ButtonPayload desconocido: ${buttonPayload}`);
-        }
-
-        return res.status(200).send("");
-      } catch (e: any) {
-        console.error("[WhatsApp Webhook] Error procesando ButtonPayload:", e.message);
-        try {
-          await sendWhatsApp(from, "Uy, algo falló procesando tu selección 😅. ¿Puedes intentarlo de nuevo o decirme qué producto buscas?", undefined, undefined, to);
-        } catch (sendErr: any) {
-          console.error("[WhatsApp Webhook] Error enviando fallback tras fallo de ButtonPayload:", sendErr.message);
-        }
-        // CRÍTICO: si no retornamos aquí, la ejecución seguía cayendo al flujo
-        // normal de IA usando messageBody (que puede venir vacío o ser el texto
-        // crudo de la lista), generando respuestas duplicadas o genéricas.
-        return res.status(200).send("");
-      }
-    }
-
-    // Respaldo por texto: si Twilio NO mandó ni ButtonPayload ni ListId (por
-    // ejemplo, si el cliente tocó un item pero por algún motivo llegó como
-    // texto plano, o si escribió el nombre del producto/acción a mano),
-    // intentamos resolverlo igual antes de caer en el flujo genérico de IA.
-    if (!buttonPayload && messageBody) {
-      try {
-        const cleanFrom = from.replace('whatsapp:', '').trim();
-        const assignedStoreId = await determineStoreId(cleanFrom, messageBody || "", to);
-        const customerProfileId = `${assignedStoreId}_${cleanFrom}`;
-        const cxSnap = await getDoc(doc(db, "customers", customerProfileId));
-        const customerData = cxSnap.exists() ? cxSnap.data() : null;
-        const normalizedMsg = normalizeCatText(messageBody).trim();
-
-        // 0) ¿Está en medio de un flujo de "quitar producto" que arrancó con
-        //    el botón 🗑️? Si es así, resolvemos ESO primero, antes que
-        //    cualquier otra interpretación del texto (evita ambigüedad).
-        if (customerData?.pendingCartAction === "remove") {
-          const cartNow: any[] = Array.isArray(customerData?.cart) ? [...customerData.cart] : [];
-          if (/^todos?$/i.test(normalizedMsg) || /vaciar/.test(normalizedMsg)) {
-            await updateDoc(doc(db, "customers", customerProfileId), { cart: [], pendingCartAction: null });
-            await sendWhatsApp(from, "🗑️ Listo, vacié todo tu carrito. ¿Vemos el catálogo de nuevo?", undefined, undefined, to);
-            await sendCategoriesMenu(from, to);
-            return res.status(200).send("");
-          }
-          const removeIdx = parseInt(normalizedMsg, 10);
-          if (!isNaN(removeIdx) && removeIdx >= 1 && removeIdx <= cartNow.length) {
-            const removed = cartNow.splice(removeIdx - 1, 1)[0];
-            await updateDoc(doc(db, "customers", customerProfileId), { cart: cartNow, pendingCartAction: null });
-            if (cartNow.length === 0) {
-              await sendWhatsApp(from, `🗑️ Quité *${removed.name}*. Tu carrito quedó vacío. ¿Vemos el catálogo?`, undefined, undefined, to);
-              await sendCategoriesMenu(from, to);
-            } else {
-              const cartSummary = cartNow
-                .map((it: any) => `• ${it.cantidad}x ${it.name} - $${Number(it.price * it.cantidad).toLocaleString("es-CO")}`)
-                .join("\n");
-              const totalCart = cartNow.reduce((sum: number, it: any) => sum + (it.price * it.cantidad), 0);
-              await sendWhatsApp(from, `🗑️ Quité *${removed.name}* de tu carrito.`, undefined, undefined, to);
-              const sent = await sendCartActionButtons(from, to, cartSummary, totalCart);
-              if (!sent) {
-                await sendWhatsApp(from, `🛒 Tu carrito ahora:\n${cartSummary}\n\n💵 Total: $${totalCart.toLocaleString("es-CO")} COP`, undefined, undefined, to);
-              }
-            }
-            return res.status(200).send("");
-          }
-          // No entendimos la respuesta: le recordamos el formato esperado y
-          // NO seguimos al resto del flujo (para no confundir más).
-          await sendWhatsApp(from, `No entendí cuál 😅. Responde con el número (ej: 1) o escribe "todos" para vaciar el carrito.`, undefined, undefined, to);
-          return res.status(200).send("");
-        }
-
-        const lastList: any[] = Array.isArray(customerData?.lastProductList) ? customerData.lastProductList : [];
-
-        // 1) ¿El texto coincide (por número de la lista o por nombre) con un
-        //    producto de la última lista que le mostramos?
-        let matchedIdx = -1;
-        const asNumber = parseInt(normalizedMsg, 10);
-        if (!isNaN(asNumber) && asNumber >= 1 && asNumber <= lastList.length) {
-          matchedIdx = asNumber - 1;
-        } else if (normalizedMsg.length > 2) {
-          matchedIdx = lastList.findIndex((p: any) => {
-            const prodName = normalizeCatText(p?.name || "");
-            return prodName && (prodName.includes(normalizedMsg) || normalizedMsg.includes(prodName));
-          });
-        }
-
-        if (matchedIdx >= 0 && lastList[matchedIdx]) {
-          const picked = lastList[matchedIdx];
-          const currentCart: any[] = Array.isArray(customerData?.cart) ? [...customerData.cart] : [];
-          const existing = currentCart.find((it: any) => it.name === picked.name);
-          if (existing) {
-            existing.cantidad = (existing.cantidad || 1) + 1;
-          } else {
-            currentCart.push({ name: picked.name, price: picked.price, cantidad: 1 });
-          }
-          await updateDoc(doc(db, "customers", customerProfileId), { cart: currentCart });
-
-          const cartSummary = currentCart
-            .map((it: any) => `• ${it.cantidad}x ${it.name} - $${Number(it.price * it.cantidad).toLocaleString("es-CO")}`)
-            .join("\n");
-          const totalCart = currentCart.reduce((sum: number, it: any) => sum + (it.price * it.cantidad), 0);
-
-          const sent = await sendCartActionButtons(from, to, cartSummary, totalCart);
-          if (!sent) {
-            await sendWhatsApp(from, `🛒 Agregado a tu carrito:\n${cartSummary}\n\n💵 Total: $${totalCart.toLocaleString("es-CO")} COP\n\n¿Deseas agregar otro producto? Responde AGREGAR o CONFIRMAR.`, undefined, undefined, to);
-          }
-          return res.status(200).send("");
-        }
-
-        // 2) Palabras clave de acciones de carrito por texto libre
-        if (/\bagregar\b/.test(normalizedMsg)) {
-          await sendCategoriesMenu(from, to);
-          return res.status(200).send("");
-        }
-        if (/\bconfirmar\b/.test(normalizedMsg)) {
-          const currentCart: any[] = Array.isArray(customerData?.cart) ? customerData.cart : [];
-          if (currentCart.length === 0) {
-            await sendWhatsApp(from, "Tu carrito está vacío todavía 🙂. Elige al menos un producto del catálogo.", undefined, undefined, to);
-            await sendCategoriesMenu(from, to);
-          } else {
-            const productoTexto = currentCart.map((it: any) => `${it.cantidad}x ${it.name}`).join(", ");
-            const valorTotal = currentCart.reduce((sum: number, it: any) => sum + (it.price * it.cantidad), 0);
-            await updateDoc(doc(db, "customers", customerProfileId), { cart: null });
-            await startCheckoutFlowFromCart(from, cleanFrom, to, assignedStoreId, productoTexto, valorTotal);
-          }
-          return res.status(200).send("");
-        }
-        // Si no coincide con nada de lo anterior, seguimos normalmente hacia
-        // el flujo de IA de más abajo (no hacemos return).
-      } catch (e: any) {
-        console.error("[WhatsApp Webhook] Error en respaldo por texto (sin ButtonPayload):", e.message);
-        // No retornamos: dejamos que el flujo normal de IA intente responder.
-      }
-    }
-
     // Dynamic URL detection for status callbacks
     if (!currentAppUrl) {
       const host = req.headers["x-forwarded-host"] || req.headers["host"];
@@ -5155,8 +4895,6 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
       currentAppUrl = `${proto}://${host}`;
       console.log(`[Twilio Webhook] Detected APP_URL: ${currentAppUrl}`);
     }
-
-    console.log(`[WhatsApp Webhook] Incoming from ${from} to ${to}: ${messageBody}`);
 
     // EXRACT MEDIA IF ANY
     let finalMessage = messageBody;
@@ -5206,41 +4944,629 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
       }
     }
 
-    // LOG IMMEDIATELY
+    const cleanFrom = from.replace('whatsapp:', '').trim();
+    let assignedStoreId = await determineStoreId(cleanFrom, finalMessage, to);
+
+    // CANCEL ANY PENDING FOLLOW-UP BECAUSE CLIENT RESPONDED
+    await cancelPendingFollowUps(from, assignedStoreId);
+
+    // Determinar texto del mensaje para loguear según si fue un botón interactivo
+    const buttonPayload = req.body?.ButtonPayload || req.body?.ListId;
+    let actMsg = finalMessage;
+    if (buttonPayload) {
+      actMsg = req.body?.ButtonText || `[Botón: ${buttonPayload}]`;
+    }
+
+    // REGISTRAR ACTIVIDAD INMEDIATAMENTE PARA QUE APAREZCA EN CHAT
+    const activityData = {
+      from,
+      to,
+      recipient: from, // THE CUSTOMER is always the recipient/thread-ID
+      customerPhone: cleanFrom,
+      botNumber: to,   // Store which bot number received this
+      storeId: assignedStoreId,
+      message: actMsg,
+      mediaUrl: mediaItems.length > 0 ? mediaItems.map((_, i) => req.body[`MediaUrl${i}`]).join(",") : null,
+      status: "recibido",
+      senderType: 'customer',
+      receivedAt: serverTimestamp(),
+      timestamp: serverTimestamp()
+    };
+    
+    let activityRefId = "";
+    let activityRef: any = null;
     try {
-      const cleanFrom = from.replace('whatsapp:', '').trim();
-      let assignedStoreId = await determineStoreId(cleanFrom, finalMessage, to);
+      activityRef = await addDoc(collection(db, "activities"), activityData);
+      activityRefId = activityRef.id;
+      console.log(`[Activity] Registered: ${activityRefId}. Bot receiving: ${to}`);
+    } catch (e: any) {
+      console.error("[WhatsApp Webhook] Error registering initial activity:", e.message);
+    }
 
-      // CANCEL ANY PENDING FOLLOW-UP BECAUSE CLIENT RESPONDED
-      await cancelPendingFollowUps(from, assignedStoreId);
+    const customerProfileId = `${assignedStoreId}_${cleanFrom}`;
+    const cxSnap = await getDoc(doc(db, "customers", customerProfileId));
+    const customerData = cxSnap.exists() ? cxSnap.data() : null;
+    const pending = customerData?.pendingConfirmation;
 
-      const activityData = {
-        from,
-        to,
-        recipient: from, // THE CUSTOMER is always the recipient/thread-ID
-        customerPhone: cleanFrom,
-        botNumber: to,   // Store which bot number received this
-        storeId: assignedStoreId,
-        message: finalMessage,
-        mediaUrl: mediaItems.length > 0 ? mediaItems.map((_, i) => req.body[`MediaUrl${i}`]).join(",") : null,
-        status: "recibido",
-        senderType: 'customer',
-        receivedAt: serverTimestamp(),
-        timestamp: serverTimestamp()
-      };
-      
-      const activityRef = await addDoc(collection(db, "activities"), activityData);
-      console.log(`[Activity] Registered: ${activityRef.id}. Bot receiving: ${to}`);
+    // ==============================================
+    // 🔘 RESPUESTA A BOTONES INTERACTIVOS (MENÚS Y CONFIRMACIÓN)
+    // ==============================================
+    if (buttonPayload) {
+      try {
+        if (buttonPayload === CONFIRM_YES_ID) {
+          if (pending && pending.jsonResponse) {
+            let storeConfig: any = {};
+            const storeSnap = await getDoc(doc(db, "stores", assignedStoreId));
+            if (storeSnap.exists()) storeConfig = storeSnap.data();
+            const products = await loadProductsForStore(assignedStoreId);
 
-      // Deterministic message processing & Interceptors (bypasses LLM for maximum performance & reliability)
-      const cleanMsg = (finalMessage || "").toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .trim();
+            await finalizeOrder(pending.jsonResponse, storeConfig, customerData, cleanFrom, assignedStoreId, products, db);
+            await updateDoc(doc(db, "customers", customerProfileId), { pendingConfirmation: null });
+            
+            const confMsg = "¡Listo! 🎉 Tu pedido quedó confirmado, ya te lo estamos alistando. ¡Gracias por tu compra!";
+            await sendWhatsApp(from, confMsg, undefined, activityRefId, to);
+            if (activityRefId) {
+              await updateDoc(doc(db, "activities", activityRefId), {
+                status: "respondido",
+                response: confMsg,
+                respondedAt: serverTimestamp()
+              });
+            }
+          } else {
+            const noPendMsg = "No encontramos ningún pedido pendiente de confirmación. 😊 ¿En qué más te puedo ayudar?";
+            await sendWhatsApp(from, noPendMsg, undefined, activityRefId, to);
+            if (activityRefId) {
+              await updateDoc(doc(db, "activities", activityRefId), {
+                status: "respondido",
+                response: noPendMsg,
+                respondedAt: serverTimestamp()
+              });
+            }
+          }
+        } else if (buttonPayload === CONFIRM_NO_ID) {
+          await updateDoc(doc(db, "customers", customerProfileId), { pendingConfirmation: null });
+          const noMsg = "Tranqui, no confirmé nada todavía 🙂 Contame qué querés cambiar y seguimos.";
+          await sendWhatsApp(from, noMsg, undefined, activityRefId, to);
+          if (activityRefId) {
+            await updateDoc(doc(db, "activities", activityRefId), {
+              status: "respondido",
+              response: noMsg,
+              respondedAt: serverTimestamp()
+            });
+          }
+        } else if (buttonPayload === IMG_YES_ID) {
+          const pendingImg = customerData?.pendingImageOffer;
+          if (pendingImg?.producto) {
+            await updateDoc(doc(db, "customers", customerProfileId), { pendingImageOffer: null });
+            await startCheckoutFlow(from, cleanFrom, to, assignedStoreId, pendingImg.producto, activityRefId);
+          } else {
+            const okMsg = "¡Perfecto! Contame qué producto te interesó y seguimos. 😊";
+            await sendWhatsApp(from, okMsg, undefined, activityRefId, to);
+            if (activityRefId) {
+              await updateDoc(doc(db, "activities", activityRefId), {
+                status: "respondido",
+                response: okMsg,
+                respondedAt: serverTimestamp()
+              });
+            }
+          }
+        } else if (buttonPayload === IMG_NO_ID) {
+          await updateDoc(doc(db, "customers", customerProfileId), { pendingImageOffer: null });
+          const cancelImgMsg = "Tranqui 🙂 ¿Buscas algo más o te muestro otras opciones?";
+          await sendWhatsApp(from, cancelImgMsg, undefined, activityRefId, to);
+          if (activityRefId) {
+            await updateDoc(doc(db, "activities", activityRefId), {
+              status: "respondido",
+              response: cancelImgMsg,
+              respondedAt: serverTimestamp()
+            });
+          }
+        } else if (buttonPayload === "MENU_CATALOG") {
+          await sendCategoriesMenu(from, to);
+          if (activityRefId) {
+            await updateDoc(doc(db, "activities", activityRefId), {
+              status: "respondido",
+              response: "[Menú enviado: Categorías del catálogo]",
+              respondedAt: serverTimestamp()
+            });
+          }
+        } else if (buttonPayload === "MENU_HUMAN") {
+          await updateDoc(doc(db, "customers", customerProfileId), { etapa: "asesoria_solicitada" });
+          
+          // Notificar a los administradores
+          const adminMessage = `🚨 *ASESORÍA HUMANA SOLICITADA*
+Cliente: ${customerData?.name || cleanFrom} (${cleanFrom})
+Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
+          
+          const adminNumbersRaw = process.env.ADMIN_WHATSAPP_NUMBERS || "";
+          const adminNumbers = adminNumbersRaw.split(",").filter(n => n.trim().length > 0);
+          for (const num of adminNumbers) {
+            try {
+              const target = num.trim().startsWith("whatsapp:") ? num.trim() : `whatsapp:${num.trim()}`;
+              await sendWhatsApp(target, adminMessage);
+            } catch (e) {
+              console.error("[Server AI] Error notificando asesoría de botón:", e);
+            }
+          }
+          const helpMsg = "¡Perfecto! Ya le he avisado a un asesor humano 🙋‍♂️. Te escribirá en un momento. Mientras tanto, si tienes otra duda, puedes escribirme por acá. 😊";
+          await sendWhatsApp(from, helpMsg, undefined, activityRefId, to);
+          if (activityRefId) {
+            await updateDoc(doc(db, "activities", activityRefId), {
+              status: "respondido",
+              response: helpMsg,
+              respondedAt: serverTimestamp()
+            });
+          }
+        } else if (buttonPayload === "RESUME_CHECKOUT") {
+          await resendCurrentCheckoutStepPrompt(from, to, customerData, activityRefId);
+        } else if (buttonPayload === "RESUME_CHECKOUT_NO") {
+          await setDoc(doc(db, "customers", customerProfileId), {
+            checkoutStep: null,
+            checkoutData: null,
+            pendingConfirmation: null,
+            etapa: "interesado"
+          }, { merge: true });
+          const resumeNoMsg = "¡Listo, sin problema! Aquí estaré si cambias de idea. 😊 ¿En qué más te puedo colaborar?";
+          await sendWhatsApp(from, resumeNoMsg, undefined, activityRefId, to);
+          if (activityRefId) {
+            await updateDoc(doc(db, "activities", activityRefId), {
+              status: "respondido",
+              response: resumeNoMsg,
+              respondedAt: serverTimestamp()
+            });
+          }
+        } else if (buttonPayload === "MENU_END" || buttonPayload === "CHAT_END") {
+          await updateDoc(doc(db, "customers", customerProfileId), { 
+            pendingConfirmation: null,
+            etapa: "finalizado",
+            score: 0 
+          });
+          const endMsg = "¡Fue un gusto ayudarte! 😊 Una vez vuelvas a escribir, iniciaremos una nueva conversación. ¡Te espero de regreso! 👋";
+          await sendWhatsApp(from, endMsg, undefined, activityRefId, to);
+          if (activityRefId) {
+            await updateDoc(doc(db, "activities", activityRefId), {
+              status: "respondido",
+              response: endMsg,
+              respondedAt: serverTimestamp()
+            });
+          }
+        } else if (buttonPayload === "CHAT_KEEP") {
+          const keepMsg = "¡Súper! Dime en qué más te puedo colaborar hoy o qué producto estás buscando. 🔎";
+          await sendWhatsApp(from, keepMsg, undefined, activityRefId, to);
+          if (activityRefId) {
+            await updateDoc(doc(db, "activities", activityRefId), {
+              status: "respondido",
+              response: keepMsg,
+              respondedAt: serverTimestamp()
+            });
+          }
+        } else if (buttonPayload === "CAT_TECH") {
+          await sendCategoryFeaturedProducts(from, to, ["tecnologia"], "Tecnología 💻", assignedStoreId);
+          if (activityRefId) {
+            await updateDoc(doc(db, "activities", activityRefId), {
+              status: "respondido",
+              response: "[Productos enviados: Tecnología 💻]",
+              respondedAt: serverTimestamp()
+            });
+          }
+        } else if (buttonPayload === "CAT_HOME") {
+          await sendCategoryFeaturedProducts(from, to, ["hogar", "cocina", "aseo"], "Hogar, Cocina y Aseo 🧼", assignedStoreId);
+          if (activityRefId) {
+            await updateDoc(doc(db, "activities", activityRefId), {
+              status: "respondido",
+              response: "[Productos enviados: Hogar, Cocina y Aseo 🧼]",
+              respondedAt: serverTimestamp()
+            });
+          }
+        } else if (buttonPayload === "CAT_OTHER") {
+          await sendOtherCategoriesMenu(from, to);
+          if (activityRefId) {
+            await updateDoc(doc(db, "activities", activityRefId), {
+              status: "respondido",
+              response: "[Menú de otras categorías enviado]",
+              respondedAt: serverTimestamp()
+            });
+          }
+        } else if (buttonPayload === "CAT_AUTOS") {
+          await sendCategoryFeaturedProducts(from, to, ["autos", "herramientas"], "Autos y Herramientas 🚗", assignedStoreId);
+          if (activityRefId) {
+            await updateDoc(doc(db, "activities", activityRefId), {
+              status: "respondido",
+              response: "[Productos enviados: Autos y Herramientas 🚗]",
+              respondedAt: serverTimestamp()
+            });
+          }
+        } else if (buttonPayload === "CAT_BEAUTY") {
+          await sendCategoryFeaturedProducts(from, to, ["belleza", "salud"], "Salud y Belleza 🧴", assignedStoreId);
+          if (activityRefId) {
+            await updateDoc(doc(db, "activities", activityRefId), {
+              status: "respondido",
+              response: "[Productos enviados: Salud y Belleza 🧴]",
+              respondedAt: serverTimestamp()
+            });
+          }
+        } else if (buttonPayload === "CAT_OTHER2") {
+          await sendOtherCategoriesMenu2(from, to);
+          if (activityRefId) {
+            await updateDoc(doc(db, "activities", activityRefId), {
+              status: "respondido",
+              response: "[Menú de otras categorías 2 enviado]",
+              respondedAt: serverTimestamp()
+            });
+          }
+        } else if (buttonPayload === "CAT_MODA") {
+          await sendCategoryFeaturedProducts(from, to, ["moda"], "Moda 👗", assignedStoreId);
+          if (activityRefId) {
+            await updateDoc(doc(db, "activities", activityRefId), {
+              status: "respondido",
+              response: "[Productos enviados: Moda 👗]",
+              respondedAt: serverTimestamp()
+            });
+          }
+        } else if (buttonPayload === "CAT_PETS") {
+          await sendCategoryFeaturedProducts(from, to, ["mascotas", "bebe", "jugueteria"], "Mascotas, Bebés y Juguetería 🐾🍼", assignedStoreId);
+          if (activityRefId) {
+            await updateDoc(doc(db, "activities", activityRefId), {
+              status: "respondido",
+              response: "[Productos enviados: Mascotas, Bebés y Juguetería]",
+              respondedAt: serverTimestamp()
+            });
+          }
+        } else if (buttonPayload === "MORE_PAGE") {
+          const lastSearch = customerData?.lastCategorySearch;
+          if (!lastSearch || !Array.isArray(lastSearch.categories)) {
+            await sendWhatsApp(from, "Uy, esa búsqueda ya expiró 😅. Elige una categoría de nuevo:", undefined, activityRefId, to);
+            await sendCategoriesMenu(from, to);
+            if (activityRefId) {
+              await updateDoc(doc(db, "activities", activityRefId), {
+                status: "respondido",
+                response: "[Búsqueda expirada, menú de categorías enviado]",
+                respondedAt: serverTimestamp()
+              });
+            }
+          } else {
+            await sendCategoryFeaturedProducts(from, to, lastSearch.categories, lastSearch.categoryLabel || "Productos", assignedStoreId, lastSearch.nextOffset || 0);
+            if (activityRefId) {
+              await updateDoc(doc(db, "activities", activityRefId), {
+                status: "respondido",
+                response: "[Página siguiente de productos enviada]",
+                respondedAt: serverTimestamp()
+              });
+            }
+          }
+        } else if (buttonPayload === "MENU_BACK") {
+          await sendMainMenu(from, to);
+          if (activityRefId) {
+            await updateDoc(doc(db, "activities", activityRefId), {
+              status: "respondido",
+              response: "[Menú principal enviado]",
+              respondedAt: serverTimestamp()
+            });
+          }
+        } else if (buttonPayload.startsWith("PROD_")) {
+          const idx = parseInt(buttonPayload.replace("PROD_", ""), 10);
+          const lastList = customerData?.lastProductList || [];
+          const picked = lastList[idx];
 
-      const customerProfileId = `${assignedStoreId}_${cleanFrom}`;
-      const cxSnap = await getDoc(doc(db, "customers", customerProfileId));
-      const customerData = cxSnap.exists() ? cxSnap.data() : null;
+          if (!picked) {
+            await sendWhatsApp(from, "Uy, esa opción ya no está disponible 😅. Volvamos al catálogo:", undefined, activityRefId, to);
+            await sendCategoriesMenu(from, to);
+            if (activityRefId) {
+              await updateDoc(doc(db, "activities", activityRefId), {
+                status: "respondido",
+                response: "[Opción no disponible, catálogo enviado]",
+                respondedAt: serverTimestamp()
+              });
+            }
+          } else {
+            const currentCart: any[] = Array.isArray(customerData?.cart) ? [...customerData.cart] : [];
+            const existing = currentCart.find((it: any) => it.name === picked.name);
+            if (existing) {
+              existing.cantidad = (existing.cantidad || 1) + 1;
+            } else {
+              currentCart.push({ name: picked.name, price: picked.price, cantidad: 1 });
+            }
+            await updateDoc(doc(db, "customers", customerProfileId), { cart: currentCart });
+
+            const cartSummary = currentCart
+              .map((it: any) => `• ${it.cantidad}x ${it.name} - $${Number(it.price * it.cantidad).toLocaleString("es-CO")}`)
+              .join("\n");
+            const totalCart = currentCart.reduce((sum: number, it: any) => sum + (it.price * it.cantidad), 0);
+
+            const sent = await sendCartActionButtons(from, to, cartSummary, totalCart);
+            if (!sent) {
+              const addedCartMsg = `🛒 Agregado a tu carrito:\n${cartSummary}\n\n💵 Total: $${totalCart.toLocaleString("es-CO")} COP\n\n¿Deseas agregar otro producto? Responde AGREGAR o CONFIRMAR.`;
+              await sendWhatsApp(from, addedCartMsg, undefined, activityRefId, to);
+              if (activityRefId) {
+                await updateDoc(doc(db, "activities", activityRefId), {
+                  status: "respondido",
+                  response: addedCartMsg,
+                  respondedAt: serverTimestamp()
+                });
+              }
+            } else {
+              if (activityRefId) {
+                await updateDoc(doc(db, "activities", activityRefId), {
+                  status: "respondido",
+                  response: `[Producto agregado al carrito interactivo: ${picked.name}]`,
+                  respondedAt: serverTimestamp()
+                });
+              }
+            }
+          }
+        } else if (buttonPayload === "CART_ADD_MORE") {
+          await sendCategoriesMenu(from, to);
+          if (activityRefId) {
+            await updateDoc(doc(db, "activities", activityRefId), {
+              status: "respondido",
+              response: "[Menú de categorías enviado para agregar más productos]",
+              respondedAt: serverTimestamp()
+            });
+          }
+        } else if (buttonPayload === "CART_CHECKOUT") {
+          const currentCart: any[] = Array.isArray(customerData?.cart) ? customerData.cart : [];
+          if (currentCart.length === 0) {
+            await sendWhatsApp(from, "Tu carrito está vacío todavía 🙂. Elige al menos un producto del catálogo.", undefined, activityRefId, to);
+            await sendCategoriesMenu(from, to);
+            if (activityRefId) {
+              await updateDoc(doc(db, "activities", activityRefId), {
+                status: "respondido",
+                response: "[Carrito vacío, catálogo enviado]",
+                respondedAt: serverTimestamp()
+              });
+            }
+          } else {
+            const productoTexto = currentCart.map((it: any) => `${it.cantidad}x ${it.name}`).join(", ");
+            const valorTotal = currentCart.reduce((sum: number, it: any) => sum + (it.price * it.cantidad), 0);
+            await updateDoc(doc(db, "customers", customerProfileId), { cart: null });
+            await startCheckoutFlowFromCart(from, cleanFrom, to, assignedStoreId, productoTexto, valorTotal, activityRefId);
+          }
+        } else if (buttonPayload === "CART_REMOVE") {
+          const currentCart: any[] = Array.isArray(customerData?.cart) ? customerData.cart : [];
+          if (currentCart.length === 0) {
+            const cartEmptyMsg = "Tu carrito ya está vacío 🙂.";
+            await sendWhatsApp(from, cartEmptyMsg, undefined, activityRefId, to);
+            if (activityRefId) {
+              await updateDoc(doc(db, "activities", activityRefId), {
+                status: "respondido",
+                response: cartEmptyMsg,
+                respondedAt: serverTimestamp()
+              });
+            }
+          } else if (currentCart.length === 1) {
+            await updateDoc(doc(db, "customers", customerProfileId), { cart: [], pendingCartAction: null });
+            const removedMsg = `🗑️ Listo, quité *${currentCart[0].name}* de tu carrito. ¿Quieres ver el catálogo de nuevo?`;
+            await sendWhatsApp(from, removedMsg, undefined, activityRefId, to);
+            await sendCategoriesMenu(from, to);
+            if (activityRefId) {
+              await updateDoc(doc(db, "activities", activityRefId), {
+                status: "respondido",
+                response: removedMsg,
+                respondedAt: serverTimestamp()
+              });
+            }
+          } else {
+            const listText = currentCart
+              .map((it: any, idx: number) => `${idx + 1}. ${it.cantidad}x ${it.name} - $${Number(it.price * it.cantidad).toLocaleString("es-CO")}`)
+              .join("\n");
+            await updateDoc(doc(db, "customers", customerProfileId), { pendingCartAction: "remove" });
+            const whichRemoveMsg = `🗑️ ¿Cuál quieres quitar? Escríbeme el número:\n\n${listText}\n\nO escribe "todos" para vaciar el carrito completo.`;
+            await sendWhatsApp(from, whichRemoveMsg, undefined, activityRefId, to);
+            if (activityRefId) {
+              await updateDoc(doc(db, "activities", activityRefId), {
+                status: "respondido",
+                response: whichRemoveMsg,
+                respondedAt: serverTimestamp()
+              });
+            }
+          }
+        } else {
+          console.warn(`[WhatsApp Webhook] ButtonPayload desconocido: ${buttonPayload}`);
+        }
+
+        return res.status(200).send("");
+      } catch (e: any) {
+        console.error("[WhatsApp Webhook] Error procesando ButtonPayload:", e.message);
+        try {
+          const failMsg = "Uy, algo falló procesando tu selección 😅. ¿Puedes intentarlo de nuevo o decirme qué producto buscas?";
+          await sendWhatsApp(from, failMsg, undefined, activityRefId, to);
+          if (activityRefId) {
+            await updateDoc(doc(db, "activities", activityRefId), {
+              status: "respondido",
+              response: failMsg,
+              respondedAt: serverTimestamp()
+            });
+          }
+        } catch (sendErr: any) {
+          console.error("[WhatsApp Webhook] Error enviando fallback tras fallo de ButtonPayload:", sendErr.message);
+        }
+        return res.status(200).send("");
+      }
+    }
+
+    // Respaldo por texto: si Twilio NO mandó ni ButtonPayload ni ListId (por
+    // ejemplo, si el cliente tocó un item pero por algún motivo llegó como
+    // texto plano, o si escribió el nombre del producto/acción a mano),
+    // intentamos resolverlo igual antes de caer en el flujo genérico de IA.
+    if (!buttonPayload && messageBody) {
+      try {
+        const normalizedMsg = normalizeCatText(messageBody).trim();
+
+        // 0) ¿Está en medio de un flujo de "quitar producto" que arrancó con
+        //    el botón 🗑️? Si es así, resolvemos ESO primero, antes que
+        //    cualquier otra interpretación del texto (evita ambigüedad).
+        if (customerData?.pendingCartAction === "remove") {
+          const cartNow: any[] = Array.isArray(customerData?.cart) ? [...customerData.cart] : [];
+          if (/^todos?$/i.test(normalizedMsg) || /vaciar/.test(normalizedMsg)) {
+            await updateDoc(doc(db, "customers", customerProfileId), { cart: [], pendingCartAction: null });
+            const allClearedMsg = "🗑️ Listo, vacié todo tu carrito. ¿Vemos el catálogo de nuevo?";
+            await sendWhatsApp(from, allClearedMsg, undefined, activityRefId, to);
+            await sendCategoriesMenu(from, to);
+            if (activityRefId) {
+              await updateDoc(doc(db, "activities", activityRefId), {
+                status: "respondido",
+                response: allClearedMsg,
+                respondedAt: serverTimestamp()
+              });
+            }
+            return res.status(200).send("");
+          }
+          const removeIdx = parseInt(normalizedMsg, 10);
+          if (!isNaN(removeIdx) && removeIdx >= 1 && removeIdx <= cartNow.length) {
+            const removed = cartNow.splice(removeIdx - 1, 1)[0];
+            await updateDoc(doc(db, "customers", customerProfileId), { cart: cartNow, pendingCartAction: null });
+            if (cartNow.length === 0) {
+              const emptyRemovedMsg = `🗑️ Quité *${removed.name}*. Tu carrito quedó vacío. ¿Vemos el catálogo?`;
+              await sendWhatsApp(from, emptyRemovedMsg, undefined, activityRefId, to);
+              await sendCategoriesMenu(from, to);
+              if (activityRefId) {
+                await updateDoc(doc(db, "activities", activityRefId), {
+                  status: "respondido",
+                  response: emptyRemovedMsg,
+                  respondedAt: serverTimestamp()
+                });
+              }
+            } else {
+              const cartSummary = cartNow
+                .map((it: any) => `• ${it.cantidad}x ${it.name} - $${Number(it.price * it.cantidad).toLocaleString("es-CO")}`)
+                .join("\n");
+              const totalCart = cartNow.reduce((sum: number, it: any) => sum + (it.price * it.cantidad), 0);
+              const oneRemovedMsg = `🗑️ Quité *${removed.name}* de tu carrito.`;
+              await sendWhatsApp(from, oneRemovedMsg, undefined, activityRefId, to);
+              const sent = await sendCartActionButtons(from, to, cartSummary, totalCart);
+              if (!sent) {
+                const manualCartMsg = `🛒 Tu carrito ahora:\n${cartSummary}\n\n💵 Total: $${totalCart.toLocaleString("es-CO")} COP`;
+                await sendWhatsApp(from, manualCartMsg, undefined, activityRefId, to);
+                if (activityRefId) {
+                  await updateDoc(doc(db, "activities", activityRefId), {
+                    status: "respondido",
+                    response: `${oneRemovedMsg} ${manualCartMsg}`,
+                    respondedAt: serverTimestamp()
+                  });
+                }
+              } else {
+                if (activityRefId) {
+                  await updateDoc(doc(db, "activities", activityRefId), {
+                    status: "respondido",
+                    response: oneRemovedMsg,
+                    respondedAt: serverTimestamp()
+                  });
+                }
+              }
+            }
+            return res.status(200).send("");
+          }
+          const helpRemMsg = "No entendí cuál 😅. Responde con el número (ej: 1) o escribe \"todos\" para vaciar el carrito.";
+          await sendWhatsApp(from, helpRemMsg, undefined, activityRefId, to);
+          if (activityRefId) {
+            await updateDoc(doc(db, "activities", activityRefId), {
+              status: "respondido",
+              response: helpRemMsg,
+              respondedAt: serverTimestamp()
+            });
+          }
+          return res.status(200).send("");
+        }
+
+        const lastList: any[] = Array.isArray(customerData?.lastProductList) ? customerData.lastProductList : [];
+
+        // 1) ¿El texto coincide (por número de la lista o por nombre) con un
+        //    producto de la última lista que le mostramos?
+        let matchedIdx = -1;
+        const asNumber = parseInt(normalizedMsg, 10);
+        if (!isNaN(asNumber) && asNumber >= 1 && asNumber <= lastList.length) {
+          matchedIdx = asNumber - 1;
+        } else if (normalizedMsg.length > 2) {
+          matchedIdx = lastList.findIndex((p: any) => {
+            const prodName = normalizeCatText(p?.name || "");
+            return prodName && (prodName.includes(normalizedMsg) || normalizedMsg.includes(prodName));
+          });
+        }
+
+        if (matchedIdx >= 0 && lastList[matchedIdx]) {
+          const picked = lastList[matchedIdx];
+          const currentCart: any[] = Array.isArray(customerData?.cart) ? [...customerData.cart] : [];
+          const existing = currentCart.find((it: any) => it.name === picked.name);
+          if (existing) {
+            existing.cantidad = (existing.cantidad || 1) + 1;
+          } else {
+            currentCart.push({ name: picked.name, price: picked.price, cantidad: 1 });
+          }
+          await updateDoc(doc(db, "customers", customerProfileId), { cart: currentCart });
+
+          const cartSummary = currentCart
+            .map((it: any) => `• ${it.cantidad}x ${it.name} - $${Number(it.price * it.cantidad).toLocaleString("es-CO")}`)
+            .join("\n");
+          const totalCart = currentCart.reduce((sum: number, it: any) => sum + (it.price * it.cantidad), 0);
+
+          const sent = await sendCartActionButtons(from, to, cartSummary, totalCart);
+          if (!sent) {
+            const textCartMsg = `🛒 Agregado a tu carrito:\n${cartSummary}\n\n💵 Total: $${totalCart.toLocaleString("es-CO")} COP\n\n¿Deseas agregar otro producto? Responde AGREGAR o CONFIRMAR.`;
+            await sendWhatsApp(from, textCartMsg, undefined, activityRefId, to);
+            if (activityRefId) {
+              await updateDoc(doc(db, "activities", activityRefId), {
+                status: "respondido",
+                response: textCartMsg,
+                respondedAt: serverTimestamp()
+              });
+            }
+          } else {
+            if (activityRefId) {
+              await updateDoc(doc(db, "activities", activityRefId), {
+                status: "respondido",
+                response: `[Producto agregado al carrito por texto: ${picked.name}]`,
+                respondedAt: serverTimestamp()
+              });
+            }
+          }
+          return res.status(200).send("");
+        }
+
+        // 2) Palabras clave de acciones de carrito por texto libre
+        if (/\bagregar\b/.test(normalizedMsg)) {
+          await sendCategoriesMenu(from, to);
+          if (activityRefId) {
+            await updateDoc(doc(db, "activities", activityRefId), {
+              status: "respondido",
+              response: "[Categorías enviadas para agregar más por texto]",
+              respondedAt: serverTimestamp()
+            });
+          }
+          return res.status(200).send("");
+        }
+        if (/\bconfirmar\b/.test(normalizedMsg)) {
+          const currentCart: any[] = Array.isArray(customerData?.cart) ? customerData.cart : [];
+          if (currentCart.length === 0) {
+            const noItemsMsg = "Tu carrito está vacío todavía 🙂. Elige al menos un producto del catálogo.";
+            await sendWhatsApp(from, noItemsMsg, undefined, activityRefId, to);
+            await sendCategoriesMenu(from, to);
+            if (activityRefId) {
+              await updateDoc(doc(db, "activities", activityRefId), {
+                status: "respondido",
+                response: noItemsMsg,
+                respondedAt: serverTimestamp()
+              });
+            }
+          } else {
+            const productoTexto = currentCart.map((it: any) => `${it.cantidad}x ${it.name}`).join(", ");
+            const valorTotal = currentCart.reduce((sum: number, it: any) => sum + (it.price * it.cantidad), 0);
+            await updateDoc(doc(db, "customers", customerProfileId), { cart: null });
+            await startCheckoutFlowFromCart(from, cleanFrom, to, assignedStoreId, productoTexto, valorTotal, activityRefId);
+          }
+          return res.status(200).send("");
+        }
+      } catch (e: any) {
+        console.error("[WhatsApp Webhook] Error en respaldo por texto (sin ButtonPayload):", e.message);
+      }
+    }
+
+    console.log(`[WhatsApp Webhook] Incoming from ${from} to ${to}: ${finalMessage}`);
+
+    // Deterministic message processing & Interceptors (bypasses LLM for maximum performance & reliability)
+    const cleanMsg = (finalMessage || "").toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim();
 
       // ==============================================
       // 0.A INTERCEPTOR GLOBAL: PEDIR ASESOR HUMANO (funciona en cualquier punto)
@@ -5274,6 +5600,11 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
           console.error("[Advisor Interceptor] Error notificando asesoría:", e);
         }
         await sendWhatsApp(from, "¡Perfecto! Ya le he avisado a un asesor humano 🙋‍♂️. Te escribirá en un momento. Mientras tanto, si tienes otra duda, puedes escribirme por acá. 😊", undefined, activityRef.id, to);
+        await updateDoc(doc(db, "activities", activityRef.id), {
+          status: "respondido",
+          response: "¡Perfecto! Ya le he avisado a un asesor humano 🙋‍♂️. Te escribirá en un momento. Mientras tanto, si tienes otra duda, puedes escribirme por acá. 😊",
+          respondedAt: serverTimestamp()
+        });
         return res.status(200).send("");
       }
 
@@ -5298,7 +5629,13 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
           );
           const ordersSnap = await getDocs(ordersQ);
           if (ordersSnap.empty) {
-            await sendWhatsApp(from, "No encuentro ningún pedido asociado a tu número todavía. 🙁 Si ya hiciste uno, cuéntame el nombre con el que lo registraste y te ayudo a buscarlo.", undefined, activityRef.id, to);
+            const noOrderMsg = "No encuentro ningún pedido asociado a tu número todavía. 🙁 Si ya hiciste uno, cuéntame el nombre con el que lo registraste y te ayudo a buscarlo.";
+            await sendWhatsApp(from, noOrderMsg, undefined, activityRef.id, to);
+            await updateDoc(doc(db, "activities", activityRef.id), {
+              status: "respondido",
+              response: noOrderMsg,
+              respondedAt: serverTimestamp()
+            });
             return res.status(200).send("");
           }
           const order = ordersSnap.docs[0].data() as any;
@@ -5314,9 +5651,20 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
           if (order.trackingUrl) msg += `\n🔗 *Rastrear aquí:* ${order.trackingUrl}`;
           if (!order.trackingUrl) msg += `\n\nApenas se despache te mandaremos el número de guía automáticamente. 😊`;
           await sendWhatsApp(from, msg, undefined, activityRef.id, to);
+          await updateDoc(doc(db, "activities", activityRef.id), {
+            status: "respondido",
+            response: msg,
+            respondedAt: serverTimestamp()
+          });
         } catch (e) {
           console.error("[Tracking Interceptor] Error buscando pedido:", e);
-          await sendWhatsApp(from, "Tuve un problema buscando tu pedido. Un asesor te va a confirmar el estado en un momento. 🙏", undefined, activityRef.id, to);
+          const errorMsg = "Tuve un problema buscando tu pedido. Un asesor te va a confirmar el estado en un momento. 🙏";
+          await sendWhatsApp(from, errorMsg, undefined, activityRef.id, to);
+          await updateDoc(doc(db, "activities", activityRef.id), {
+            status: "respondido",
+            response: errorMsg,
+            respondedAt: serverTimestamp()
+          });
         }
         return res.status(200).send("");
       }
@@ -5337,7 +5685,13 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
             checkoutData: null,
             etapa: "interesado"
           }, { merge: true });
-          await sendWhatsApp(from, `¡Listo, parce! Cancelamos tu proceso de compra. 🙂 ¿En qué más te puedo colaborar hoy?`, undefined, activityRef.id, to);
+          const cancelMsg = `¡Listo, parce! Cancelamos tu proceso de compra. 🙂 ¿En qué más te puedo colaborar hoy?`;
+          await sendWhatsApp(from, cancelMsg, undefined, activityRef.id, to);
+          await updateDoc(doc(db, "activities", activityRef.id), {
+            status: "respondido",
+            response: cancelMsg,
+            respondedAt: serverTimestamp()
+          });
           await new Promise(resolve => setTimeout(resolve, 800));
           await sendMainMenu(from, to);
           return res.status(200).send("");
@@ -5346,7 +5700,7 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
         // Retomar checkout tras un follow-up de carrito abandonado (por si el
         // botón no llegó y el cliente escribió "continuar" en texto plano)
         if (["continuar", "seguir", "continuar pedido", "seguir pedido"].some(k => cleanMsg === k || cleanMsg.startsWith(k))) {
-          await resendCurrentCheckoutStepPrompt(from, to, customerData);
+          await resendCurrentCheckoutStepPrompt(from, to, customerData, activityRef.id);
           return res.status(200).send("");
         }
 
@@ -5371,15 +5725,23 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
           if (hasMedia || isGreeting || isCatalog || isProductInquiry) {
             console.log(`[Checkout State Machine] Distraction detected at step ${currentStep}: hasMedia=${hasMedia}, isGreeting=${isGreeting}, isCatalog=${isCatalog}, isProductInquiry=${isProductInquiry}`);
             
+            let distractionMsg = "";
             if (hasMedia) {
-              await sendWhatsApp(from, `He recibido tu foto/archivo, pero veo que estabas en medio de registrar tu pedido de *${checkoutData.producto || "tu producto"}*. 📦\n\n¿Qué deseas hacer?\n\n🛒 Escribe *CONTINUAR* para seguir con tu pedido de *${checkoutData.producto || "tu producto"}*.\n❌ Escribe *CANCELAR* si prefieres cancelar este pedido para que podamos ver la foto que me enviaste.`, undefined, activityRef.id, to);
+              distractionMsg = `He recibido tu foto/archivo, pero veo que estabas en medio de registrar tu pedido de *${checkoutData.producto || "tu producto"}*. 📦\n\n¿Qué deseas hacer?\n\n🛒 Escribe *CONTINUAR* para seguir con tu pedido de *${checkoutData.producto || "tu producto"}*.\n❌ Escribe *CANCELAR* si prefieres cancelar este pedido para que podamos ver la foto que me enviaste.`;
             } else if (isCatalog) {
-              await sendWhatsApp(from, `Veo que quieres ver nuestro catálogo, pero estás en medio de registrar tu pedido de *${checkoutData.producto || "tu producto"}*. 📦\n\n¿Qué deseas hacer?\n\n🛒 Escribe *CONTINUAR* para seguir con tu pedido de *${checkoutData.producto || "tu producto"}*.\n❌ Escribe *CANCELAR* si prefieres cancelar esta compra para ver el catálogo.`, undefined, activityRef.id, to);
+              distractionMsg = `Veo que quieres ver nuestro catálogo, pero estás en medio de registrar tu pedido de *${checkoutData.producto || "tu producto"}*. 📦\n\n¿Qué deseas hacer?\n\n🛒 Escribe *CONTINUAR* para seguir con tu pedido de *${checkoutData.producto || "tu producto"}*.\n❌ Escribe *CANCELAR* si prefieres cancelar esta compra para ver el catálogo.`;
             } else if (isProductInquiry) {
-              await sendWhatsApp(from, `Veo que estás preguntando por otro producto, pero estás en medio de registrar tu pedido de *${checkoutData.producto || "tu producto"}*. 📦\n\n¿Qué deseas hacer?\n\n🛒 Escribe *CONTINUAR* para seguir con tu pedido de *${checkoutData.producto || "tu producto"}*.\n❌ Escribe *CANCELAR* si prefieres cancelar esta compra para consultar sobre el otro producto.`, undefined, activityRef.id, to);
+              distractionMsg = `Veo que estás preguntando por otro producto, pero estás en medio de registrar tu pedido de *${checkoutData.producto || "tu producto"}*. 📦\n\n¿Qué deseas hacer?\n\n🛒 Escribe *CONTINUAR* para seguir con tu pedido de *${checkoutData.producto || "tu producto"}*.\n❌ Escribe *CANCELAR* si prefieres cancelar esta compra para consultar sobre el otro producto.`;
             } else {
-              await sendWhatsApp(from, `¡Hola de nuevo! 👋 Veo que estabas en medio de registrar tu pedido de *${checkoutData.producto || "tu producto"}*.\n\n¿Qué deseas hacer?\n\n🛒 Escribe *CONTINUAR* para seguir con tu pedido de *${checkoutData.producto || "tu producto"}*.\n❌ Escribe *CANCELAR* si prefieres cancelar tu pedido.`, undefined, activityRef.id, to);
+              distractionMsg = `¡Hola de nuevo! 👋 Veo que estabas en medio de registrar tu pedido de *${checkoutData.producto || "tu producto"}*.\n\n¿Qué deseas hacer?\n\n🛒 Escribe *CONTINUAR* para seguir con tu pedido de *${checkoutData.producto || "tu producto"}*.\n❌ Escribe *CANCELAR* si prefieres cancelar tu pedido.`;
             }
+
+            await sendWhatsApp(from, distractionMsg, undefined, activityRef.id, to);
+            await updateDoc(doc(db, "activities", activityRef.id), {
+              status: "respondido",
+              response: distractionMsg,
+              respondedAt: serverTimestamp()
+            });
             return res.status(200).send("");
           }
         }
@@ -5640,7 +6002,7 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
         }
         
         console.log(`[WhatsApp Checkout Trigger] Buying intent detected. Product: ${matchedProduct || "none"}. Starting checkout flow...`);
-        await startCheckoutFlow(from, cleanFrom, to, assignedStoreId, matchedProduct);
+        await startCheckoutFlow(from, cleanFrom, to, assignedStoreId, matchedProduct, activityRef.id);
         return res.status(200).send("");
       }
 
@@ -5753,13 +6115,11 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
       }
 
       // TRIGGER SERVER-SIDE INFERENCE IMMEDIATELY
-      processInferenceOnServer(activityRef.id, { ...activityData, mediaItems, NumMedia: numMedia }).catch(e => {
-        console.error(`[Server Inference] Fatal error during async execution:`, e.message);
-      });
-
-    } catch (e: any) {
-      console.warn("[Activity] Registration failed:", e.message);
-    }
+      if (activityRefId) {
+        processInferenceOnServer(activityRefId, { ...activityData, mediaItems, NumMedia: numMedia }).catch(e => {
+          console.error(`[Server Inference] Fatal error during async execution:`, e.message);
+        });
+      }
 
     // 1. ACKNOWLEDGE TWILIO IMMEDIATELY
     res.status(200).send("");
