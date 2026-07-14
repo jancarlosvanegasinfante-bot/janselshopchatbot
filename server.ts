@@ -1379,6 +1379,49 @@ Asegúrate de que la propiedad "mensaje" contenga tu respuesta real dirigida al 
         jsonResponse = safeFallbackResponse;
       }
     }
+
+    // AUTO PRODUCT IMAGE LOOKUP FOR WHATSAPP/CHAT RESPONSE
+    try {
+      let productForImage: any = null;
+      const productsList = products || [];
+
+      if (jsonResponse.producto) {
+        const prodQuery = String(jsonResponse.producto).toLowerCase().trim();
+        productForImage = productsList.find((p: any) =>
+          (p.id && p.id.toLowerCase() === prodQuery) ||
+          (p.name && p.name.toLowerCase() === prodQuery) ||
+          (p.name && p.name.toLowerCase().includes(prodQuery)) ||
+          (p.id && prodQuery.includes(p.id.toLowerCase()))
+        );
+      }
+
+      if (!productForImage && data.message) {
+        const originalMsg = String(data.message).toLowerCase();
+        for (const p of productsList) {
+          if (p.name && originalMsg.includes(p.name.toLowerCase())) {
+            productForImage = p;
+            break;
+          }
+        }
+      }
+
+      if (productForImage && productForImage.imageUrl) {
+        let finalImgUrl = productForImage.imageUrl;
+        if (!finalImgUrl.startsWith("http")) {
+          const baseUrl = (currentAppUrl || process.env.APP_URL || "https://chatbotjanadsia.up.railway.app").replace(/\/$/, "");
+          finalImgUrl = `${baseUrl}${finalImgUrl.startsWith("/") ? "" : "/"}${finalImgUrl}`;
+        }
+        
+        const askedForPhoto = /foto|imagen|ve[or]|muestra|diseño|como es|cómo es|catálogo|catalogo/i.test(data.message || "");
+        if (askedForPhoto || jsonResponse.imageUrl || jsonResponse.accion === "iniciar_checkout") {
+          jsonResponse.imageUrl = finalImgUrl;
+          console.log(`[Server AI Image Resolver] Auto-populated imageUrl for product "${productForImage.name}": ${finalImgUrl}`);
+        }
+      }
+    } catch (err) {
+      console.error("[Server AI Image Resolver] Error during product image lookup:", err);
+    }
+
     console.log(`[Server AI] Respuesta generada para ${fromPhone} (Acción: ${jsonResponse.accion}):`, jsonResponse.mensaje);
 
     // CRM / Scoring update
@@ -5182,6 +5225,40 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
         if (["continuar", "seguir", "continuar pedido", "seguir pedido"].some(k => cleanMsg === k || cleanMsg.startsWith(k))) {
           await resendCurrentCheckoutStepPrompt(from, to, customerData);
           return res.status(200).send("");
+        }
+
+        // Interceptor de distracciones en Checkout (Evita que fotos, saludos, catálogos
+        // o preguntas por otros productos se guarden como ciudad, dirección, nombre, etc.)
+        const isDataStep = ["cantidad", "nombre", "telefono", "ciudad", "direccion", "referencia"].includes(currentStep);
+        if (isDataStep) {
+          const hasMedia = numMedia > 0 || (mediaItems && mediaItems.length > 0) || (finalMessage || "").includes("[Media:");
+          const isGreeting = (cleanMsg.length <= 15 && ["hola", "buenas", "buenos dias", "buenas tardes", "buenas noches", "que tal", "alo", "buen dia", "saludos", "epale", "parce", "oe", "que mas"].some(w => cleanMsg === w || cleanMsg.startsWith(w)));
+          const isCatalog = ["catalogo", "ver catalogo", "ver productos", "portafolio", "que productos tienen", "que productos tienes", "que productos venden", "que venden"].some(k => cleanMsg.includes(k));
+          const isProductInquiry = [
+            "tienes de este", "tienes este", "cuanto vale este", "precio de este", 
+            "que cuesta este", "cuanto cuesta este", "vendes de este", "este lo tienes",
+            "que precio", "que costo", "valor de este", "tienen de este"
+          ].some(q => cleanMsg.includes(q)) || (
+            [
+              "modem", "retrovisor", "intercomunicador", "soporte", "funda", "destornillador", 
+              "linterna", "camping", "candado", "compresor", "hidrolavadora", "aspiradora", "cargador"
+            ].some(kw => cleanMsg.includes(kw) && !String(checkoutData.producto || "").toLowerCase().includes(kw))
+          );
+
+          if (hasMedia || isGreeting || isCatalog || isProductInquiry) {
+            console.log(`[Checkout State Machine] Distraction detected at step ${currentStep}: hasMedia=${hasMedia}, isGreeting=${isGreeting}, isCatalog=${isCatalog}, isProductInquiry=${isProductInquiry}`);
+            
+            if (hasMedia) {
+              await sendWhatsApp(from, `He recibido tu foto/archivo, pero veo que estabas en medio de registrar tu pedido de *${checkoutData.producto || "tu producto"}*. 📦\n\n¿Qué deseas hacer?\n\n🛒 Escribe *CONTINUAR* para seguir con tu pedido de *${checkoutData.producto || "tu producto"}*.\n❌ Escribe *CANCELAR* si prefieres cancelar este pedido para que podamos ver la foto que me enviaste.`, undefined, activityRef.id, to);
+            } else if (isCatalog) {
+              await sendWhatsApp(from, `Veo que quieres ver nuestro catálogo, pero estás en medio de registrar tu pedido de *${checkoutData.producto || "tu producto"}*. 📦\n\n¿Qué deseas hacer?\n\n🛒 Escribe *CONTINUAR* para seguir con tu pedido de *${checkoutData.producto || "tu producto"}*.\n❌ Escribe *CANCELAR* si prefieres cancelar esta compra para ver el catálogo.`, undefined, activityRef.id, to);
+            } else if (isProductInquiry) {
+              await sendWhatsApp(from, `Veo que estás preguntando por otro producto, pero estás en medio de registrar tu pedido de *${checkoutData.producto || "tu producto"}*. 📦\n\n¿Qué deseas hacer?\n\n🛒 Escribe *CONTINUAR* para seguir con tu pedido de *${checkoutData.producto || "tu producto"}*.\n❌ Escribe *CANCELAR* si prefieres cancelar esta compra para consultar sobre el otro producto.`, undefined, activityRef.id, to);
+            } else {
+              await sendWhatsApp(from, `¡Hola de nuevo! 👋 Veo que estabas en medio de registrar tu pedido de *${checkoutData.producto || "tu producto"}*.\n\n¿Qué deseas hacer?\n\n🛒 Escribe *CONTINUAR* para seguir con tu pedido de *${checkoutData.producto || "tu producto"}*.\n❌ Escribe *CANCELAR* si prefieres cancelar tu pedido.`, undefined, activityRef.id, to);
+            }
+            return res.status(200).send("");
+          }
         }
 
         if (currentStep === "producto") {

@@ -1420,25 +1420,62 @@ function ReportsTab({
   const [showStatusId, setShowStatusId] = useState<string | null>(null);
 
   const renderMedia = (text: string) => {
-    const mediaMatch = text.match(/\[Media:\s*(https?:\/\/[^\]]+)\]/);
-    if (!mediaMatch) return null;
-    const url = mediaMatch[1];
+    const matches = [...text.matchAll(/\[Media:\s*(https?:\/\/[^\]]+)\]/g)];
+    if (matches.length === 0) return null;
     
-    // Improved detection: Check for media type based on extension
-    const isVideo = url.match(/\.(mp4|webm|ogg)/i);
-    const isAudio = url.match(/\.(mp3|wav|m4a|aac)/i) || (url.includes('/api/media/') && url.endsWith('.mp3'));
-    const isImage = url.match(/\.(jpg|jpeg|png|gif|webp)/i);
-    
-    if (isVideo) {
-      return <video src={url} controls className="mt-2 rounded-lg max-w-full border border-white/10" />;
-    }
-    if (isAudio) {
-      return <audio src={url} controls className="mt-2 w-full" />;
-    }
-    if (isImage) {
-      return <img src={url} referrerPolicy="no-referrer" alt="Media" className="mt-2 rounded-lg max-w-full h-auto" />;
-    }
-    return null;
+    return (
+      <div className="flex flex-col gap-2 mt-2">
+        {matches.map((match, idx) => {
+          const url = match[1];
+          const isVideo = url.match(/\.(mp4|webm)/i);
+          const isAudio = url.match(/\.(mp3|wav|m4a|aac|ogg|opus)/i) || url.toLowerCase().includes('audio') || (url.includes('/api/media/') && url.endsWith('.mp3'));
+          const isImage = url.match(/\.(jpg|jpeg|png|gif|webp)/i) || url.toLowerCase().includes('image') || url.includes('/api/image-proxy');
+          
+          if (isVideo) {
+            return (
+              <video 
+                key={idx} 
+                src={url} 
+                controls 
+                className="rounded-lg max-w-full border border-white/10 max-h-64" 
+              />
+            );
+          }
+          if (isAudio) {
+            return (
+              <audio 
+                key={idx} 
+                src={url} 
+                controls 
+                className="w-full" 
+              />
+            );
+          }
+          if (isImage) {
+            return (
+              <img 
+                key={idx} 
+                src={url} 
+                referrerPolicy="no-referrer" 
+                alt="Media" 
+                className="rounded-lg max-w-full h-auto border border-white/5 max-h-64 object-contain" 
+              />
+            );
+          }
+          return (
+            <a 
+              key={idx} 
+              href={url} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="text-xs text-amber-400 underline flex items-center gap-1 hover:text-white"
+            >
+              📎 Ver archivo adjunto ({url.split('/').pop()?.split('?')[0] || "Descargar"})
+            </a>
+          );
+        })}
+      </div>
+    );
   };
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="h-[calc(100vh-140px)] lg:h-[calc(100vh-180px)] bg-[#111] border border-neutral-800 rounded-3xl overflow-hidden flex flex-col md:flex-row ring-1 ring-white/5 shadow-2xl relative">

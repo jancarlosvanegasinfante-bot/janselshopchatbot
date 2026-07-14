@@ -339,6 +339,7 @@ export default function LandingPage() {
   const [testimonialIdx, setTestimonialIdx] = useState(0);
   const [ordersToday] = useState(Math.floor(Math.random() * 40) + 30);
   const [heroViewers] = useState(Math.floor(Math.random() * 30) + 45);
+  const [isWaMenuOpen, setIsWaMenuOpen] = useState(false);
 
   const formRef = useRef<HTMLDivElement>(null);
 
@@ -733,7 +734,7 @@ export default function LandingPage() {
 
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#070810] text-white font-sans overflow-x-hidden selection:bg-amber-400 selection:text-black">
+    <div className="landing-container min-h-screen bg-[#070810] text-white font-sans overflow-x-hidden selection:bg-amber-400 selection:text-black">
 
       {/* ════════════════════════════════════════════
           BARRA DE URGENCIA PREMIUM (STICKY TOP)
@@ -1063,7 +1064,7 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: Math.min(idx * 0.04, 0.25) }}
-                className="group relative flex flex-col bg-[#0d0f1a] border border-white/6 rounded-3xl overflow-hidden hover:border-amber-400/30 hover:shadow-[0_0_40px_rgba(251,191,36,0.08)] transition-all duration-300"
+                className="neon-glow-card group relative flex flex-col rounded-3xl overflow-hidden transition-all duration-300"
               >
                 {/* Badge top-left */}
                 <div className="absolute top-3 left-3 z-20 flex flex-col gap-1.5">
@@ -1086,12 +1087,12 @@ export default function LandingPage() {
                 </div>
 
                 {/* Product image */}
-                <div className="relative h-64 sm:h-56 md:h-64 lg:h-60 bg-[#06070c] flex items-center justify-center p-3 overflow-hidden border-b border-white/5">
+                <div className="relative h-64 sm:h-56 md:h-64 lg:h-60 bg-[#06070c] flex items-center justify-center overflow-hidden border-b border-white/5">
                   <img
                     src={getProxiedImageUrl(p.imageUrl)}
                     alt={p.name}
                     referrerPolicy="no-referrer"
-                    className="max-w-full max-h-full w-auto h-auto object-contain transition-transform duration-500 ease-out select-none"
+                    className="w-full h-full object-cover transition-transform duration-500 ease-out select-none"
                     style={{ transform: "scale(1)" }}
                     onMouseEnter={(e) => { (e.currentTarget as HTMLImageElement).style.transform = "scale(1.05)"; }}
                     onMouseLeave={(e) => { (e.currentTarget as HTMLImageElement).style.transform = "scale(1)"; }}
@@ -2278,6 +2279,105 @@ export default function LandingPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ════════════════════════════════════════════
+          BOTÓN FLOTANTE DE WHATSAPP + MINI-MODAL
+          ════════════════════════════════════════════ */}
+      <div className="fixed bottom-6 right-6 z-40">
+        <AnimatePresence>
+          {isWaMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: 15, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 15, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="absolute bottom-16 right-0 w-72 bg-[#0c0d16] border border-emerald-500/20 rounded-2xl p-4 shadow-2xl space-y-3"
+            >
+              <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-xs font-black tracking-wider text-slate-300 uppercase">¿Cómo te ayudamos?</span>
+                </div>
+                <button
+                  onClick={() => setIsWaMenuOpen(false)}
+                  className="text-slate-500 hover:text-white transition-colors cursor-pointer"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+
+              <p className="text-[11px] text-slate-400 leading-normal">
+                Selecciona una opción para chatear directamente con nuestro equipo de atención oficial.
+              </p>
+
+              <div className="flex flex-col gap-2">
+                {/* Option 1: Quiero Pedir */}
+                <button
+                  onClick={() => {
+                    const waNumber = officialBotNumber || "14155238886";
+                    const msg = "¡Hola! 👋 Quisiera realizar un pedido de los productos del catálogo de Jansel Shop.";
+                    window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`, "_blank");
+                    setIsWaMenuOpen(false);
+                  }}
+                  className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500/10 to-transparent hover:from-amber-500/20 border border-amber-500/20 hover:border-amber-400 text-left text-xs font-extrabold text-amber-300 transition-all flex items-center justify-between group cursor-pointer"
+                >
+                  <span className="flex items-center gap-2">
+                    <ShoppingBag size={12} className="group-hover:scale-110 transition-transform" />
+                    <span>Quiero Pedir</span>
+                  </span>
+                  <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
+                </button>
+
+                {/* Option 2: Dudas / Asesoría */}
+                <button
+                  onClick={() => {
+                    const waNumber = officialBotNumber || "14155238886";
+                    const msg = "¡Hola! 👋 Necesito asesoría con algunas dudas que tengo sobre los productos de Jansel Shop.";
+                    window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`, "_blank");
+                    setIsWaMenuOpen(false);
+                  }}
+                  className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-500/10 to-transparent hover:from-emerald-500/20 border border-emerald-500/20 hover:border-emerald-400 text-left text-xs font-extrabold text-emerald-300 transition-all flex items-center justify-between group cursor-pointer"
+                >
+                  <span className="flex items-center gap-2">
+                    <MessageCircle size={12} className="group-hover:scale-110 transition-transform" />
+                    <span>Dudas / Asesoría</span>
+                  </span>
+                  <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
+                </button>
+
+                {/* Option 3: Seguimiento de Pedido */}
+                <button
+                  onClick={() => {
+                    const waNumber = officialBotNumber || "14155238886";
+                    const msg = "¡Hola! 👋 Quisiera hacerle seguimiento a mi pedido realizado en Jansel Shop.";
+                    window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`, "_blank");
+                    setIsWaMenuOpen(false);
+                  }}
+                  className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-blue-500/10 to-transparent hover:from-blue-500/20 border border-blue-500/20 hover:border-blue-400 text-left text-xs font-extrabold text-blue-300 transition-all flex items-center justify-between group cursor-pointer"
+                >
+                  <span className="flex items-center gap-2">
+                    <Truck size={12} className="group-hover:scale-110 transition-transform" />
+                    <span>Seguimiento de Pedido</span>
+                  </span>
+                  <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Main floating button */}
+        <button
+          onClick={() => setIsWaMenuOpen(!isWaMenuOpen)}
+          className="relative w-14 h-14 rounded-full bg-emerald-500 hover:bg-emerald-400 text-white flex items-center justify-center shadow-lg hover:shadow-emerald-500/25 transition-all duration-300 hover:scale-110 active:scale-95 group cursor-pointer"
+        >
+          <div className="absolute inset-0 rounded-full border border-emerald-500/50 animate-ping-large pointer-events-none" />
+          <MessageCircle size={28} fill="currentColor" className="group-hover:scale-110 transition-transform duration-300" />
+          <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-[#070810] flex items-center justify-center text-[8px] font-black text-white">
+            1
+          </span>
+        </button>
+      </div>
     </div>
   );
 }

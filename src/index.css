@@ -153,6 +153,31 @@
 }
 
 /* Neon border glow */
+@keyframes border-glow-anim {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.neon-glow-card {
+  position: relative;
+  background: linear-gradient(#0d0f1a, #0d0f1a) padding-box,
+              linear-gradient(135deg, #fbbf24, #f97316, #ef4444, #fbbf24) border-box;
+  border: 1.5px solid transparent;
+  background-size: 200% 200%;
+  animation: border-glow-anim 4s linear infinite;
+  box-shadow: 0 0 15px rgba(251, 191, 36, 0.05);
+  transition: all 0.3s ease-in-out;
+}
+
+.neon-glow-card:hover {
+  box-shadow: 0 0 25px rgba(251, 191, 36, 0.35), 0 0 50px rgba(249, 115, 22, 0.15);
+  transform: translateY(-4px);
+}
+
 .border-glow-amber {
   box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.3), 0 0 20px rgba(251, 191, 36, 0.1);
 }
