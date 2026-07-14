@@ -1428,13 +1428,20 @@ export default function LandingPage() {
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         {[
-                          { label: "📱 NEQUI", color: "text-[#E52F86]", number: "313 364 7176", owner: "Jan vanegas" },
-                          { label: "💳 DAVIPLATA", color: "text-[#421D83]", number: "313 361 5984", owner: "Nelsy tatiana salcedo" },
+                          { owner: "Jan Vanegas", number: "313 364 7176" },
+                          { owner: "Nelsy Tatiana Salcedo", number: "313 361 5984" },
                         ].map((m) => (
-                          <div key={m.label} className="bg-black/30 p-3 rounded-xl border border-white/5">
-                            <span className={`text-[10px] font-black uppercase ${m.color} tracking-wider`}>{m.label}</span>
-                            <span className="block text-xs font-mono font-black text-white mt-1 select-all">{m.number}</span>
-                            <span className="text-[8px] text-slate-500 mt-0.5">A nombre de: {m.owner}</span>
+                          <div key={m.owner} className="bg-black/40 p-3 rounded-xl border border-white/5 space-y-1.5">
+                            <div className="flex flex-wrap gap-1">
+                              <span className="text-[8px] px-1.5 py-0.5 rounded bg-[#E52F86]/25 text-[#FF66B2] font-black tracking-wider">NEQUI</span>
+                              <span className="text-[8px] px-1.5 py-0.5 rounded bg-[#421D83]/40 text-[#9E7BFF] font-black tracking-wider">DAVIPLATA</span>
+                            </div>
+                            <span className="block text-xs font-mono font-black text-white select-all">
+                              {m.number}
+                            </span>
+                            <span className="text-[8px] text-slate-400 block border-t border-white/5 pt-1">
+                              Titular: {m.owner}
+                            </span>
                           </div>
                         ))}
                       </div>
