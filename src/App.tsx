@@ -3210,6 +3210,21 @@ function ConfigTab({ user, userStore, userStores, setUserStore, setUserStores, w
   const [isSyncingFromShopify, setIsSyncingFromShopify] = useState(false);
   const [isSyncingToShopify, setIsSyncingToShopify] = useState(false);
   const [officialBotNumber, setOfficialBotNumber] = useState("");
+  const [dbStatus, setDbStatus] = useState<any>(null);
+  const [loadingDbStatus, setLoadingDbStatus] = useState(false);
+
+  const fetchDbStatus = async () => {
+    setLoadingDbStatus(true);
+    try {
+      const res = await fetch("/api/db/supabase-status");
+      const data = await res.json();
+      setDbStatus(data);
+    } catch (e) {
+      console.error("Error fetching db status", e);
+    } finally {
+      setLoadingDbStatus(false);
+    }
+  };
 
   const handleShopifySync = async (direction: 'from_shopify' | 'to_shopify') => {
     if (!userStore?.id) return;
@@ -3248,6 +3263,7 @@ function ConfigTab({ user, userStore, userStores, setUserStore, setUserStores, w
         if (data.whatsappNumber) setOfficialBotNumber(data.whatsappNumber);
       })
       .catch(err => console.error("Error fetching bot config", err));
+    fetchDbStatus();
   }, []);
 
   const publicUrl = `https://chatbotjanadsia.up.railway.app/landing`;
@@ -3578,6 +3594,57 @@ function ConfigTab({ user, userStore, userStores, setUserStore, setUserStores, w
                    <p className="text-[8px] text-neutral-500">Inyecta el script oficial de TikTok Pixel y realiza el seguimiento completo del embudo de conversión publicitario.</p>
                 </div>
              </div>
+          </div>
+
+          {/* SUPABASE CONNECTION DIAGNOSTICS CARD */}
+          <div className="bg-neutral-900/40 border border-neutral-800 p-6 rounded-2xl space-y-4">
+             <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-dark-accent">
+                   <span className="text-emerald-400">⚡</span>
+                   <h5 className="text-[10px] uppercase font-black tracking-widest text-white">Estado de Base de Datos (Supabase)</h5>
+                </div>
+                <button 
+                  onClick={fetchDbStatus} 
+                  disabled={loadingDbStatus}
+                  className="bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-[9px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
+                >
+                   <RefreshCw size={10} className={loadingDbStatus ? "animate-spin" : ""} />
+                   {loadingDbStatus ? "Actualizar" : "Actualizar"}
+                </button>
+             </div>
+             <p className="text-[9px] text-neutral-400 leading-normal">
+                Tu base de datos en Supabase resguarda de manera permanente toda la información de tu chatbot: tus productos, tus pedidos, tus conversaciones y el historial del CRM.
+             </p>
+             
+             {dbStatus ? (
+                <div className="space-y-4">
+                   <div className="flex items-center justify-between bg-neutral-950 border border-neutral-800 p-3.5 rounded-xl">
+                      <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wide">Modo de Operación</span>
+                      <div className="flex items-center gap-2">
+                         <span className={`w-2 h-2 rounded-full ${dbStatus.connected ? "bg-emerald-500 animate-pulse" : "bg-amber-500"}`} />
+                         <span className={`text-[10px] font-black uppercase tracking-widest ${dbStatus.connected ? "text-emerald-400" : "text-amber-400"}`}>
+                            {dbStatus.mode}
+                         </span>
+                      </div>
+                   </div>
+
+                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {Object.entries(dbStatus.collections || {}).map(([name, colInfo]: [string, any]) => (
+                         <div key={name} className="bg-black/50 border border-neutral-800 p-3 rounded-xl flex flex-col justify-between hover:border-neutral-700 transition-colors">
+                            <span className="text-[9px] text-neutral-500 font-mono tracking-wider truncate uppercase">{name}</span>
+                            <div className="flex items-baseline gap-1 mt-1.5">
+                               <span className="text-lg font-black text-white leading-none">{colInfo.localCount}</span>
+                               <span className="text-[8px] text-neutral-600 font-bold uppercase tracking-wider">filas</span>
+                            </div>
+                         </div>
+                      ))}
+                   </div>
+                </div>
+             ) : (
+                <div className="text-center py-6 border border-dashed border-neutral-800 rounded-xl">
+                   <p className="text-[10px] text-neutral-500">Cargando estado de la base de datos...</p>
+                </div>
+             )}
           </div>
 
           <button onClick={handleSaveStore} disabled={isSaving} className="w-full bg-dark-accent text-black font-black uppercase text-[10px] tracking-widest py-3 rounded-xl disabled:opacity-50">

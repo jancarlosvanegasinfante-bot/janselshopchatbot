@@ -63,6 +63,45 @@ function saveLocalDb() {
 // Initial load on boot
 loadLocalDb();
 
+// Preload all data from Supabase on startup to avoid empty localDbCache on redeployment or container restart
+async function preloadSupabaseData() {
+  if (!supabaseServer) {
+    console.log("[Supabase Server] Not connected, skipping prefetch.");
+    return;
+  }
+  const collections = ["stores", "products", "orders", "activities", "customers", "conversations", "config", "followups"];
+  console.log(`[Supabase Prefetch] Starting prefetch on startup for: ${collections.join(", ")}`);
+  for (const col of collections) {
+    try {
+      const { data, error } = await supabaseServer.from(col).select("*");
+      if (error) {
+        console.warn(`[Supabase Prefetch] Error loading table "${col}": ${error.message}.
+If the table does not exist in your Supabase database, please execute this in your Supabase SQL Editor:
+
+CREATE TABLE ${col} (
+  id TEXT PRIMARY KEY,
+  data JSONB,
+  "updatedAt" TEXT
+);`);
+        continue;
+      }
+      if (data && data.length > 0) {
+        if (!localDbCache[col]) {
+          localDbCache[col] = {};
+        }
+        for (const item of data) {
+          localDbCache[col][item.id] = item.data || item;
+        }
+        console.log(`[Supabase Prefetch] Successfully loaded ${data.length} records for table "${col}"`);
+      }
+    } catch (e: any) {
+      console.warn(`[Supabase Prefetch] Failed to preload table "${col}":`, e.message);
+    }
+  }
+  saveLocalDb();
+}
+preloadSupabaseData();
+
 // -------------------------------------------------------------
 // 🗄️ SUPABASE-COMPATIBLE API ADAPTER FOR BACKEND
 // -------------------------------------------------------------
@@ -3607,6 +3646,21 @@ async function startServer() {
 
   app.post("/api/storage/upload", (req, res) => {
     res.json({ url: "https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&q=80&w=400" });
+  });
+
+  app.get("/api/db/supabase-status", (req, res) => {
+    const status: Record<string, any> = {
+      connected: !!supabaseServer,
+      mode: supabaseServer ? "Conectado a la Nube (Supabase)" : "Simulación Local (Auto-Fallback)",
+      collections: {}
+    };
+    const colNames = ["stores", "products", "orders", "activities", "customers", "conversations", "config", "followups"];
+    for (const name of colNames) {
+      status.collections[name] = {
+        localCount: Object.keys(localDbCache[name] || {}).length,
+      };
+    }
+    res.json(status);
   });
 
   // DEBUG ROUTE: Visit /api/health to see if Jan is alive
