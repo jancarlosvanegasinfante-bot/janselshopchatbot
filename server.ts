@@ -133,6 +133,23 @@ export async function dbSetDoc(collectionName: string, id: string, data: any, me
     localDbCache[collectionName] = {};
   }
 
+  // Pre-fetch from Supabase if not in local cache to prevent data loss on container restarts
+  if (merge && !localDbCache[collectionName][id] && supabaseServer) {
+    try {
+      const { data: remoteData, error } = await supabaseServer
+        .from(collectionName)
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+      if (!error && remoteData) {
+        localDbCache[collectionName][id] = remoteData.data || remoteData;
+        console.log(`[Supabase Prefetch] Successfully loaded existing doc "${id}" for merge in collection "${collectionName}"`);
+      }
+    } catch (e: any) {
+      console.warn(`[Supabase Prefetch] Failed to prefetch doc ${id} for merge:`, e?.message);
+    }
+  }
+
   if (merge) {
     localDbCache[collectionName][id] = {
       ...(localDbCache[collectionName][id] || {}),
@@ -201,6 +218,14 @@ export async function dbGetDocs(collectionName: string, constraints: any[] = [])
     try {
       const { data, error } = await supabaseServer.from(collectionName).select("*");
       if (!error && data && data.length > 0) {
+        if (!localDbCache[collectionName]) {
+          localDbCache[collectionName] = {};
+        }
+        for (const item of data) {
+          localDbCache[collectionName][item.id] = item.data || item;
+        }
+        saveLocalDb();
+        
         list = data.map((item: any) => ({
           id: item.id,
           data: item.data || item
@@ -1599,8 +1624,7 @@ Producto/Duda: ${jsonResponse.producto || 'No especificado'}
 Mensaje del cliente: "${data.message}"
 Jan respondió: "${jsonResponse.mensaje}"`;
       
-      const adminNumbersRaw = process.env.ADMIN_WHATSAPP_NUMBERS || "";
-      const adminNumbers = adminNumbersRaw.split(",").filter(n => n.trim().length > 0);
+      const adminNumbers = getAdminNumbers();
       for (const num of adminNumbers) {
           try {
             const target = num.trim().startsWith("whatsapp:") ? num.trim() : `whatsapp:${num.trim()}`;
@@ -2818,8 +2842,24 @@ function normalizePhone(phone: string): string {
   let clean = phone.toLowerCase().replace('whatsapp:', '');
   // 2. Remove all non-digit characters
   clean = clean.replace(/\D/g, '');
-  // 3. Return with the correct Twilio prefix
+  // 3. Smart Colombia handling: if it has exactly 10 digits and starts with '3', prepend '57'
+  if (clean.length === 10 && clean.startsWith('3')) {
+    clean = '57' + clean;
+  }
+  // 4. Return with the correct Twilio prefix
   return `whatsapp:+${clean}`;
+}
+
+function getAdminNumbers(storeConfig?: any): string[] {
+  const adminNumbersRaw = process.env.ADMIN_WHATSAPP_NUMBERS || "";
+  let adminNumbers = adminNumbersRaw.split(",").map(n => n.trim()).filter(n => n.length > 0);
+  if (storeConfig?.notificationPhone) {
+    adminNumbers = [storeConfig.notificationPhone.trim()];
+  }
+  if (adminNumbers.length === 0) {
+    adminNumbers = ["3133647176", "3133615984"];
+  }
+  return adminNumbers;
 }
 
 async function sendWhatsApp(to: string, body: string, mediaUrl?: string, activityId?: string, from?: string) {
@@ -3439,13 +3479,8 @@ Genera la recomendación en JSON respetando la estructura solicitada.`;
  * Notifies administrators (Jan and Tatiana) about new orders via WhatsApp
  */
 async function notifyAdmins(orderData: any, storeName: string, storeConfig?: any) {
-  const adminNumbersRaw = process.env.ADMIN_WHATSAPP_NUMBERS || "";
-  let adminNumbers = adminNumbersRaw.split(",").filter(n => n.trim().length > 0);
+  const adminNumbers = getAdminNumbers(storeConfig);
   
-  if (storeConfig?.notificationPhone) {
-    adminNumbers = [storeConfig.notificationPhone];
-  }
-
   if (adminNumbers.length === 0) {
     console.log("[Admin Notify] No admin numbers configured.");
     return;
@@ -3950,11 +3985,7 @@ Jan acaba de recibir una compra directa por formulario de Landing Page.
 _El pedido ya se guardó y está listo en tu tablero._`;
 
       // Modify the standard notification phone if config exists
-      const adminNumbersRaw = process.env.ADMIN_WHATSAPP_NUMBERS || "";
-      let adminNumbers = adminNumbersRaw.split(",").filter(n => n.trim().length > 0);
-      if (storeConfig?.notificationPhone) {
-        adminNumbers = [storeConfig.notificationPhone];
-      }
+      const adminNumbers = getAdminNumbers(storeConfig);
 
       for (const num of adminNumbers) {
         try {
