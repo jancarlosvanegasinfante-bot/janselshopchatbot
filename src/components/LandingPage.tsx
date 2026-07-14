@@ -1428,13 +1428,13 @@ export default function LandingPage() {
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         {[
-                          { label: "📱 NEQUI", color: "text-[#E52F86]", number: "312 345 6789" },
-                          { label: "💳 DAVIPLATA", color: "text-[#421D83]", number: "312 345 6789" },
+                          { label: "📱 NEQUI", color: "text-[#E52F86]", number: "313 364 7176", owner: "Jan vanegas" },
+                          { label: "💳 DAVIPLATA", color: "text-[#421D83]", number: "313 361 5984", owner: "Nelsy tatiana salcedo" },
                         ].map((m) => (
                           <div key={m.label} className="bg-black/30 p-3 rounded-xl border border-white/5">
                             <span className={`text-[10px] font-black uppercase ${m.color} tracking-wider`}>{m.label}</span>
                             <span className="block text-xs font-mono font-black text-white mt-1 select-all">{m.number}</span>
-                            <span className="text-[8px] text-slate-500 mt-0.5">A nombre de: Jan S.</span>
+                            <span className="text-[8px] text-slate-500 mt-0.5">A nombre de: {m.owner}</span>
                           </div>
                         ))}
                       </div>
