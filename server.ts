@@ -3042,6 +3042,29 @@ async function sendWhatsApp(to: string, body: string, mediaUrl?: string, activit
     console.log(`[Twilio Action] Sending... From:${params.from} To:${params.to} MsgLen:${body?.length || 0} Media:${!!params.mediaUrl}`);
     const msg = await twilioClient.messages.create(params);
     console.log(`[Twilio Success] SID: ${msg.sid}. Status: ${msg.status}`);
+    
+    // 📝 REGISTRAR LA RESPUESTA DEL BOT (para que el dashboard muestre la conversación completa)
+    try {
+      const cleanCustomerPhone = finalTo.replace('whatsapp:', '').trim();
+      const assignedStoreId = await determineStoreId(cleanCustomerPhone, finalBody, finalFrom);
+      await addDoc(collection(db, "activities"), {
+        from: finalFrom,
+        to: finalTo,
+        recipient: finalTo,
+        customerPhone: cleanCustomerPhone,
+        botNumber: finalFrom,
+        storeId: assignedStoreId,
+        message: finalBody,
+        mediaUrl: finalMediaUrl || null,
+        status: "respondido",
+        whatsappStatus: msg.status,
+        senderType: "bot",
+        timestamp: serverTimestamp()
+      });
+    } catch (logErr: any) {
+      console.error("[Activity Log] No se pudo registrar la respuesta del bot:", logErr.message);
+    }
+    
     return msg;
   } catch (err: any) {
     console.error(`[Twilio Error] FATAL: From:${finalFrom} To:${finalTo} Error: ${err.message}`);
@@ -3054,6 +3077,29 @@ async function sendWhatsApp(to: string, body: string, mediaUrl?: string, activit
         delete textOnlyParams.mediaUrl;
         const msg = await twilioClient.messages.create(textOnlyParams);
         console.log(`[Twilio Success][Fallback] SID: ${msg.sid}`);
+        
+        // 📝 REGISTRAR LA RESPUESTA DEL BOT (para que el dashboard muestre la conversación completa)
+        try {
+          const cleanCustomerPhone = finalTo.replace('whatsapp:', '').trim();
+          const assignedStoreId = await determineStoreId(cleanCustomerPhone, finalBody, finalFrom);
+          await addDoc(collection(db, "activities"), {
+            from: finalFrom,
+            to: finalTo,
+            recipient: finalTo,
+            customerPhone: cleanCustomerPhone,
+            botNumber: finalFrom,
+            storeId: assignedStoreId,
+            message: finalBody,
+            mediaUrl: null, // text only fallback
+            status: "respondido",
+            whatsappStatus: msg.status,
+            senderType: "bot",
+            timestamp: serverTimestamp()
+          });
+        } catch (logErr: any) {
+          console.error("[Activity Log] No se pudo registrar la respuesta del bot:", logErr.message);
+        }
+        
         return msg;
       } catch (innerErr: any) {
         console.error("[Twilio Fallback] FAILED TOO:", innerErr.message);
