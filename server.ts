@@ -207,7 +207,8 @@ export async function dbSetDoc(collectionName: string, id: string, data: any, me
   if (supabaseServer) {
     try {
       const docPayload = localDbCache[collectionName][id];
-      const { error } = await supabaseServer
+      // Try Option 1: Schema with id, data, and updatedAt
+      let { error } = await supabaseServer
         .from(collectionName)
         .upsert({
           id,
@@ -216,13 +217,38 @@ export async function dbSetDoc(collectionName: string, id: string, data: any, me
         });
       
       if (error) {
-        // Fallback: try upserting flat properties directly
-        await supabaseServer
+        // Fallback 1: Try with only id and data (most standard schema for key-value stores)
+        console.log(`[Supabase DB Server] Option 1 failed for table ${collectionName} (${error.message}). Trying Fallback 1 (id, data)...`);
+        const { error: error2 } = await supabaseServer
           .from(collectionName)
-          .upsert({ id, ...docPayload });
+          .upsert({
+            id,
+            data: docPayload
+          });
+        
+        if (error2) {
+          // Fallback 2: Try upserting flat properties directly
+          console.log(`[Supabase DB Server] Fallback 1 failed for table ${collectionName} (${error2.message}). Trying Fallback 2 (flat properties)...`);
+          const { error: error3 } = await supabaseServer
+            .from(collectionName)
+            .upsert({ id, ...docPayload });
+          
+          if (error3) {
+            console.error(`[Supabase DB Server] All upsert attempts failed for table ${collectionName}. Errors:
+1. ${error.message}
+2. ${error2.message}
+3. ${error3.message}`);
+          } else {
+            console.log(`[Supabase DB Server] Upsert succeeded on Fallback 2 (flat schema) for table ${collectionName}`);
+          }
+        } else {
+          console.log(`[Supabase DB Server] Upsert succeeded on Fallback 1 (id/data schema) for table ${collectionName}`);
+        }
+      } else {
+        console.log(`[Supabase DB Server] Upsert succeeded on Option 1 (updatedAt schema) for table ${collectionName}`);
       }
     } catch (err: any) {
-      console.warn(`[Supabase DB Server] Upsert failed for table ${collectionName}: ${err.message}`);
+      console.warn(`[Supabase DB Server] Upsert failed with exception for table ${collectionName}: ${err.message}`);
     }
   }
 }
