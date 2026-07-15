@@ -3073,6 +3073,42 @@ function InventoryTab({ products, onUpdateStock, onReset, isResetting, userStore
 }
 
 function MonitorTab({ activities }: { activities: Activity[], key?: string }) {
+  const [monitorView, setMonitorView] = useState<'chat' | 'campaigns'>('chat');
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [loadingCampaigns, setLoadingCampaigns] = useState(false);
+
+  useEffect(() => {
+    if (monitorView === 'campaigns') {
+      setLoadingCampaigns(true);
+      const q = query(collection(db, 'trendCampaigns'), orderBy('createdAt', 'desc'), limit(50));
+      const unsub = onSnapshot(q, async (snap) => {
+        const camps = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const enriched = await Promise.all(camps.map(async (c: any) => {
+          try {
+            const qQueue = query(collection(db, 'trendQueue'), where('campaignId', '==', c.id));
+            const qSnap = await getDocs(qQueue);
+            let sentCount = 0;
+            let pendingCount = 0;
+            let failedCount = 0;
+            qSnap.forEach((d: any) => {
+              const status = d.data().status;
+              if (status === 'sent') sentCount++;
+              else if (status === 'pending') pendingCount++;
+              else if (status === 'failed') failedCount++;
+            });
+            return { ...c, sentCount, pendingCount, failedCount };
+          } catch (e) {
+            console.error(e);
+            return c;
+          }
+        }));
+        setCampaigns(enriched);
+        setLoadingCampaigns(false);
+      });
+      return () => unsub();
+    }
+  }, [monitorView]);
+
   const formatTime = (ts: any) => {
     return safeFormat(ts, "HH:mm:ss");
   };
@@ -3091,109 +3127,223 @@ function MonitorTab({ activities }: { activities: Activity[], key?: string }) {
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-      <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl overflow-hidden backdrop-blur-sm">
-        <div className="p-6 border-b border-neutral-800 bg-black/20 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-dark-accent/10 flex items-center justify-center border border-dark-accent/20">
-              <Clock className="w-4 h-4 text-dark-accent" />
-            </div>
-            <div>
-              <h3 className="text-white text-xs font-black uppercase tracking-widest">Monitor de Respuesta Jan</h3>
-              <p className="text-[10px] text-neutral-500">Auditoría de tiempos de procesamiento y errores.</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-dark-green animate-pulse" />
-            <span className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest">Escaneando Hook...</span>
-          </div>
-        </div>
+      <div className="flex bg-neutral-900 rounded-xl p-1 border border-neutral-800 self-start inline-flex">
+        <button
+          onClick={() => setMonitorView('chat')}
+          className={cn(
+            "px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-2",
+            monitorView === 'chat' ? "bg-dark-accent text-black shadow-[0_4px_15px_rgba(242,125,38,0.2)]" : "text-neutral-500 hover:text-white"
+          )}
+        >
+          <MessageSquare size={14} />
+          Chat en Vivo
+        </button>
+        <button
+          onClick={() => setMonitorView('campaigns')}
+          className={cn(
+            "px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-2",
+            monitorView === 'campaigns' ? "bg-dark-accent text-black shadow-[0_4px_15px_rgba(242,125,38,0.2)]" : "text-neutral-500 hover:text-white"
+          )}
+        >
+          <TrendingUp size={14} />
+          Campañas Masivas
+        </button>
+      </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-black/40 border-b border-neutral-800">
-                <th className="px-6 py-4 text-[9px] font-black text-neutral-500 uppercase tracking-widest">Cliente / Mensaje</th>
-                <th className="px-6 py-4 text-[9px] font-black text-neutral-500 uppercase tracking-widest text-center">Recibido</th>
-                <th className="px-6 py-4 text-[9px] font-black text-neutral-500 uppercase tracking-widest text-center">Proceso</th>
-                <th className="px-6 py-4 text-[9px] font-black text-neutral-500 uppercase tracking-widest text-center">Respuesta</th>
-                <th className="px-6 py-4 text-[9px] font-black text-neutral-500 uppercase tracking-widest text-center">Duración</th>
-                <th className="px-6 py-4 text-[9px] font-black text-neutral-500 uppercase tracking-widest">Estado / Log</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-800">
-              {activities.map((item) => (
-                <tr key={item.id} className="hover:bg-white/[0.02] transition-colors group">
-                  <td className="px-6 py-5">
-                    <div className="flex flex-col">
-                      <span className="text-[10px] font-bold text-white uppercase tracking-tight mb-1">{(item.from || "unknown").replace("whatsapp:", "")}</span>
-                      <p className="text-[11px] text-neutral-400 italic line-clamp-1 max-w-xs group-hover:text-neutral-200 transition-colors">
-                        "{(item.message || "").substring(0, 500)}..."
-                      </p>
-                    </div>
-                  </td>
-                  <td className="px-6 py-5 text-center font-mono text-[10px] text-neutral-500">{formatTime(item.receivedAt || item.timestamp)}</td>
-                  <td className="px-6 py-5 text-center font-mono text-[10px] text-neutral-500">{formatTime(item.processingAt)}</td>
-                  <td className="px-6 py-5 text-center font-mono text-[10px] text-neutral-500">{formatTime(item.respondedAt)}</td>
-                  <td className="px-6 py-5 text-center">
-                    <span className="text-[10px] font-black text-dark-accent bg-dark-accent/5 px-2 py-0.5 rounded border border-dark-accent/10">
-                      {getDuration(item.receivedAt || item.timestamp, item.respondedAt || item.errorAt) || "..."}
-                    </span>
-                  </td>
-                  <td className="px-6 py-5">
-                    <div className="flex items-center gap-3">
-                      <div className={cn(
-                        "w-2 h-2 rounded-full shrink-0",
-                        item.status === 'respondido' ? 'bg-dark-green' :
-                        item.status === 'error' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]' :
-                        'bg-dark-accent animate-pulse'
-                      )} />
-                      <div className="flex flex-col min-w-0">
-                        <span className={cn(
-                          "text-[9px] font-black uppercase tracking-widest",
-                          item.status === 'error' ? 'text-red-400' : 'text-neutral-300'
-                        )}>
-                          {item.status}
+      {monitorView === 'chat' && (
+        <>
+          <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl overflow-hidden backdrop-blur-sm">
+            <div className="p-6 border-b border-neutral-800 bg-black/20 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-dark-accent/10 flex items-center justify-center border border-dark-accent/20">
+                  <Clock className="w-4 h-4 text-dark-accent" />
+                </div>
+                <div>
+                  <h3 className="text-white text-xs font-black uppercase tracking-widest">Monitor de Respuesta Jan</h3>
+                  <p className="text-[10px] text-neutral-500">Auditoría de tiempos de procesamiento y errores.</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-dark-green animate-pulse" />
+                <span className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest">Escaneando Hook...</span>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-black/40 border-b border-neutral-800">
+                    <th className="px-6 py-4 text-[9px] font-black text-neutral-500 uppercase tracking-widest">Cliente / Mensaje</th>
+                    <th className="px-6 py-4 text-[9px] font-black text-neutral-500 uppercase tracking-widest text-center">Recibido</th>
+                    <th className="px-6 py-4 text-[9px] font-black text-neutral-500 uppercase tracking-widest text-center">Proceso</th>
+                    <th className="px-6 py-4 text-[9px] font-black text-neutral-500 uppercase tracking-widest text-center">Respuesta</th>
+                    <th className="px-6 py-4 text-[9px] font-black text-neutral-500 uppercase tracking-widest text-center">Duración</th>
+                    <th className="px-6 py-4 text-[9px] font-black text-neutral-500 uppercase tracking-widest">Estado / Log</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-800">
+                  {activities.map((item) => (
+                    <tr key={item.id} className="hover:bg-white/[0.02] transition-colors group">
+                      <td className="px-6 py-5">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-bold text-white uppercase tracking-tight mb-1">{(item.from || "unknown").replace("whatsapp:", "")}</span>
+                          <p className="text-[11px] text-neutral-400 italic line-clamp-1 max-w-xs group-hover:text-neutral-200 transition-colors">
+                            "{(item.message || "").substring(0, 500)}..."
+                          </p>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5 text-center font-mono text-[10px] text-neutral-500">{formatTime(item.receivedAt || item.timestamp)}</td>
+                      <td className="px-6 py-5 text-center font-mono text-[10px] text-neutral-500">{formatTime(item.processingAt)}</td>
+                      <td className="px-6 py-5 text-center font-mono text-[10px] text-neutral-500">{formatTime(item.respondedAt)}</td>
+                      <td className="px-6 py-5 text-center">
+                        <span className="text-[10px] font-black text-dark-accent bg-dark-accent/5 px-2 py-0.5 rounded border border-dark-accent/10">
+                          {getDuration(item.receivedAt || item.timestamp, item.respondedAt || item.errorAt) || "..."}
                         </span>
-                        {item.status === 'error' && (
-                          <span className="text-[9px] text-red-900/80 truncate max-w-[150px] font-mono leading-none mt-1">
-                            {item.response || "Error técnico"}
-                          </span>
-                        )}
-                        {item.status === 'respondido' && (
-                          <span className="text-[9px] text-neutral-600 truncate max-w-[150px] italic leading-none mt-1">
-                            {item.response}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {activities.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-6 py-20 text-center">
-                    <div className="flex flex-col items-center gap-3 opacity-20">
-                      <Database size={32} />
-                      <p className="text-[10px] font-black uppercase tracking-[0.3em]">Esperando activad de WhatsApp...</p>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-3">
+                          <div className={cn(
+                            "w-2 h-2 rounded-full shrink-0",
+                            item.status === 'respondido' ? 'bg-dark-green' :
+                            item.status === 'error' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]' :
+                            'bg-dark-accent animate-pulse'
+                          )} />
+                          <div className="flex flex-col min-w-0">
+                            <span className={cn(
+                              "text-[9px] font-black uppercase tracking-widest",
+                              item.status === 'error' ? 'text-red-400' : 'text-neutral-300'
+                            )}>
+                              {item.status}
+                            </span>
+                            {item.status === 'error' && (
+                              <span className="text-[9px] text-red-900/80 truncate max-w-[150px] font-mono leading-none mt-1">
+                                {item.response || "Error técnico"}
+                              </span>
+                            )}
+                            {item.status === 'respondido' && (
+                              <span className="text-[9px] text-neutral-600 truncate max-w-[150px] italic leading-none mt-1">
+                                {item.response}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {activities.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-20 text-center">
+                        <div className="flex flex-col items-center gap-3 opacity-20">
+                          <Database size={32} />
+                          <p className="text-[10px] font-black uppercase tracking-[0.3em]">Esperando activad de WhatsApp...</p>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-      <div className="bg-dark-accent/5 border border-dark-accent/10 p-6 rounded-2xl flex items-start gap-4 ring-1 ring-white/5">
-        <AlertTriangle className="text-dark-accent w-5 h-5 shrink-0 mt-0.5" />
-        <div className="space-y-1">
-          <h4 className="text-white text-xs font-bold uppercase tracking-widest">Guía de Auditoría</h4>
-          <p className="text-[11px] text-neutral-500 leading-relaxed">
-            Si ves un estado en <span className="text-red-400 font-bold">ROJO</span>, el log te dirá si falló la API de NVIDIA/OpenRouter o si Twilio rechazó el mensaje. 
-            El tiempo ideal de respuesta debe ser menor a <span className="text-white font-mono">15.0s</span> para mantener la fluidez del chat.
-          </p>
+          <div className="bg-dark-accent/5 border border-dark-accent/10 p-6 rounded-2xl flex items-start gap-4 ring-1 ring-white/5">
+            <AlertTriangle className="text-dark-accent w-5 h-5 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h4 className="text-white text-xs font-bold uppercase tracking-widest">Guía de Auditoría</h4>
+              <p className="text-[11px] text-neutral-500 leading-relaxed">
+                Si ves un estado en <span className="text-red-400 font-bold">ROJO</span>, el log te dirá si falló la API de NVIDIA/OpenRouter o si Twilio rechazó el mensaje. 
+                El tiempo ideal de respuesta debe ser menor a <span className="text-white font-mono">15.0s</span> para mantener la fluidez del chat.
+              </p>
+            </div>
+          </div>
+        </>
+      )}
+
+      {monitorView === 'campaigns' && (
+        <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl overflow-hidden backdrop-blur-sm">
+          <div className="p-6 border-b border-neutral-800 bg-black/20 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-dark-accent/10 flex items-center justify-center border border-dark-accent/20">
+                <TrendingUp className="w-4 h-4 text-dark-accent" />
+              </div>
+              <div>
+                <h3 className="text-white text-xs font-black uppercase tracking-widest">Historial de Disparadores Masivos</h3>
+                <p className="text-[10px] text-neutral-500">Auditoría de campañas de tendencias enviadas.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-black/40 border-b border-neutral-800">
+                  <th className="px-6 py-4 text-[9px] font-black text-neutral-500 uppercase tracking-widest">Fecha / Hora</th>
+                  <th className="px-6 py-4 text-[9px] font-black text-neutral-500 uppercase tracking-widest">Campaña / Producto</th>
+                  <th className="px-6 py-4 text-[9px] font-black text-neutral-500 uppercase tracking-widest text-center">Candidatos</th>
+                  <th className="px-6 py-4 text-[9px] font-black text-neutral-500 uppercase tracking-widest text-center">Enviados</th>
+                  <th className="px-6 py-4 text-[9px] font-black text-neutral-500 uppercase tracking-widest text-center">Pendientes</th>
+                  <th className="px-6 py-4 text-[9px] font-black text-neutral-500 uppercase tracking-widest text-center">Fallidos</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-800">
+                {campaigns.map((item) => (
+                  <tr key={item.id} className="hover:bg-white/[0.02] transition-colors group">
+                    <td className="px-6 py-5 text-left font-mono text-[10px] text-neutral-400">
+                      {item.createdAt ? safeFormat(item.createdAt.toDate ? item.createdAt.toDate() : item.createdAt, "dd/MM/yyyy HH:mm") : "N/A"}
+                    </td>
+                    <td className="px-6 py-5">
+                      <div className="flex flex-col">
+                        <span className="text-[11px] font-bold text-white uppercase tracking-tight">{item.productName}</span>
+                        <span className="text-[9px] text-neutral-500 font-mono mt-0.5">ID: {item.id}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-5 text-center">
+                      <span className="text-[11px] font-bold text-white">{item.totalCandidates || 0}</span>
+                    </td>
+                    <td className="px-6 py-5 text-center">
+                      <span className="text-[11px] font-bold text-dark-green bg-dark-green/10 px-2 py-0.5 rounded border border-dark-green/20">
+                        {item.sentCount || 0}
+                      </span>
+                    </td>
+                    <td className="px-6 py-5 text-center">
+                      <span className="text-[11px] font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                        {item.pendingCount || 0}
+                      </span>
+                    </td>
+                    <td className="px-6 py-5 text-center">
+                      <span className={cn(
+                        "text-[11px] font-bold px-2 py-0.5 rounded border",
+                        (item.failedCount || 0) > 0 ? "text-red-500 bg-red-500/10 border-red-500/20" : "text-neutral-500 bg-neutral-800 border-neutral-700"
+                      )}>
+                        {item.failedCount || 0}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+                {!loadingCampaigns && campaigns.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-20 text-center">
+                      <div className="flex flex-col items-center gap-3 opacity-20">
+                        <Database size={32} />
+                        <p className="text-[10px] font-black uppercase tracking-[0.3em]">No hay campañas registradas</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                {loadingCampaigns && (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-20 text-center">
+                      <div className="flex flex-col items-center gap-3 opacity-50">
+                        <RefreshCw className="animate-spin text-dark-accent" size={24} />
+                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-dark-accent">Cargando...</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
     </motion.div>
   );
 }
