@@ -42,7 +42,9 @@ import {
   Trash2,
   Layout,
   Instagram,
-  MessageCircle
+  MessageCircle,
+  Search,
+  Sparkles
 } from "lucide-react";
 import * as React from "react";
 import { useState, useEffect, useRef, useMemo } from "react";
@@ -1838,6 +1840,60 @@ function OrdersTab({ orders, onUpdateStatus, userStore }: { orders: Order[], onU
   const [generatingUpsellId, setGeneratingUpsellId] = useState<string | null>(null);
   const [sendingUpsellId, setSendingUpsellId] = useState<string | null>(null);
 
+  // Filter & Search states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("todas");
+
+  // Selected Order for Master-Detail Layout
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+
+  // Normalize phone number for universal wa.me link
+  const normalizePhone = (phone: string) => {
+    if (!phone) return "";
+    let cleaned = phone.replace(/\D/g, "");
+    if (cleaned.length === 10) {
+      cleaned = "57" + cleaned; // Default to Colombia if 10 digits
+    }
+    return cleaned;
+  };
+
+  // Filtered list of orders
+  const filteredList = useMemo(() => {
+    return orders.filter(o => {
+      const name = o.customerName || "";
+      const phone = o.customerPhone || "";
+      const product = o.productName || "";
+      const city = o.city || "";
+      const address = o.address || "";
+      
+      const matchesSearch = 
+        name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        phone.includes(searchTerm) ||
+        product.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        address.toLowerCase().includes(searchTerm.toLowerCase());
+        
+      const matchesStatus = statusFilter === "todas" || o.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [orders, searchTerm, statusFilter]);
+
+  // Active Order based on selection
+  const activeOrder = useMemo(() => {
+    const selected = filteredList.find(o => o.id === selectedOrderId);
+    if (selected) return selected;
+    return filteredList[0] || null;
+  }, [filteredList, selectedOrderId]);
+
+  // Handle active selection synchronization
+  useEffect(() => {
+    if (filteredList.length > 0) {
+      if (!selectedOrderId || !filteredList.some(o => o.id === selectedOrderId)) {
+        setSelectedOrderId(filteredList[0].id);
+      }
+    }
+  }, [filteredList, selectedOrderId]);
+
   const handlePushToPlatform = async (orderId: string, platform: 'shopify' | 'dropi') => {
     setSyncingOrderId(orderId + '_' + platform);
     try {
@@ -1891,570 +1947,756 @@ function OrdersTab({ orders, onUpdateStatus, userStore }: { orders: Order[], onU
 
   return (
     <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="space-y-6">
-      <div className="flex justify-between items-center px-2">
-        <h3 className="text-dark-accent text-[11px] font-black uppercase tracking-[0.2em] leading-none">Listado de Ventas</h3>
+      {/* HEADER ROW */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-neutral-900/40 p-4 rounded-2xl border border-neutral-850">
+        <div>
+          <h3 className="text-dark-accent text-[12px] font-black uppercase tracking-[0.2em] leading-none mb-1">Ventana de Pedidos</h3>
+          <p className="text-[10px] text-neutral-400">Gestiona, integra y despacha los pedidos capturados por el chatbot.</p>
+        </div>
         <button 
           onClick={downloadCSV}
           disabled={orders.length === 0}
-          className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-white px-4 py-2 rounded-xl text-[10px] font-bold uppercase transition-all active:scale-95 disabled:opacity-30"
+          className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-white px-4 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all active:scale-95 disabled:opacity-30 self-stretch sm:self-auto justify-center"
         >
           <Database size={12} className="text-dark-accent" />
           Descargar para Dropi (CSV)
         </button>
       </div>
 
-      <div className="bg-[#111] border border-neutral-800 rounded-2xl overflow-hidden ring-1 ring-white/5">
-        <div className="overflow-x-auto no-scrollbar">
-          <table className="w-full text-left text-[11px] min-w-[700px] lg:min-w-0">
-             <thead>
-               <tr className="bg-neutral-900 border-b border-neutral-800 font-serif italic text-dark-accent">
-                 <th className="p-4 uppercase tracking-tighter text-[10px]">Fecha</th>
-                 <th className="p-4 uppercase tracking-tighter text-[10px]">Cliente</th>
-                 <th className="p-4 uppercase tracking-tighter text-[10px]">Contacto</th>
-                 <th className="p-4 uppercase tracking-tighter text-[10px]">Producto</th>
-                 <th className="p-4 uppercase tracking-tighter text-[10px]">Total</th>
-                 <th className="p-4 uppercase tracking-tighter text-[10px]">Dirección</th>
-                 <th className="p-4 uppercase tracking-tighter text-[10px]">Integraciones</th>
-                 <th className="p-4 uppercase tracking-tighter text-[10px]">Estado</th>
-               </tr>
-             </thead>
-             <tbody className="divide-y divide-neutral-800">
-                {orders.map((o) => (
-                  <tr key={o.id} className="hover:bg-white/5 transition-colors group">
-                    <td className="p-4 text-neutral-500">
+      {/* MASTER-DETAIL GRID */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* LEFT COLUMN: LIST OF ORDERS */}
+        <div className="lg:col-span-5 flex flex-col gap-4">
+          {/* SEARCH & FILTER CONTROLS */}
+          <div className="grid grid-cols-3 gap-2 bg-neutral-950 p-2.5 rounded-xl border border-neutral-850">
+            <div className="col-span-2 relative flex items-center">
+              <Search size={12} className="absolute left-3 text-neutral-500" />
+              <input 
+                type="text"
+                placeholder="Buscar cliente, ciudad o producto..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-[#111] border border-neutral-800 rounded-lg pl-8 pr-2.5 py-1.5 text-[10px] text-white outline-none focus:border-dark-accent placeholder-neutral-500 font-sans"
+              />
+            </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="bg-[#111] border border-neutral-800 rounded-lg p-1.5 text-[10px] text-neutral-300 font-black uppercase outline-none cursor-pointer focus:border-dark-accent"
+            >
+              <option value="todas">TODOS</option>
+              <option value="pendiente">PENDIENTES</option>
+              <option value="despachado">DESPACHADOS</option>
+              <option value="entregado">ENTREGADOS</option>
+            </select>
+          </div>
+
+          {/* LIST CONTAINER */}
+          <div className="flex flex-col gap-3 max-h-[700px] overflow-y-auto pr-1 no-scrollbar">
+            {filteredList.map((o) => {
+              const isActive = o.id === activeOrder?.id;
+              return (
+                <button
+                  key={o.id}
+                  onClick={() => setSelectedOrderId(o.id)}
+                  className={cn(
+                    "w-full text-left p-4 rounded-xl border transition-all duration-200 outline-none relative overflow-hidden flex flex-col gap-2.5",
+                    isActive 
+                      ? "bg-neutral-900 border-[#F27D26]/60 shadow-lg shadow-black/40 ring-1 ring-[#F27D26]/20" 
+                      : "bg-[#111]/80 border-neutral-800 hover:bg-neutral-900/50 hover:border-neutral-700"
+                  )}
+                >
+                  {/* Left accent color bar if active */}
+                  {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#F27D26]" />}
+
+                  {/* Top Status & Date Row */}
+                  <div className="flex justify-between items-center text-[9px]">
+                    <span className="text-neutral-500 font-mono">
                       {safeFormat(o.createdAt, 'dd MMM, HH:mm')}
-                    </td>
-                    <td className="p-4 font-bold text-white uppercase">
-                      <div className="flex flex-col gap-1">
-                        <span>{o.customerName}</span>
-                        {(o as any).origin === 'landing' && (
-                          <span className="text-[8px] bg-amber-500/10 text-amber-400 border border-amber-500/20 font-black px-1.5 py-0.5 rounded uppercase tracking-widest w-fit">
-                            Viene de Landing ⚡
-                          </span>
-                        )}
+                    </span>
+                    <span className={cn(
+                      "font-black tracking-widest uppercase px-2 py-0.5 rounded-full text-[8px] border",
+                      o.status === 'pendiente' ? 'text-amber-400 bg-amber-500/5 border-amber-500/25' :
+                      o.status === 'despachado' ? 'text-blue-400 bg-blue-500/5 border-blue-500/25' :
+                      'text-green-400 bg-green-500/5 border-green-500/25'
+                    )}>
+                      {o.status}
+                    </span>
+                  </div>
+
+                  {/* Customer Name & Source Badger */}
+                  <div>
+                    <h4 className="text-white font-black text-xs uppercase tracking-tight leading-tight flex items-center gap-1.5 flex-wrap">
+                      <span>{o.customerName}</span>
+                      {(o as any).origin === 'landing' && (
+                        <span className="text-[7.5px] bg-amber-500/15 text-amber-400 border border-amber-500/20 font-black px-1.5 py-0.2 rounded uppercase tracking-widest leading-none">
+                          Landing ⚡
+                        </span>
+                      )}
+                    </h4>
+                  </div>
+
+                  {/* Product purchased */}
+                  <div className="text-[10px] text-neutral-400 font-sans line-clamp-1">
+                    📦 {o.productName} <span className="text-neutral-500 font-bold">(x{o.quantity})</span>
+                  </div>
+
+                  {/* Bottom Metadata & Price Row */}
+                  <div className="flex justify-between items-center text-[9.5px] border-t border-neutral-800/40 pt-2.5 mt-0.5">
+                    <span className="text-neutral-500 flex items-center gap-1">
+                      <MapPin size={9} />
+                      {o.city}
+                    </span>
+                    <span className="font-mono text-dark-green font-bold text-xs">
+                      ${o.totalPrice?.toLocaleString()}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+
+            {filteredList.length === 0 && (
+              <div className="p-12 text-center bg-[#111] border border-neutral-800 rounded-xl space-y-2">
+                <ShoppingBag className="mx-auto text-neutral-800 w-10 h-10" />
+                <p className="text-neutral-500 text-[10px] uppercase font-bold">No se encontraron pedidos</p>
+                <p className="text-neutral-600 text-[9px]">Prueba con otro término de búsqueda.</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN: CURRENT ORDER DETAILS (WORKSPACE) */}
+        <div className="lg:col-span-7">
+          {activeOrder ? (
+            <div className="bg-[#111] border border-neutral-800 rounded-2xl p-6 shadow-2xl space-y-6">
+              {/* HEADER DETAILS PANEL */}
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-5 border-b border-neutral-800/80">
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl font-bold font-serif text-white uppercase tracking-tight leading-none">
+                      {activeOrder.customerName}
+                    </h2>
+                    {activeOrder.status === 'pendiente' && (
+                      <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3 text-[10px] text-neutral-400">
+                    <span className="font-mono text-neutral-500">ID: {activeOrder.id.slice(0, 8)}...</span>
+                    <span>•</span>
+                    <span className="text-neutral-500">{safeFormat(activeOrder.createdAt, 'dd MMMM yyyy, HH:mm')}</span>
+                    <span>•</span>
+                    <span className="text-amber-500 font-bold">
+                      {activeOrder.origin === 'landing' ? 'Landing Page ⚡' : 'WhatsApp Chatbot 🤖'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-stretch md:self-auto">
+                  {/* Status Dropdown */}
+                  <select 
+                    value={activeOrder.status}
+                    onChange={(e) => onUpdateStatus(activeOrder.id, e.target.value as any)}
+                    className={cn(
+                      "flex-1 bg-black border border-neutral-800 rounded-xl px-3 py-2 text-[10px] uppercase font-black outline-none cursor-pointer hover:border-dark-accent transition-colors",
+                      activeOrder.status === 'pendiente' ? 'text-amber-400' : 
+                      activeOrder.status === 'despachado' ? 'text-blue-400' : 'text-green-400'
+                    )}
+                  >
+                    <option value="pendiente">Pendiente</option>
+                    <option value="despachado">Despachado</option>
+                    <option value="entregado">Entregado</option>
+                  </select>
+
+                  {/* Direct Contact Button */}
+                  <a 
+                    href={`https://wa.me/${normalizePhone(activeOrder.customerPhone)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-emerald-600/10 hover:bg-emerald-600/20 text-green-400 border border-emerald-500/20 px-3 py-2 rounded-xl text-[10px] font-black uppercase flex items-center gap-1.5 transition-all"
+                  >
+                    <Phone size={10} />
+                    Chat
+                  </a>
+                </div>
+              </div>
+
+              {/* PRODUCTS LIST */}
+              <div className="bg-neutral-950/60 rounded-xl p-4 border border-neutral-850 space-y-3">
+                <h5 className="text-[9px] font-black uppercase tracking-widest text-neutral-500">Productos Solicitados</h5>
+                <div className="flex justify-between items-center text-[11px] border-b border-neutral-800/40 pb-2">
+                  <span className="text-neutral-200 font-medium">
+                    📦 {activeOrder.productName}
+                  </span>
+                  <span className="text-neutral-400 font-bold">
+                    x{activeOrder.quantity}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-xs pt-1">
+                  <span className="text-neutral-400 font-bold uppercase text-[9px] tracking-wider">Total del Pedido</span>
+                  <span className="font-mono text-dark-green text-sm font-black select-all">
+                    ${activeOrder.totalPrice?.toLocaleString()} COP
+                  </span>
+                </div>
+              </div>
+
+              {/* DELIVERY DATA */}
+              <div className="bg-neutral-950/60 rounded-xl p-4 border border-neutral-850 space-y-4">
+                <h5 className="text-[9px] font-black uppercase tracking-widest text-neutral-500">Datos de Entrega</h5>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[10.5px]">
+                  <div>
+                    <span className="text-neutral-500 block uppercase text-[8px] tracking-wider mb-1">Nombre de Contacto</span>
+                    <span className="text-white font-bold">{activeOrder.customerName}</span>
+                  </div>
+                  <div>
+                    <span className="text-neutral-500 block uppercase text-[8px] tracking-wider mb-1">Número de Contacto</span>
+                    <span className="text-white font-bold select-all">{activeOrder.customerPhone}</span>
+                  </div>
+                  <div className="md:col-span-2">
+                    <span className="text-neutral-500 block uppercase text-[8px] tracking-wider mb-1">Dirección de Destino</span>
+                    <span className="text-white font-bold leading-relaxed">{activeOrder.address}, {activeOrder.city}</span>
+                  </div>
+                  {activeOrder.addressIndicator && (
+                    <div className="md:col-span-2 bg-neutral-900/30 p-2.5 rounded border border-neutral-850/60 italic text-neutral-300">
+                      <span className="text-neutral-500 not-italic block uppercase text-[7.5px] font-bold tracking-wider mb-0.5">Indicaciones de Dirección</span>
+                      Ref: {activeOrder.addressIndicator}
+                    </div>
+                  )}
+                  {(activeOrder as any).notes && (
+                    <div className="md:col-span-2 bg-amber-500/5 p-2.5 rounded border border-amber-500/10 text-amber-300/90 whitespace-pre-wrap leading-tight">
+                      <span className="text-amber-500 block uppercase text-[7.5px] font-bold tracking-wider mb-0.5">Datos Extra Recolectados</span>
+                      {(activeOrder as any).notes}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* INTEGRATIONS SYNC (SHOPIFY & DROPI) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* SHOPIFY CARD */}
+                <div className="bg-neutral-950/40 border border-neutral-850 p-4 rounded-xl flex flex-col justify-between gap-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h6 className="text-[9px] font-black text-neutral-400 uppercase tracking-widest">Tienda Shopify</h6>
+                      <p className="text-[8px] text-neutral-500 mt-0.5">Sincronización de pedidos</p>
+                    </div>
+                    {(activeOrder as any).shopifyStatus === 'enviado' ? (
+                      <span className="text-[8px] text-green-400 font-bold bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20" title={`Shopify ID: ${(activeOrder as any).shopifyOrderId}`}>
+                        ✓ ENVIADO
+                      </span>
+                    ) : (activeOrder as any).shopifyStatus === 'error' ? (
+                      <span className="text-[8px] text-red-400 font-bold bg-red-500/10 px-2 py-0.5 rounded-full border border-red-500/20" title={(activeOrder as any).shopifyError}>
+                        ⚠️ ERROR
+                      </span>
+                    ) : (
+                      <span className="text-[8px] text-neutral-500 font-bold bg-neutral-900 px-2 py-0.5 rounded-full border border-neutral-800">
+                        PENDIENTE
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Push Action */}
+                  <button 
+                    onClick={() => handlePushToPlatform(activeOrder.id, 'shopify')}
+                    disabled={syncingOrderId === `${activeOrder.id}_shopify` || (activeOrder as any).shopifyStatus === 'enviado'}
+                    className="w-full bg-neutral-850 hover:bg-neutral-800 disabled:opacity-45 text-neutral-200 hover:text-white font-bold text-[9px] uppercase py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 border border-neutral-800"
+                  >
+                    <Send size={10} className={syncingOrderId === `${activeOrder.id}_shopify` ? "animate-spin" : ""} />
+                    {syncingOrderId === `${activeOrder.id}_shopify` ? "Procesando..." : 
+                     (activeOrder as any).shopifyStatus === 'enviado' ? "Sincronizado" : "Enviar a Shopify"}
+                  </button>
+                </div>
+
+                {/* DROPI CARD */}
+                <div className="bg-neutral-950/40 border border-neutral-850 p-4 rounded-xl flex flex-col justify-between gap-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h6 className="text-[9px] font-black text-neutral-400 uppercase tracking-widest">Transportadora Dropi</h6>
+                      <p className="text-[8px] text-neutral-500 mt-0.5">Generación de guía de despacho</p>
+                    </div>
+                    {(activeOrder as any).dropiStatus === 'enviado' ? (
+                      <span className="text-[8px] text-blue-400 font-bold bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20" title={`Dropi Carrier: ${(activeOrder as any).dropiCarrier}`}>
+                        ✓ DESPACHADO
+                      </span>
+                    ) : (activeOrder as any).dropiStatus === 'error' ? (
+                      <span className="text-[8px] text-red-400 font-bold bg-red-500/10 px-2 py-0.5 rounded-full border border-red-500/20" title={(activeOrder as any).dropiError}>
+                        ⚠️ ERROR
+                      </span>
+                    ) : (
+                      <span className="text-[8px] text-neutral-500 font-bold bg-neutral-900 px-2 py-0.5 rounded-full border border-neutral-800">
+                        PENDIENTE
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Dispatch Guide output if sent */}
+                  {(activeOrder as any).dropiTrackingNumber && (
+                    <div className="bg-black/35 p-2 rounded border border-neutral-850 font-mono text-[8px] leading-tight flex justify-between items-center select-all">
+                      <span className="text-neutral-500 uppercase">Guía:</span>
+                      <span className="text-white font-bold">{(activeOrder as any).dropiTrackingNumber}</span>
+                    </div>
+                  )}
+                  
+                  {/* Push Action */}
+                  <button 
+                    onClick={() => handlePushToPlatform(activeOrder.id, 'dropi')}
+                    disabled={syncingOrderId === `${activeOrder.id}_dropi` || (activeOrder as any).dropiStatus === 'enviado'}
+                    className="w-full bg-neutral-850 hover:bg-neutral-800 disabled:opacity-45 text-neutral-200 hover:text-white font-bold text-[9px] uppercase py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 border border-neutral-800"
+                  >
+                    <Send size={10} className={syncingOrderId === `${activeOrder.id}_dropi` ? "animate-spin" : ""} />
+                    {syncingOrderId === `${activeOrder.id}_dropi` ? "Procesando..." : 
+                     (activeOrder as any).dropiStatus === 'enviado' ? "Generar Guía" : "Enviar a Dropi"}
+                  </button>
+                </div>
+              </div>
+
+              {/* DETAILED TRACKING LOGISTICS SYSTEM */}
+              <div className="bg-neutral-950/50 border border-neutral-850 p-4 rounded-xl space-y-4">
+                <div className="flex justify-between items-center border-b border-neutral-850 pb-2">
+                  <h6 className="text-[9px] font-black text-neutral-400 uppercase tracking-widest">Seguimiento Logístico Automatizado</h6>
+                  {(activeOrder as any).trackingUrl && (
+                    <button 
+                      onClick={async () => {
+                        if (confirm("¿Seguro que quieres remover el enlace de seguimiento?")) {
+                          try {
+                            toast.loading("Restableciendo...", { id: "track_reset" });
+                            const res = await fetch(`/api/integration/orders/${activeOrder.id}/tracking`, {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ trackingUrl: "" })
+                            });
+                            const data = await res.json();
+                            if (data.success) {
+                              toast.success("Enlace restablecido.", { id: "track_reset" });
+                            } else {
+                              toast.error(data.error, { id: "track_reset" });
+                            }
+                          } catch (err: any) {
+                            toast.error(err.message, { id: "track_reset" });
+                          }
+                        }
+                      }}
+                      className="text-red-500 hover:text-red-400 text-[8px] underline"
+                    >
+                      Remover Ruta
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Setup Tracking Link */}
+                  <div className="space-y-1.5">
+                    <span className="text-[8px] font-mono text-neutral-500 uppercase font-bold">Ruta de Seguimiento (URL)</span>
+                    {(activeOrder as any).trackingUrl ? (
+                      <a 
+                        href={(activeOrder as any).trackingUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-[9px] text-blue-400 font-bold hover:underline block truncate max-w-full bg-blue-500/5 p-2 rounded border border-blue-500/10"
+                        title={(activeOrder as any).trackingUrl}
+                      >
+                        🔗 Ver Ruta de Rastreo Oficial
+                      </a>
+                    ) : (
+                      <div className="flex gap-1.5">
+                        <input 
+                          type="text"
+                          placeholder="Pegar URL de seguimiento..."
+                          className="bg-black/45 border border-neutral-800 text-[9px] text-white px-3 py-1.5 rounded-lg outline-none w-full focus:border-dark-accent"
+                          id={`tracking_url_${activeOrder.id}`}
+                        />
+                        <button
+                          onClick={async () => {
+                            const input = document.getElementById(`tracking_url_${activeOrder.id}`) as HTMLInputElement;
+                            if (!input || !input.value.trim()) {
+                              toast.error("Por favor pega la URL de ruta de Dropi o transportadora.");
+                              return;
+                            }
+                            try {
+                              toast.loading("Configurando...", { id: "track_save_" + activeOrder.id });
+                              const res = await fetch(`/api/integration/orders/${activeOrder.id}/tracking`, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ trackingUrl: input.value.trim() })
+                              });
+                              const data = await res.json();
+                              if (data.success) {
+                                toast.success("¡Ruta guardada y cliente notificado!", { id: "track_save_" + activeOrder.id });
+                                input.value = "";
+                              } else {
+                                toast.error("Error: " + data.error, { id: "track_save_" + activeOrder.id });
+                              }
+                            } catch (e: any) {
+                              toast.error("Error: " + e.message, { id: "track_save_" + activeOrder.id });
+                            }
+                          }}
+                          className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[9px] px-3 rounded-lg uppercase"
+                        >
+                          Guardar
+                        </button>
                       </div>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-2">
-                         <Phone size={10} className="text-dark-green" />
-                         {o.customerPhone}
+                    )}
+                  </div>
+
+                  {/* Escaneo IA trigger */}
+                  {(activeOrder as any).trackingUrl ? (
+                    <div className="flex flex-col justify-end">
+                      <button
+                        onClick={async () => {
+                          try {
+                            toast.loading("Escaneando ruta en tiempo real con IA...", { id: "track_scan_" + activeOrder.id });
+                            const res = await fetch(`/api/integration/orders/${activeOrder.id}/tracking/scan`, {
+                              method: "POST"
+                            });
+                            const data = await res.json();
+                            if (data.success) {
+                              toast.success(`Ruta escaneada: Estado: ${data.status.toUpperCase()}`, { id: "track_scan_" + activeOrder.id });
+                            } else {
+                              toast.error("Error: " + data.error, { id: "track_scan_" + activeOrder.id });
+                            }
+                          } catch (e: any) {
+                            toast.error("Error: " + e.message, { id: "track_scan_" + activeOrder.id });
+                          }
+                        }}
+                        className="bg-neutral-850 hover:bg-neutral-800 text-neutral-200 hover:text-white text-[9px] font-black uppercase py-2 px-3 rounded-lg transition-all active:scale-95 flex items-center justify-center gap-1.5 font-mono border border-neutral-750"
+                      >
+                        <RefreshCw size={10} />
+                        Escaneo IA Inmediato
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center text-[8.5px] text-neutral-500 italic leading-snug">
+                      La IA monitoreará y enviará notificaciones por WhatsApp al cliente cuando asocies la URL de seguimiento.
+                    </div>
+                  )}
+
+                  {/* Monitored metrics */}
+                  {(activeOrder as any).trackingUrl && (
+                    <div className="md:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-3 bg-black/25 p-3 rounded-lg border border-neutral-850 text-[10px]">
+                      <div className="space-y-0.5">
+                        <span className="text-neutral-500 block text-[7.5px] uppercase font-bold tracking-wider">Estado Logística</span>
+                        <span className={cn(
+                          "font-bold uppercase",
+                          (activeOrder as any).trackingStatus === "entregado" ? "text-green-400" :
+                          (activeOrder as any).trackingStatus === "novedad" ? "text-red-400" :
+                          (activeOrder as any).trackingStatus === "en_ruta" ? "text-blue-400" : "text-amber-400"
+                        )}>
+                          {(activeOrder as any).trackingStatus === "preparacion" ? "En preparación" : 
+                           (activeOrder as any).trackingStatus === "en_ruta" ? "En tránsito" : 
+                           (activeOrder as any).trackingStatus === "entregado" ? "Entregado" : 
+                           (activeOrder as any).trackingStatus === "novedad" ? "Novedad / Retorno" : "En preparación"}
+                        </span>
                       </div>
-                    </td>
-                    <td className="p-4">{o.productName} (x{o.quantity})</td>
-                    <td className="p-4 font-mono text-dark-green font-bold">${o.totalPrice?.toLocaleString()}</td>
-                    <td className="p-4 text-neutral-400">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-start gap-1 capitalize">
-                          <MapPin size={10} className="mt-0.5 shrink-0" />
-                          <span className="truncate max-w-[150px]">{o.address}, {o.city}</span>
-                        </div>
-                        {o.addressIndicator && (
-                          <span className="text-[9px] text-dark-accent/60 lowercase italic ml-4 leading-tight">
-                            Ref: {o.addressIndicator}
-                          </span>
-                        )}
-                        {(o as any).notes && (
-                          <span className="text-[9px] text-yellow-500/80 italic ml-4 mt-1 leading-tight whitespace-pre-wrap">
-                            Datos extra: {(o as any).notes}
-                          </span>
-                        )}
+
+                      <div className="space-y-0.5">
+                        <span className="text-neutral-500 block text-[7.5px] uppercase font-bold tracking-wider">Transportista</span>
+                        <span className="text-neutral-300 font-bold">{(activeOrder as any).trackingCarrier || "Pendiente"}</span>
                       </div>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex flex-col gap-1.5 min-w-[130px] max-w-[180px]">
-                        {/* SHOPIFY STATUS */}
-                        <div className="flex items-center justify-between gap-1.5 bg-black/40 border border-neutral-800 p-1 rounded-lg">
-                          <span className="text-[8px] font-mono text-neutral-500 uppercase tracking-wider pl-1">Shopify</span>
-                          {(o as any).shopifyStatus === 'enviado' ? (
-                            <span className="text-[8px] text-green-400 font-bold bg-green-500/10 px-1.5 py-0.5 rounded cursor-help font-mono border border-green-500/20" title={`Shopify ID: ${(o as any).shopifyOrderId}`}>
-                              ✓ OK
-                            </span>
-                          ) : (o as any).shopifyStatus === 'error' ? (
-                            <button 
-                              onClick={() => handlePushToPlatform(o.id, 'shopify')}
-                              disabled={syncingOrderId === `${o.id}_shopify`}
-                              className="text-[8px] text-red-400 font-bold bg-red-500/10 hover:bg-red-500/20 px-1.5 py-0.5 rounded flex items-center gap-1 transition-all border border-red-500/20"
-                              title={(o as any).shopifyError || "Reintentar envío"}
-                            >
-                              <span>ERROR</span>
-                              <RefreshCw size={8} className={syncingOrderId === `${o.id}_shopify` ? "animate-spin" : ""} />
-                            </button>
-                          ) : (
-                            <button 
-                              onClick={() => handlePushToPlatform(o.id, 'shopify')}
-                              disabled={syncingOrderId === `${o.id}_shopify`}
-                              className="text-[8px] text-neutral-400 hover:text-white font-bold bg-neutral-800 hover:bg-neutral-700 px-1.5 py-0.5 rounded flex items-center gap-1 transition-all"
-                            >
-                              <span>ENVIAR</span>
-                              <Send size={8} className={syncingOrderId === `${o.id}_shopify` ? "animate-spin" : ""} />
-                            </button>
-                          )}
-                        </div>
 
-                        {/* DROPI STATUS */}
-                        <div className="flex items-center justify-between gap-1.5 bg-black/40 border border-neutral-800 p-1 rounded-lg">
-                          <span className="text-[8px] font-mono text-neutral-500 uppercase tracking-wider pl-1">Dropi</span>
-                          {(o as any).dropiStatus === 'enviado' ? (
-                            <div className="flex flex-col items-end">
-                              <span className="text-[8px] text-blue-400 font-bold bg-blue-500/10 px-1.5 py-0.5 rounded cursor-help font-mono border border-blue-500/20" title={`Transportadora: ${(o as any).dropiCarrier || 'N/A'}`}>
-                                ✓ OK
-                              </span>
-                              {(o as any).dropiTrackingNumber && (
-                                <span className="text-[7px] text-neutral-500 font-mono mt-0.5 leading-none select-all font-bold">
-                                  {(o as any).dropiTrackingNumber}
-                                </span>
-                              )}
-                            </div>
-                          ) : (o as any).dropiStatus === 'error' ? (
-                            <button 
-                              onClick={() => handlePushToPlatform(o.id, 'dropi')}
-                              disabled={syncingOrderId === `${o.id}_dropi`}
-                              className="text-[8px] text-red-400 font-bold bg-red-500/10 hover:bg-red-500/20 px-1.5 py-0.5 rounded flex items-center gap-1 transition-all border border-red-500/20"
-                              title={(o as any).dropiError || "Reintentar envío"}
-                            >
-                              <span>ERROR</span>
-                              <RefreshCw size={8} className={syncingOrderId === `${o.id}_dropi` ? "animate-spin" : ""} />
-                            </button>
-                          ) : (
-                            <button 
-                              onClick={() => handlePushToPlatform(o.id, 'dropi')}
-                              disabled={syncingOrderId === `${o.id}_dropi`}
-                              className="text-[8px] text-neutral-400 hover:text-white font-bold bg-neutral-800 hover:bg-neutral-700 px-1.5 py-0.5 rounded flex items-center gap-1 transition-all"
-                            >
-                              <span>ENVIAR</span>
-                              <Send size={8} className={syncingOrderId === `${o.id}_dropi` ? "animate-spin" : ""} />
-                            </button>
-                          )}
-                        </div>
+                      <div className="space-y-0.5">
+                        <span className="text-neutral-500 block text-[7.5px] uppercase font-bold tracking-wider">Guía oficial</span>
+                        <span className="text-neutral-300 font-mono font-bold select-all">{(activeOrder as any).trackingGuide || "-"}</span>
+                      </div>
 
-                        {/* SEGUIMIENTO AUTOMATIZADO */}
-                        <div className="flex flex-col gap-2 bg-neutral-900/60 border border-neutral-850 p-2 rounded-lg mt-1 w-full max-w-[200px]">
-                          <div className="flex justify-between items-center border-b border-neutral-800 pb-1">
-                            <span className="text-[9px] font-black tracking-wider text-neutral-400 uppercase">SEGUIMIENTO</span>
-                            {(o as any).trackingUrl && (
-                              <button 
-                                onClick={async () => {
-                                  if (confirm("¿Seguro que quieres remover el enlace de seguimiento?")) {
-                                    try {
-                                      toast.loading("Restableciendo...", { id: "track_reset" });
-                                      const res = await fetch(`/api/integration/orders/${o.id}/tracking`, {
-                                        method: "POST",
-                                        headers: { "Content-Type": "application/json" },
-                                        body: JSON.stringify({ trackingUrl: "" })
-                                      });
-                                      const data = await res.json();
-                                      if (data.success) {
-                                        toast.success("Enlace restablecido.", { id: "track_reset" });
-                                      } else {
-                                        toast.error(data.error, { id: "track_reset" });
-                                      }
-                                    } catch (err: any) {
-                                      toast.error(err.message, { id: "track_reset" });
-                                    }
-                                  }
-                                }}
-                                className="text-red-500 hover:text-red-400 text-[8px] underline"
-                              >
-                                Remover
-                              </button>
-                            )}
-                          </div>
+                      <div className="space-y-0.5">
+                        <span className="text-neutral-500 block text-[7.5px] uppercase font-bold tracking-wider">Último chequeo</span>
+                        <span className="text-neutral-400 font-mono text-[9px]">
+                          {(activeOrder as any).lastTrackedAt ? new Date((activeOrder as any).lastTrackedAt).toLocaleString() : "Pendiente"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
 
-                          {/* URL Input or active link */}
-                          <div className="flex flex-col gap-1">
-                            <span className="text-[8px] font-mono text-neutral-500">URL de seguimiento</span>
-                            {(o as any).trackingUrl ? (
-                              <a 
-                                href={(o as any).trackingUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                className="text-[8px] text-blue-400 font-bold hover:underline truncate w-full"
-                                title={(o as any).trackingUrl}
-                              >
-                                🔗 Ver Ruta Oficial
-                              </a>
-                            ) : (
-                              <div className="flex gap-1 mt-0.5">
-                                <input 
-                                  type="text"
-                                  placeholder="Pegar URL de ruta..."
-                                  className="bg-black/45 border border-neutral-800 text-[8px] text-white px-1 py-0.5 rounded outline-none w-full"
-                                  id={`tracking_url_${o.id}`}
-                                />
-                                <button
-                                  onClick={async () => {
-                                    const input = document.getElementById(`tracking_url_${o.id}`) as HTMLInputElement;
-                                    if (!input || !input.value.trim()) {
-                                      toast.error("Por favor pega la URL de ruta de Dropi o transportadora.");
-                                      return;
-                                    }
-                                    try {
-                                      toast.loading("Configurando...", { id: "track_save_" + o.id });
-                                      const res = await fetch(`/api/integration/orders/${o.id}/tracking`, {
-                                        method: "POST",
-                                        headers: { "Content-Type": "application/json" },
-                                        body: JSON.stringify({ trackingUrl: input.value.trim() })
-                                      });
-                                      const data = await res.json();
-                                      if (data.success) {
-                                        toast.success("¡Ruta guardada y cliente notificado!", { id: "track_save_" + o.id });
-                                        input.value = "";
-                                      } else {
-                                        toast.error("Error: " + data.error, { id: "track_save_" + o.id });
-                                      }
-                                    } catch (e: any) {
-                                      toast.error("Error: " + e.message, { id: "track_save_" + o.id });
-                                    }
-                                  }}
-                                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[8px] px-1.5 py-0.5 rounded uppercase"
-                                >
-                                  Guardar
-                                </button>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* [ ESCANEAR ] Button */}
-                          {(o as any).trackingUrl && (
-                            <button
-                              onClick={async () => {
-                                try {
-                                  toast.loading("Escanenando en tiempo real...", { id: "track_scan_" + o.id });
-                                  const res = await fetch(`/api/integration/orders/${o.id}/tracking/scan`, {
-                                    method: "POST"
-                                  });
-                                  const data = await res.json();
-                                  if (data.success) {
-                                    toast.success(`Estado actual: ${data.status.toUpperCase()}`, { id: "track_scan_" + o.id });
-                                  } else {
-                                    toast.error("Error: " + data.error, { id: "track_scan_" + o.id });
-                                  }
-                                } catch (e: any) {
-                                  toast.error("Error: " + e.message, { id: "track_scan_" + o.id });
+                  {/* Active/Pause toggling */}
+                  {(activeOrder as any).trackingUrl && (
+                    <div className="md:col-span-2 flex items-center justify-between bg-black/10 border border-neutral-850 p-2.5 rounded-lg text-[9.5px]">
+                      <span className="text-neutral-400">Notificaciones automáticas en tiempo real:</span>
+                      <div className="flex gap-4">
+                        <label className="flex items-center gap-1.5 cursor-pointer text-white font-bold">
+                          <input 
+                            type="radio" 
+                            name={`monitoring_${activeOrder.id}`} 
+                            checked={!(activeOrder as any).trackingPaused}
+                            onChange={async () => {
+                              try {
+                                toast.loading("Activando monitoreo...", { id: "track_mon_" + activeOrder.id });
+                                const res = await fetch(`/api/integration/orders/${activeOrder.id}/tracking/toggle-monitoring`, {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ paused: false })
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                  toast.success("Monitoreo activo.", { id: "track_mon_" + activeOrder.id });
+                                } else {
+                                  toast.error(data.error, { id: "track_mon_" + activeOrder.id });
                                 }
-                              }}
-                              className="w-full bg-neutral-850 hover:bg-neutral-800 text-neutral-200 hover:text-white text-[8px] font-black uppercase py-1 px-1.5 rounded transition-all active:scale-95 flex items-center justify-center gap-1 font-mono border border-neutral-700"
-                              title="Escanear en tiempo real con IA"
-                            >
-                              <RefreshCw size={8} />
-                              ESCANEAR
-                            </button>
-                          )}
-
-                          {/* Estado */}
-                          <div className="flex flex-col gap-0.5">
-                            <span className="text-[8px] font-mono text-neutral-500">Estado:</span>
-                            <span className={cn(
-                              "text-[8px] font-bold px-1.5 py-0.5 rounded border w-fit uppercase font-mono",
-                              (o as any).trackingStatus === "entregado" ? "text-green-400 bg-green-500/10 border-green-500/20" :
-                              (o as any).trackingStatus === "novedad" ? "text-red-400 bg-red-500/10 border-red-500/20" :
-                              (o as any).trackingStatus === "en_ruta" ? "text-blue-400 bg-blue-500/10 border-blue-500/20" :
-                              "text-amber-400 bg-amber-500/10 border-amber-500/20"
-                            )}>
-                              {(o as any).trackingStatus === "preparacion" ? "Pendiente" : 
-                               (o as any).trackingStatus === "en_ruta" ? "En tránsito" : 
-                               (o as any).trackingStatus === "entregado" ? "Entregado" : 
-                               (o as any).trackingStatus === "novedad" ? "Novedad" : "Pendiente"}
-                            </span>
-                          </div>
-
-                          {/* Transportadora */}
-                          <div className="flex flex-col gap-0.5">
-                            <span className="text-[8px] font-mono text-neutral-500">Transportadora:</span>
-                            <span className="text-[8px] font-black text-neutral-300">
-                              {(o as any).trackingCarrier || "-"}
-                            </span>
-                          </div>
-
-                          {/* Guía */}
-                          <div className="flex flex-col gap-0.5">
-                            <span className="text-[8px] font-mono text-neutral-500">Guía:</span>
-                            <span className="text-[8px] font-black text-neutral-300 font-mono select-all">
-                              {(o as any).trackingGuide || "-"}
-                            </span>
-                          </div>
-
-                          {/* Última revisión */}
-                          <div className="flex flex-col gap-0.5">
-                            <span className="text-[8px] font-mono text-neutral-500">Última revisión:</span>
-                            <span className="text-[7px] text-neutral-400 font-mono">
-                              {(o as any).lastTrackedAt ? new Date((o as any).lastTrackedAt).toLocaleString() : "-"}
-                            </span>
-                          </div>
-
-                          {/* Monitoreo: Activo / Pausado */}
-                          {(o as any).trackingUrl && (
-                            <div className="flex flex-col gap-1 border-t border-neutral-800 pt-1.5">
-                              <span className="text-[8px] font-mono text-neutral-500">Monitoreo:</span>
-                              <div className="flex items-center gap-3">
-                                <label className="flex items-center gap-1 cursor-pointer text-[8px] font-bold text-neutral-300">
-                                  <input 
-                                    type="radio" 
-                                    name={`monitoring_${o.id}`} 
-                                    checked={!(o as any).trackingPaused}
-                                    onChange={async () => {
-                                      try {
-                                        toast.loading("Activando monitoreo...", { id: "track_mon_" + o.id });
-                                        const res = await fetch(`/api/integration/orders/${o.id}/tracking/toggle-monitoring`, {
-                                          method: "POST",
-                                          headers: { "Content-Type": "application/json" },
-                                          body: JSON.stringify({ paused: false })
-                                        });
-                                        const data = await res.json();
-                                        if (data.success) {
-                                          toast.success("Monitoreo activo.", { id: "track_mon_" + o.id });
-                                        } else {
-                                          toast.error(data.error, { id: "track_mon_" + o.id });
-                                        }
-                                      } catch (err: any) {
-                                        toast.error(err.message, { id: "track_mon_" + o.id });
-                                      }
-                                    }}
-                                    className="accent-emerald-500"
-                                  />
-                                  <span>Activo</span>
-                                </label>
-                                <label className="flex items-center gap-1 cursor-pointer text-[8px] font-bold text-neutral-300">
-                                  <input 
-                                    type="radio" 
-                                    name={`monitoring_${o.id}`} 
-                                    checked={!!(o as any).trackingPaused}
-                                    onChange={async () => {
-                                      try {
-                                        toast.loading("Pausando monitoreo...", { id: "track_mon_" + o.id });
-                                        const res = await fetch(`/api/integration/orders/${o.id}/tracking/toggle-monitoring`, {
-                                          method: "POST",
-                                          headers: { "Content-Type": "application/json" },
-                                          body: JSON.stringify({ paused: true })
-                                        });
-                                        const data = await res.json();
-                                        if (data.success) {
-                                          toast.success("Monitoreo pausado.", { id: "track_mon_" + o.id });
-                                        } else {
-                                          toast.error(data.error, { id: "track_mon_" + o.id });
-                                        }
-                                      } catch (err: any) {
-                                        toast.error(err.message, { id: "track_mon_" + o.id });
-                                      }
-                                    }}
-                                    className="accent-amber-500"
-                                  />
-                                  <span>Pausado</span>
-                                </label>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* 🛍️ MARKETING POST-VENTA (CROSS-SELL IA) */}
-                        <div className="flex flex-col gap-2 bg-neutral-900/60 border border-neutral-850 p-2 rounded-lg mt-2 w-full max-w-[200px]">
-                          <div className="flex justify-between items-center border-b border-neutral-850 pb-1">
-                            <span className="text-[9px] font-black tracking-wider text-amber-400 uppercase flex items-center gap-1">
-                              <span>🛍️ CROSS-SELL IA</span>
-                            </span>
-                            {/* Toggle pause automatic flow */}
-                            <button
-                              onClick={async () => {
-                                const newPaused = !(o as any).upsellPaused;
-                                try {
-                                  toast.loading(newPaused ? "Pausando..." : "Activando...", { id: "upsell_pause_" + o.id });
-                                  await updateDoc(doc(db, "orders", o.id), { upsellPaused: newPaused });
-                                  toast.success(newPaused ? "Flujo pausado" : "Flujo automático activo", { id: "upsell_pause_" + o.id });
-                                } catch (err: any) {
-                                  toast.error(err.message, { id: "upsell_pause_" + o.id });
+                              } catch (err: any) {
+                                toast.error(err.message, { id: "track_mon_" + activeOrder.id });
+                              }
+                            }}
+                            className="accent-emerald-500 cursor-pointer"
+                          />
+                          <span>Activo</span>
+                        </label>
+                        <label className="flex items-center gap-1.5 cursor-pointer text-neutral-400 hover:text-white transition-colors">
+                          <input 
+                            type="radio" 
+                            name={`monitoring_${activeOrder.id}`} 
+                            checked={!!(activeOrder as any).trackingPaused}
+                            onChange={async () => {
+                              try {
+                                toast.loading("Pausando monitoreo...", { id: "track_mon_" + activeOrder.id });
+                                const res = await fetch(`/api/integration/orders/${activeOrder.id}/tracking/toggle-monitoring`, {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ paused: true })
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                  toast.success("Monitoreo pausado.", { id: "track_mon_" + activeOrder.id });
+                                } else {
+                                  toast.error(data.error, { id: "track_mon_" + activeOrder.id });
                                 }
-                              }}
-                              className={cn(
-                                "text-[7px] px-1 py-0.5 rounded font-bold uppercase transition-all",
-                                (o as any).upsellPaused 
-                                  ? "bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30" 
-                                  : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30"
-                              )}
-                              title={(o as any).upsellPaused ? "Activar flujo de marketing de 7-15 días" : "Pausar flujo de marketing"}
-                            >
-                              {(o as any).upsellPaused ? "Pausado" : "Auto"}
-                            </button>
-                          </div>
-
-                          {!(o as any).upsellProfile ? (
-                            <div className="flex flex-col gap-1.5 py-1">
-                              <p className="text-[7.5px] text-neutral-400 leading-tight">
-                                La IA aprenderá de sus compras y creará ofertas VIP personalizadas tras la entrega.
-                              </p>
-                              <button
-                                onClick={async () => {
-                                  try {
-                                    setGeneratingUpsellId(o.id);
-                                    toast.loading("IA analizando y aprendiendo del cliente...", { id: "upsell_gen_" + o.id });
-                                    const res = await fetch(`/api/integration/orders/${o.id}/generate-upsell`, {
-                                      method: "POST"
-                                    });
-                                    const data = await res.json();
-                                    if (data.success) {
-                                      toast.success("¡Análisis y recomendación listos!", { id: "upsell_gen_" + o.id });
-                                    } else {
-                                      toast.error("Error: " + data.error, { id: "upsell_gen_" + o.id });
-                                    }
-                                  } catch (err: any) {
-                                    toast.error("Error: " + err.message, { id: "upsell_gen_" + o.id });
-                                  } finally {
-                                    setGeneratingUpsellId(null);
-                                  }
-                                }}
-                                disabled={generatingUpsellId === o.id}
-                                className="w-full bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-black font-black text-[8px] uppercase py-1 px-1.5 rounded transition-all active:scale-95 flex items-center justify-center gap-1 font-mono"
-                              >
-                                {generatingUpsellId === o.id ? "Analizando..." : "✨ GENERAR OFERTA IA"}
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex flex-col gap-1.5 text-left">
-                              {/* Customer Profile analysis */}
-                              <div className="bg-neutral-950/70 p-1 rounded border border-neutral-850">
-                                <span className="text-[7px] font-mono text-neutral-500 block uppercase font-bold mb-0.5">Perfil Deducción (IA):</span>
-                                <p className="text-[7.5px] text-neutral-300 italic leading-snug">
-                                  "{(o as any).upsellProfile}"
-                                </p>
-                              </div>
-
-                              {/* Recommended product */}
-                              <div className="bg-amber-500/5 p-1 rounded border border-amber-500/20">
-                                <span className="text-[7px] font-mono text-amber-500 block uppercase font-bold">Ofrecer:</span>
-                                <span className="text-[8px] font-black text-amber-400">
-                                  🎁 {(o as any).upsellRecommendedProductName}
-                                </span>
-                              </div>
-
-                              {/* Suggested message edit */}
-                              <div className="flex flex-col gap-0.5">
-                                <span className="text-[7px] font-mono text-neutral-500 uppercase font-bold">Mensaje sugerido (Editable):</span>
-                                <textarea
-                                  value={editedMessages[o.id] !== undefined ? editedMessages[o.id] : ((o as any).upsellSuggestedMsg || "")}
-                                  onChange={(e) => {
-                                    setEditedMessages({
-                                      ...editedMessages,
-                                      [o.id]: e.target.value
-                                    });
-                                  }}
-                                  className="w-full bg-black/55 border border-neutral-800 text-[8.5px] text-neutral-100 p-1 rounded outline-none h-16 resize-none font-sans leading-tight focus:border-amber-500"
-                                />
-                              </div>
-
-                              {/* Action Buttons */}
-                              <div className="flex gap-1">
-                                <button
-                                  onClick={async () => {
-                                    try {
-                                      setGeneratingUpsellId(o.id);
-                                      toast.loading("Re-generando recomendación...", { id: "upsell_gen_" + o.id });
-                                      const res = await fetch(`/api/integration/orders/${o.id}/generate-upsell`, {
-                                        method: "POST"
-                                      });
-                                      const data = await res.json();
-                                      if (data.success) {
-                                        toast.success("¡Recomendación actualizada!", { id: "upsell_gen_" + o.id });
-                                        // Reset edited message for this order to pull the new one
-                                        const nextEdited = { ...editedMessages };
-                                        delete nextEdited[o.id];
-                                        setEditedMessages(nextEdited);
-                                      } else {
-                                        toast.error("Error: " + data.error, { id: "upsell_gen_" + o.id });
-                                      }
-                                    } catch (err: any) {
-                                      toast.error("Error: " + err.message, { id: "upsell_gen_" + o.id });
-                                    } finally {
-                                      setGeneratingUpsellId(null);
-                                    }
-                                  }}
-                                  disabled={generatingUpsellId === o.id}
-                                  className="w-1/3 bg-neutral-800 hover:bg-neutral-750 text-neutral-300 font-bold text-[8px] uppercase py-1 rounded transition-all text-center flex items-center justify-center gap-0.5"
-                                  title="Re-generar oferta"
-                                >
-                                  🔄 RE-GEN
-                                </button>
-
-                                <button
-                                  onClick={async () => {
-                                    const currentMsg = editedMessages[o.id] !== undefined ? editedMessages[o.id] : ((o as any).upsellSuggestedMsg || "");
-                                    try {
-                                      setSendingUpsellId(o.id);
-                                      toast.loading("Enviando WhatsApp...", { id: "upsell_send_" + o.id });
-                                      const res = await fetch(`/api/integration/orders/${o.id}/send-upsell`, {
-                                        method: "POST",
-                                        headers: { "Content-Type": "application/json" },
-                                        body: JSON.stringify({ customMessage: currentMsg })
-                                      });
-                                      const data = await res.json();
-                                      if (data.success) {
-                                        toast.success("¡Oferta VIP enviada correctamente!", { id: "upsell_send_" + o.id });
-                                      } else {
-                                        toast.error("Error: " + data.error, { id: "upsell_send_" + o.id });
-                                      }
-                                    } catch (err: any) {
-                                      toast.error("Error: " + err.message, { id: "upsell_send_" + o.id });
-                                    } finally {
-                                      setSendingUpsellId(null);
-                                    }
-                                  }}
-                                  disabled={sendingUpsellId === o.id}
-                                  className="w-2/3 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[8px] uppercase py-1 rounded transition-all text-center flex items-center justify-center gap-0.5"
-                                >
-                                  💬 ENVIAR VIP
-                                </button>
-                              </div>
-
-                              {/* Status indicators */}
-                              <div className="flex justify-between items-center mt-1 border-t border-neutral-850 pt-1 text-[7px] font-mono">
-                                <span className="text-neutral-500">Estado de Envío:</span>
-                                {(o as any).upsellSent ? (
-                                  <span className="text-green-400 font-bold uppercase flex items-center gap-0.5">
-                                    <span>● ENVIADO</span>
-                                  </span>
-                                ) : (
-                                  <button
-                                    onClick={async () => {
-                                      try {
-                                        toast.loading("Configurando trigger...", { id: "upsell_trig_" + o.id });
-                                        await updateDoc(doc(db, "orders", o.id), { triggerUpsellImmediately: true });
-                                        toast.success("¡Trigger inmediato configurado! La IA lo enviará en su próximo escaneo.", { id: "upsell_trig_" + o.id });
-                                      } catch (err: any) {
-                                        toast.error(err.message, { id: "upsell_trig_" + o.id });
-                                      }
-                                    }}
-                                    className="text-amber-400 font-bold hover:underline uppercase"
-                                    title="Disparar inmediatamente en el próximo chequeo en segundo plano"
-                                  >
-                                    ⏳ PROGRAMADO (DISPARAR)
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                              } catch (err: any) {
+                                toast.error(err.message, { id: "track_mon_" + activeOrder.id });
+                              }
+                            }}
+                            className="accent-amber-500 cursor-pointer"
+                          />
+                          <span>Pausado</span>
+                        </label>
                       </div>
-                    </td>
-                    <td className="p-4">
-                       <select 
-                         value={o.status}
-                         onChange={(e) => onUpdateStatus(o.id, e.target.value as any)}
-                         className={cn(
-                           "bg-black border border-neutral-800 rounded-lg p-1.5 text-[9px] uppercase font-black outline-none cursor-pointer hover:border-dark-accent transition-colors",
-                           o.status === 'pendiente' ? 'text-dark-accent' : 'text-dark-green'
-                         )}
-                       >
-                         <option value="pendiente">Pendiente</option>
-                         <option value="despachado">Despachado</option>
-                         <option value="entregado">Entregado</option>
-                       </select>
-                    </td>
-                  </tr>
-                ))}
-             </tbody>
-          </table>
-          {orders.length === 0 && (
-            <div className="p-20 text-center space-y-3">
-              <ShoppingBag className="mx-auto text-neutral-800 w-12 h-12" />
-              <p className="text-neutral-600 text-[10px] uppercase font-bold">Esperando que Jan cierre el primer pedido...</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 🛍️ AI POST-PURCHASE MARKETING & CROSS-SELL (COSMIC STYLE CARD) */}
+              <div className="bg-gradient-to-br from-amber-500/5 to-yellow-500/5 border border-amber-500/25 p-5 rounded-2xl ring-1 ring-amber-500/10 space-y-4">
+                <div className="flex justify-between items-center border-b border-amber-500/10 pb-3">
+                  <h6 className="text-[10px] font-black text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
+                    <Sparkles size={12} className="text-amber-500 animate-pulse" />
+                    <span>Inteligencia Artificial - Cross-Selling</span>
+                  </h6>
+                  
+                  {/* Automatic flow status toggle */}
+                  <button
+                    onClick={async () => {
+                      const newPaused = !(activeOrder as any).upsellPaused;
+                      try {
+                        toast.loading(newPaused ? "Pausando..." : "Activando...", { id: "upsell_pause_" + activeOrder.id });
+                        await updateDoc(doc(db, "orders", activeOrder.id), { upsellPaused: newPaused });
+                        toast.success(newPaused ? "Campaña marketing pausada" : "Flujo automático activo", { id: "upsell_pause_" + activeOrder.id });
+                      } catch (err: any) {
+                        toast.error(err.message, { id: "upsell_pause_" + activeOrder.id });
+                      }
+                    }}
+                    className={cn(
+                      "text-[8px] px-2.5 py-1 rounded-lg font-bold uppercase transition-all tracking-wider border",
+                      (activeOrder as any).upsellPaused 
+                        ? "bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20" 
+                        : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20"
+                    )}
+                    title={(activeOrder as any).upsellPaused ? "Activar flujo automático de 7 a 15 días" : "Pausar flujo de fidelización"}
+                  >
+                    {(activeOrder as any).upsellPaused ? "Campaña Pausada" : "Campaña Automática Activa"}
+                  </button>
+                </div>
+
+                {!(activeOrder as any).upsellProfile ? (
+                  <div className="flex flex-col gap-3 py-2 items-center text-center max-w-sm mx-auto">
+                    <Sparkles className="text-amber-500/50 w-8 h-8" />
+                    <p className="text-[10px] text-neutral-400 leading-relaxed">
+                      El cerebro del agente analizará el comportamiento de este cliente para deducir sus preferencias y generar una oferta VIP hiper-personalizada.
+                    </p>
+                    <button
+                      onClick={async () => {
+                        try {
+                          setGeneratingUpsellId(activeOrder.id);
+                          toast.loading("IA analizando y aprendiendo del cliente...", { id: "upsell_gen_" + activeOrder.id });
+                          const res = await fetch(`/api/integration/orders/${activeOrder.id}/generate-upsell`, {
+                            method: "POST"
+                          });
+                          const data = await res.json();
+                          if (data.success) {
+                            toast.success("¡Análisis y recomendación listos!", { id: "upsell_gen_" + activeOrder.id });
+                          } else {
+                            toast.error("Error: " + data.error, { id: "upsell_gen_" + activeOrder.id });
+                          }
+                        } catch (err: any) {
+                          toast.error("Error: " + err.message, { id: "upsell_gen_" + activeOrder.id });
+                        } finally {
+                          setGeneratingUpsellId(null);
+                        }
+                      }}
+                      disabled={generatingUpsellId === activeOrder.id}
+                      className="bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black font-black text-[9px] uppercase py-2.5 px-4 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/10"
+                    >
+                      {generatingUpsellId === activeOrder.id ? "Analizando..." : "✨ GENERAR OFERTA INTELIGENTE"}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-4 text-left">
+                    {/* IA Deduction block */}
+                    <div className="bg-[#121212] p-3 rounded-xl border border-neutral-850">
+                      <span className="text-[7.5px] font-mono text-neutral-500 block uppercase font-bold tracking-wider mb-1">Deducción de Perfil (IA)</span>
+                      <p className="text-[10px] text-neutral-300 italic leading-snug">
+                        "{(activeOrder as any).upsellProfile}"
+                      </p>
+                    </div>
+
+                    {/* Recommended Product */}
+                    <div className="bg-amber-500/5 p-3 rounded-xl border border-amber-500/15 flex items-center justify-between gap-3">
+                      <div className="space-y-0.5">
+                        <span className="text-[7.5px] font-mono text-amber-500 block uppercase font-bold tracking-wider">Producto Recomendado</span>
+                        <span className="text-[11px] font-black text-amber-400">
+                          🎁 {(activeOrder as any).upsellRecommendedProductName}
+                        </span>
+                      </div>
+                      <span className="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 font-black px-2 py-0.5 rounded uppercase tracking-wider">
+                        VIP Offer
+                      </span>
+                    </div>
+
+                    {/* Editable textarea suggested msg */}
+                    <div className="space-y-1.5">
+                      <span className="text-[8px] font-mono text-neutral-500 uppercase font-bold tracking-wider block">Mensaje de Oferta Sugerido (Editable)</span>
+                      <textarea
+                        value={editedMessages[activeOrder.id] !== undefined ? editedMessages[activeOrder.id] : ((activeOrder as any).upsellSuggestedMsg || "")}
+                        onChange={(e) => {
+                          setEditedMessages({
+                            ...editedMessages,
+                            [activeOrder.id]: e.target.value
+                          });
+                        }}
+                        className="w-full bg-black/60 border border-neutral-800 text-[10px] text-neutral-100 p-3 rounded-xl outline-none h-28 resize-none font-sans leading-relaxed focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20"
+                      />
+                    </div>
+
+                    {/* Action Buttons Row */}
+                    <div className="flex flex-col gap-2.5">
+                      <div className="flex gap-2">
+                        {/* REGEN BUTTON */}
+                        <button
+                          onClick={async () => {
+                            try {
+                              setGeneratingUpsellId(activeOrder.id);
+                              toast.loading("IA re-analizando recomendación...", { id: "upsell_gen_" + activeOrder.id });
+                              const res = await fetch(`/api/integration/orders/${activeOrder.id}/generate-upsell`, {
+                                method: "POST"
+                              });
+                              const data = await res.json();
+                              if (data.success) {
+                                toast.success("¡Recomendación actualizada!", { id: "upsell_gen_" + activeOrder.id });
+                                // Clear edited buffer
+                                const nextEdited = { ...editedMessages };
+                                delete nextEdited[activeOrder.id];
+                                setEditedMessages(nextEdited);
+                              } else {
+                                toast.error("Error: " + data.error, { id: "upsell_gen_" + activeOrder.id });
+                              }
+                            } catch (err: any) {
+                              toast.error("Error: " + err.message, { id: "upsell_gen_" + activeOrder.id });
+                            } finally {
+                              setGeneratingUpsellId(null);
+                            }
+                          }}
+                          disabled={generatingUpsellId === activeOrder.id}
+                          className="w-1/3 bg-neutral-800 hover:bg-neutral-750 text-neutral-300 font-bold text-[9px] uppercase py-2.5 rounded-xl transition-all text-center flex items-center justify-center gap-1 border border-neutral-700"
+                          title="Re-calcular recomendación con IA"
+                        >
+                          <RefreshCw size={10} className={generatingUpsellId === activeOrder.id ? "animate-spin" : ""} />
+                          RE-GENERA
+                        </button>
+
+                        {/* SEND VIP BUTTON (TWILIO + DIRECT WA ME PREVIEW OVERLAY) */}
+                        <button
+                          onClick={async () => {
+                            const currentMsg = editedMessages[activeOrder.id] !== undefined ? editedMessages[activeOrder.id] : ((activeOrder as any).upsellSuggestedMsg || "");
+                            try {
+                              setSendingUpsellId(activeOrder.id);
+                              toast.loading("Enviando WhatsApp corporativo...", { id: "upsell_send_" + activeOrder.id });
+                              const res = await fetch(`/api/integration/orders/${activeOrder.id}/send-upsell`, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ customMessage: currentMsg })
+                              });
+                              const data = await res.json();
+                              if (data.success) {
+                                toast.success("¡Oferta VIP enviada correctamente por WhatsApp!", { id: "upsell_send_" + activeOrder.id });
+                              } else {
+                                toast.error("Error: " + data.error, { id: "upsell_send_" + activeOrder.id });
+                              }
+                            } catch (err: any) {
+                              toast.error("Error: " + err.message, { id: "upsell_send_" + activeOrder.id });
+                            } finally {
+                              setSendingUpsellId(null);
+                            }
+                          }}
+                          disabled={sendingUpsellId === activeOrder.id}
+                          className="w-2/3 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[9px] uppercase py-2.5 rounded-xl transition-all text-center flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/15"
+                        >
+                          {sendingUpsellId === activeOrder.id ? (
+                            <RefreshCw size={10} className="animate-spin" />
+                          ) : (
+                            <Send size={10} />
+                          )}
+                          Enviar WhatsApp VIP
+                        </button>
+                      </div>
+
+                      {/* DIRECT MANUAL WHATSAPP OPTION TAB */}
+                      <div className="flex items-center justify-between border-t border-amber-500/10 pt-3 text-[9px]">
+                        <span className="text-neutral-500 font-medium">¿Twilio apagado o quieres enviar manual?</span>
+                        <a 
+                          href={`https://wa.me/${normalizePhone(activeOrder.customerPhone)}?text=${encodeURIComponent(
+                            editedMessages[activeOrder.id] !== undefined ? editedMessages[activeOrder.id] : ((activeOrder as any).upsellSuggestedMsg || "")
+                          )}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-amber-400 hover:text-amber-300 font-black flex items-center gap-1 hover:underline transition-colors py-1 px-2 bg-amber-500/10 rounded border border-amber-500/20"
+                        >
+                          Enviar por WhatsApp Web 📲
+                        </a>
+                      </div>
+
+                      {/* Status indicator tracking */}
+                      <div className="flex justify-between items-center text-[8px] font-mono border-t border-neutral-850 pt-2.5">
+                        <span className="text-neutral-500">Log de Envío:</span>
+                        {(activeOrder as any).upsellSent ? (
+                          <span className="text-green-400 font-bold uppercase flex items-center gap-1 bg-green-500/10 px-2 py-0.5 rounded border border-green-500/20">
+                            <CheckCircle size={8} /> ENVIADO
+                          </span>
+                        ) : (
+                          <button
+                            onClick={async () => {
+                              try {
+                                toast.loading("Configurando trigger inmediato...", { id: "upsell_trig_" + activeOrder.id });
+                                await updateDoc(doc(db, "orders", activeOrder.id), { triggerUpsellImmediately: true });
+                                toast.success("¡Disparo inmediato configurado! Se enviará en el próximo escaneo.", { id: "upsell_trig_" + activeOrder.id });
+                              } catch (err: any) {
+                                toast.error(err.message, { id: "upsell_trig_" + activeOrder.id });
+                              }
+                            }}
+                            className="text-amber-400 font-bold hover:underline uppercase flex items-center gap-1"
+                            title="Disparar en el próximo chequeo periódico automático"
+                          >
+                            <Clock size={8} /> ⏳ PROGRAMADO (DISPARAR AHORA)
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="bg-[#111] border border-neutral-800 rounded-2xl p-12 text-center space-y-4 min-h-[400px] flex flex-col justify-center items-center">
+              <ShoppingBag className="text-neutral-700 w-12 h-12" />
+              <h4 className="text-sm font-black text-white uppercase tracking-widest">Sin Selección</h4>
+              <p className="text-xs text-neutral-500 max-w-xs leading-relaxed">
+                Selecciona un pedido del listado izquierdo para inspeccionar su dirección de despacho, sincronizar plataformas y enviar ofertas cruzadas con IA.
+              </p>
             </div>
           )}
         </div>

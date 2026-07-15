@@ -3765,7 +3765,15 @@ async function notifyAdmins(orderData: any, storeName: string, storeConfig?: any
   }
 
   let message = "";
-  if (storeConfig?.msgNewOrderTemplate) {
+  if (orderData.productName === "Solicitud de asesor humano") {
+    message = `🙋‍♂️ *¡SOLICITUD DE ASESORÍA HUMANA!*
+Un cliente solicita hablar con un asesor real en *${storeName}*.
+
+👤 *Cliente:* ${orderData.customerName || "Desconocido"}
+📞 *Teléfono:* ${orderData.customerPhone || "No especificado"}
+
+_La IA seguirá interactuando y acompañándolo amablemente en el chat de forma natural mientras ingresas al chat._`;
+  } else if (storeConfig?.msgNewOrderTemplate) {
     message = storeConfig.msgNewOrderTemplate
       .replace(/{nombre}/g, orderData.customerName || "No especificado")
       .replace(/{telefono}/g, orderData.customerPhone || "No especificado")
