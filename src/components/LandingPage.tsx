@@ -491,11 +491,42 @@ export default function LandingPage() {
     console.log(`[TikTok Pixel]: Inicializado con ID ${pixelId}`);
   };
 
+  // ── Advanced Matching / CAPI dedup helpers ────────────────────────────────
+  // Estas funciones alimentan tanto al pixel del navegador como al CAPI del
+  // backend con la MISMA información (fbp, fbc, event_id) para que Meta
+  // reciba señal por ambos caminos sin contar el evento doble.
+  const getCookie = (name: string): string => {
+    const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+    return match ? decodeURIComponent(match[1]) : "";
+  };
+
+  const getFbp = (): string => getCookie("_fbp");
+
+  // fbc: si ya existe la cookie _fbc la usamos; si no, y hay fbclid en la URL,
+  // la construimos según el formato que exige Meta: fb.1.<timestamp>.<fbclid>
+  const getFbc = (): string => {
+    const existing = getCookie("_fbc");
+    if (existing) return existing;
+    const params = new URLSearchParams(window.location.search);
+    const fbclid = params.get("fbclid");
+    if (fbclid) return `fb.1.${Date.now()}.${fbclid}`;
+    return "";
+  };
+
+  const generateEventId = (): string => {
+    if ((window.crypto as any)?.randomUUID) return (window.crypto as any).randomUUID();
+    return `evt_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  };
+
   // Tracking Helpers
-  const trackMetaEvent = (eventName: string, params?: any) => {
+  const trackMetaEvent = (eventName: string, params?: any, eventId?: string) => {
     if ((window as any).fbq) {
-      (window as any).fbq('track', eventName, params);
-      console.log(`[Meta Pixel Tracking]: ${eventName}`, params);
+      if (eventId) {
+        (window as any).fbq('track', eventName, params, { eventID: eventId });
+      } else {
+        (window as any).fbq('track', eventName, params);
+      }
+      console.log(`[Meta Pixel Tracking]: ${eventName}`, params, eventId ? `(eventID: ${eventId})` : "");
     }
   };
 
@@ -752,16 +783,32 @@ export default function LandingPage() {
     const phone = officialBotNumber || "14155238886";
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
 
-    // Track Contact Event
+    // Track Contact Event — mismo eventId en el pixel del navegador y en el CAPI del backend
+    // para que Meta reciba doble señal sin duplicar el conteo.
+    const contactEventId = generateEventId();
     trackMetaEvent("Contact", {
       method: "WhatsApp Direct Order",
       value: finalTotal,
       currency: "COP"
-    });
+    }, contactEventId);
     trackTiktokEvent("Contact", {
       value: finalTotal,
       currency: "COP"
     });
+
+    fetch("/api/public/track-contact", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        storeId: "default",
+        eventId: contactEventId,
+        fbp: getFbp(),
+        fbc: getFbc(),
+        eventSourceUrl: window.location.href,
+        customerPhone: formData.customerPhone,
+        value: finalTotal
+      })
+    }).catch(() => {});
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -778,6 +825,9 @@ export default function LandingPage() {
       const totalQuantities = cart.reduce((sum, item) => sum + item.quantity, 0);
       const itemsDetailStr = cart.map((item) => `- ${item.product.name} x${item.quantity} ($${item.product.price.toLocaleString()} c/u)`).join("\n");
       const paymentLabel = paymentMethod === "anticipado" ? "Pago Anticipado con 8% de Descuento" : "Pago Contraentrega al Recibir";
+      // Un solo eventId compartido entre el pixel del navegador y el CAPI del backend,
+      // así Meta deduplica y usa AMBAS señales (más robusto contra bloqueadores/iOS).
+      const purchaseEventId = generateEventId();
       const payload = {
         storeId: "default",
         customerName: formData.customerName,
@@ -790,6 +840,10 @@ export default function LandingPage() {
         quantity: totalQuantities,
         totalPrice: finalTotal,
         notes: `Método de Pago: ${paymentLabel}\n\nPRODUCTOS:\n${itemsDetailStr}\n\nNotas: ${formData.notes || "Pedido de la Landing Page"}`,
+        eventId: purchaseEventId,
+        fbp: getFbp(),
+        fbc: getFbc(),
+        eventSourceUrl: window.location.href,
       };
       const res = await fetch("/api/public/landing-order", {
         method: "POST",
@@ -798,14 +852,14 @@ export default function LandingPage() {
       });
       const data = await res.json();
       if (data.success) {
-        // Track Purchase Event
+        // Track Purchase Event (mismo eventId que se le pasó al backend arriba)
         trackMetaEvent("Purchase", {
           content_ids: cart.map(item => item.product.id),
           content_type: "product",
           value: finalTotal,
           currency: "COP",
           num_items: totalQty
-        });
+        }, purchaseEventId);
         trackTiktokEvent("CompletePayment", {
           contents: cart.map(item => ({
             content_id: item.product.id,
@@ -2233,14 +2287,28 @@ export default function LandingPage() {
                       window.open(url, "_blank");
                       setIsSupportOpen(false);
 
-                      // Track Contact Event
+                      // Track Contact Event — mismo eventId en pixel + CAPI para deduplicación
+                      const floatingContactEventId = generateEventId();
                       trackMetaEvent("Contact", {
                         method: "WhatsApp Floating Support Widget",
                         option: opt.label
-                      });
+                      }, floatingContactEventId);
                       trackTiktokEvent("Contact", {
                         method: "WhatsApp Floating Support Widget"
                       });
+
+                      fetch("/api/public/track-contact", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          storeId: "default",
+                          eventId: floatingContactEventId,
+                          fbp: getFbp(),
+                          fbc: getFbc(),
+                          eventSourceUrl: window.location.href,
+                          value: 0
+                        })
+                      }).catch(() => {});
                     }}
                     className="w-full text-left py-3 px-4 rounded-xl bg-white/[0.03] border border-white/5 hover:bg-emerald-500 hover:text-black hover:border-emerald-400 font-extrabold text-xs text-white transition-all duration-200 flex items-center justify-between group cursor-pointer"
                   >

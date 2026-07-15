@@ -2689,6 +2689,7 @@ function InventoryTab({ products, onUpdateStock, onReset, isResetting, userStore
 
   const handleManualLoad = async () => {
     if (!manualJson) return;
+    if (!confirm("⚠️ ATENCIÓN: esto REEMPLAZA TODO el catálogo actual por el JSON que pegaste (borra los productos existentes que no estén en este JSON). ¿Seguro que quieres continuar?")) return;
     setLoadingManual(true);
     try {
       const catalog = JSON.parse(manualJson);
@@ -2832,23 +2833,33 @@ function InventoryTab({ products, onUpdateStock, onReset, isResetting, userStore
           </button>
 
           <button 
-            onClick={() => {
+            onClick={async () => {
               const confirmInfo = prompt("Nombre del nuevo producto:");
               if (!confirmInfo) return;
               const price = prompt("Precio del producto (solo números):", "50000");
               if (!price) return;
-              
-              const newProd = {
-                name: confirmInfo,
-                price: parseInt(price),
-                category: "General",
-                description: "Producto agregado manualmente",
-                stock: 20,
-                storeId: userStore?.id || "default",
-                id: Math.random().toString(36).substring(7)
-              };
+              const category = prompt("Categoría (ej: Tecnología, Hogar, Autos):", "General") || "General";
 
-              handleManualLoadBulk([newProd]);
+              try {
+                const res = await fetch("/api/admin/products/add-trending", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    name: confirmInfo,
+                    price: parseInt(price),
+                    category,
+                    storeId: userStore?.id || "default"
+                  })
+                });
+                const data = await res.json();
+                if (data.success) {
+                  toast.success("✅ Producto agregado. La IA ya está armando la campaña de tendencia para clientes antiguos.");
+                } else {
+                  toast.error("❌ Error: " + data.error);
+                }
+              } catch (e: any) {
+                toast.error("❌ Error: " + e.message);
+              }
             }}
             className="flex items-center gap-2 px-4 py-2 bg-dark-accent text-black text-[10px] font-black rounded-xl hover:scale-105 transition-all shadow-[0_4px_15px_rgba(242,125,38,0.2)] whitespace-nowrap"
           >

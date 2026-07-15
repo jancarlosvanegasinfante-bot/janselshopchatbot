@@ -1873,6 +1873,10 @@ async function ensureOrderConfirmationTemplate(): Promise<string | null> {
 // "Sí", se dispara directo el flujo de checkout sin volver a pasar por la IA.
 const IMG_YES_ID = "JAN_IMG_YES";
 const IMG_NO_ID = "JAN_IMG_NO";
+const TREND_YES_ID = "JAN_TREND_YES";
+const TREND_NO_ID = "JAN_TREND_NO";
+const UPSELL_YES_ID = "JAN_UPSELL_YES";
+const UPSELL_NO_ID = "JAN_UPSELL_NO";
 
 async function ensureImageProductTemplate(): Promise<string | null> {
   if (!twilioClient) return null;
@@ -1928,6 +1932,122 @@ async function sendImageProductButtons(to: string, from: string, productName: st
     return true;
   } catch (e: any) {
     console.error("[WhatsApp Buttons] Error enviando botones de producto por imagen:", e.message);
+    return false;
+  }
+}
+
+async function ensureUpsellOfferTemplate(): Promise<string | null> {
+  if (!twilioClient) return null;
+  try {
+    const cfgSnap = await getDoc(doc(db, "config", "system"));
+    const existingSid = cfgSnap.exists() ? cfgSnap.data()?.upsellOfferTemplateSid : null;
+    if (existingSid) return existingSid;
+
+    const content = await (twilioClient as any).content.v1.contents.create({
+      friendlyName: `jan_upsell_offer_${Date.now()}`,
+      language: "es",
+      variables: { "1": "Como eres cliente VIP, tenemos algo especial para ti hoy. 🎁" },
+      types: {
+        "twilio/quick-reply": {
+          body: "{{1}}",
+          actions: [
+            { title: "Sí, la quiero 🛒", id: UPSELL_YES_ID },
+            { title: "No, gracias ❌", id: UPSELL_NO_ID }
+          ]
+        },
+        "twilio/text": {
+          body: "{{1}} Responde SI o NO."
+        }
+      }
+    });
+
+    await setDoc(doc(db, "config", "system"), { upsellOfferTemplateSid: content.sid }, { merge: true });
+    return content.sid;
+  } catch (e: any) {
+    console.error("[WhatsApp Buttons] Error creando template de oferta VIP:", e.message);
+    return null;
+  }
+}
+
+async function sendUpsellOfferButtons(to: string, from: string, message: string): Promise<boolean> {
+  if (!twilioClient) return false;
+  const contentSid = await ensureUpsellOfferTemplate();
+  if (!contentSid) return false;
+
+  try {
+    await (twilioClient as any).messages.create({
+      from: normalizePhone(from || TWILIO_FROM_NUMBER || "+14155238886"),
+      to: normalizePhone(to),
+      contentSid,
+      contentVariables: JSON.stringify({ "1": String(message || "Tenemos una oferta especial para ti.").slice(0, 1000) })
+    });
+    return true;
+  } catch (e: any) {
+    console.error("[WhatsApp Buttons] Error enviando botones de oferta VIP:", e.message);
+    return false;
+  }
+}
+
+// Template de "producto en tendencia" con imagen (header), texto y botones Sí/No.
+// Usa "twilio/card" porque, a diferencia de "twilio/quick-reply", soporta media (imagen).
+async function ensureTrendOfferTemplate(): Promise<string | null> {
+  if (!twilioClient) return null;
+  try {
+    const cfgSnap = await getDoc(doc(db, "config", "system"));
+    const existingSid = cfgSnap.exists() ? cfgSnap.data()?.trendOfferTemplateSid : null;
+    if (existingSid) return existingSid;
+
+    const content = await (twilioClient as any).content.v1.contents.create({
+      friendlyName: `jan_trend_offer_${Date.now()}`,
+      language: "es",
+      variables: {
+        "1": "Lámpara LED con Sensor",
+        "2": "🔥 ¡Nuevo en tendencia! Pensamos en ti por tus compras anteriores. Envío gratis contraentrega.",
+        "3": "https://via.placeholder.com/600"
+      },
+      types: {
+        "twilio/card": {
+          title: "{{1}}",
+          subtitle: "{{2}}",
+          media: ["{{3}}"],
+          actions: [
+            { title: "Sí, la quiero 🛒", id: TREND_YES_ID },
+            { title: "No, gracias ❌", id: TREND_NO_ID }
+          ]
+        },
+        "twilio/text": {
+          body: "🔥 Nuevo en tendencia: {{1}}. {{2}} Responde SI o NO."
+        }
+      }
+    });
+
+    await setDoc(doc(db, "config", "system"), { trendOfferTemplateSid: content.sid }, { merge: true });
+    return content.sid;
+  } catch (e: any) {
+    console.error("[WhatsApp Buttons] Error creando template de oferta en tendencia:", e.message);
+    return null;
+  }
+}
+
+async function sendTrendOfferButtons(to: string, from: string, productName: string, pitch: string, imageUrl: string): Promise<boolean> {
+  if (!twilioClient) return false;
+  const contentSid = await ensureTrendOfferTemplate();
+  if (!contentSid) return false;
+
+  try {
+    await (twilioClient as any).messages.create({
+      from: normalizePhone(from || TWILIO_FROM_NUMBER || "+14155238886"),
+      to: normalizePhone(to),
+      contentSid,
+      contentVariables: JSON.stringify({
+        "1": String(productName || "Producto").slice(0, 100),
+        "2": String(pitch || "¡Nuevo en tendencia!").slice(0, 300),
+        "3": imageUrl || "https://via.placeholder.com/600"
+      })
+    });
+    return true;
+  } catch (e: any) {
+    console.error("[WhatsApp Buttons] Error enviando oferta de tendencia:", e.message);
     return false;
   }
 }
@@ -2438,6 +2558,224 @@ const CATEGORY_PAGE_SIZE = 9; // dejamos 1 slot libre para el item "Ver más" (l
 
 function normalizeCatText(s: string): string {
   return String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+// ── Campaña Automática de Tendencias ────────────────────────────────────────
+// Cuando se agrega un producto nuevo (marcado trending:true), este motor:
+// 1. Busca clientes candidatos combinando (a) categoría de compras previas
+//    y (b) un pase de IA que personaliza y filtra quién de verdad lo querría.
+// 2. Respeta un cooldown para no aburrir al mismo cliente con ofertas seguidas.
+// 3. Reparte el envío: primeros 15 al instante, el resto en tandas de 15 cada
+//    3 horas, solo entre 8am y 9pm (para no rozar límites de spam de WhatsApp).
+const TREND_INSTANT_BATCH_SIZE = 15;
+const TREND_BATCH_SIZE = 15;
+const TREND_BATCH_INTERVAL_MS = 3 * 60 * 60 * 1000; // 3 horas
+const TREND_COOLDOWN_MS = 4 * 24 * 60 * 60 * 1000; // 4 días sin repetir oferta al mismo cliente
+const TREND_WINDOW_START_HOUR = 8;
+const TREND_WINDOW_END_HOUR = 21;
+
+function nextSendableTime(base: Date): Date {
+  const d = new Date(base);
+  if (d.getHours() < TREND_WINDOW_START_HOUR) {
+    d.setHours(TREND_WINDOW_START_HOUR, 0, 0, 0);
+  } else if (d.getHours() >= TREND_WINDOW_END_HOUR) {
+    d.setDate(d.getDate() + 1);
+    d.setHours(TREND_WINDOW_START_HOUR, 0, 0, 0);
+  }
+  return d;
+}
+
+async function triggerTrendCampaign(product: any, storeId: string): Promise<void> {
+  try {
+    if (!product?.id || !product?.name) {
+      console.warn("[Trend Campaign] Producto inválido, se omite campaña.");
+      return;
+    }
+
+    const ordersSnap = await getDocs(query(collection(db, "orders"), where("storeId", "==", storeId)));
+    const allOrders = ordersSnap.docs.map(d => d.data() as any);
+
+    // Agrupar compras por teléfono normalizado
+    const byPhone = new Map<string, any[]>();
+    for (const o of allOrders) {
+      const phone = normalizePhoneForMeta(o.customerPhone || "");
+      if (!phone) continue;
+      if (!byPhone.has(phone)) byPhone.set(phone, []);
+      byPhone.get(phone)!.push(o);
+    }
+
+    const catalogProducts = await loadProductsForStore(storeId);
+    const productCategory = (product.category || "General").toLowerCase();
+
+    // Señal 1: coincidencia por categoría de compras previas
+    const categoryCandidates: { phone: string; name: string; orders: any[] }[] = [];
+    for (const [phone, orders] of byPhone.entries()) {
+      const matchesCategory = orders.some(o => {
+        const matchProd = catalogProducts.find((p: any) =>
+          p.name && o.productName && (o.productName.includes(p.name) || p.name.includes(o.productName))
+        );
+        const cat = (matchProd?.category || "").toLowerCase();
+        return cat && cat === productCategory;
+      });
+      if (matchesCategory) {
+        categoryCandidates.push({ phone, name: orders[0]?.customerName || "Cliente", orders });
+      }
+    }
+
+    if (categoryCandidates.length === 0) {
+      console.log(`[Trend Campaign] Sin clientes con historial en la categoría "${productCategory}" para "${product.name}". No se envía nada.`);
+      return;
+    }
+
+    // Filtro de cooldown: nadie recibe una oferta de tendencia si ya recibió una hace poco
+    const eligible: { phone: string; name: string; orders: any[] }[] = [];
+    for (const c of categoryCandidates) {
+      const custId = `${storeId}_${c.phone}`;
+      const custSnap = await getDoc(doc(db, "customers", custId));
+      const lastOffer = custSnap.exists() ? (custSnap.data()?.lastTrendOfferAt || 0) : 0;
+      if (Date.now() - lastOffer < TREND_COOLDOWN_MS) continue;
+      eligible.push(c);
+    }
+
+    if (eligible.length === 0) {
+      console.log(`[Trend Campaign] Todos los candidatos de "${product.name}" están en cooldown. No se envía nada por ahora.`);
+      return;
+    }
+
+    // Señal 2: pase de IA — personaliza el mensaje y filtra quién de verdad calza
+    // (una sola llamada por campaña, para no disparar 1 request de IA por cliente)
+    let personalized: Record<string, { message: string; wants: boolean }> = {};
+    try {
+      const apiKey = process.env.OPENROUTER_API_KEY || process.env.NVIDIA_API_KEY;
+      if (apiKey) {
+        const candidatesStr = eligible
+          .map(c => `- Teléfono: "${c.phone}", Nombre: "${c.name}", Compras previas: ${c.orders.map(o => o.productName).join(" | ")}`)
+          .join("\n");
+        const prompt = `Producto nuevo en tendencia: "${product.name}" (categoría: ${product.category}, precio: $${product.price} COP).
+
+Clientes candidatos (ya compraron antes en la misma categoría):
+${candidatesStr}
+
+Para cada cliente, decide si le tiene sentido ofrecerle este producto según su historial, y si sí, escribe un mensaje corto de WhatsApp (máximo 2 líneas, cálido, con 1-2 emojis, mencionando su compra anterior) ofreciendo este producto en tendencia con envío gratis contraentrega.
+
+Devuelve ÚNICAMENTE un JSON válido con esta forma exacta, una entrada por cada teléfono:
+{ "TELEFONO": { "wants": true, "message": "mensaje personalizado" } }`;
+
+        const resp = await axios.post(
+          "https://openrouter.ai/api/v1/chat/completions",
+          {
+            model: "google/gemini-2.5-flash",
+            messages: [{ role: "user", content: prompt }],
+            response_format: { type: "json_object" }
+          },
+          {
+            headers: { Authorization: `Bearer ${process.env.OPENROUTER_API_KEY || process.env.NVIDIA_API_KEY}` },
+            timeout: 20000
+          }
+        );
+        const raw = resp.data?.choices?.[0]?.message?.content || "{}";
+        personalized = JSON.parse(String(raw).replace(/```json|```/g, "").trim());
+      }
+    } catch (e: any) {
+      console.warn("[Trend Campaign] La IA de personalización falló, se usará mensaje genérico para todos:", e.message);
+    }
+
+    // Combina las dos señales: si la IA respondió, usa su filtro (wants=false se descarta);
+    // si la IA no respondió (sin API key o error), se conserva todo el filtro por categoría.
+    const finalList = eligible.filter(c => {
+      const p = personalized[c.phone];
+      return !p || p.wants !== false;
+    });
+
+    if (finalList.length === 0) {
+      console.log(`[Trend Campaign] La IA descartó a todos los candidatos para "${product.name}".`);
+      return;
+    }
+
+    const campaignId = `${product.id}_${Date.now()}`;
+    await setDoc(doc(db, "trendCampaigns", campaignId), {
+      productId: product.id,
+      productName: product.name,
+      storeId,
+      totalCandidates: finalList.length,
+      createdAt: serverTimestamp()
+    });
+
+    const batch = writeBatch(db);
+    let scheduledAt = new Date();
+    finalList.forEach((c, idx) => {
+      const isInstant = idx < TREND_INSTANT_BATCH_SIZE;
+      if (!isInstant && (idx - TREND_INSTANT_BATCH_SIZE) % TREND_BATCH_SIZE === 0) {
+        const batchIndex = Math.floor((idx - TREND_INSTANT_BATCH_SIZE) / TREND_BATCH_SIZE) + 1;
+        scheduledAt = nextSendableTime(new Date(Date.now() + batchIndex * TREND_BATCH_INTERVAL_MS));
+      }
+      const defaultMsg = `¡Hola ${c.name}! 🔥 Nos llegó algo en tendencia que te va a encantar según tus compras anteriores: *${product.name}*. ¡Envío gratis contraentrega!`;
+      const finalMessage = personalized[c.phone]?.message || defaultMsg;
+
+      batch.set(doc(db, "trendQueue", `${campaignId}_${c.phone}`), {
+        campaignId,
+        productId: product.id,
+        productName: product.name,
+        productImage: product.imageUrl || "",
+        productPrice: product.price || 0,
+        storeId,
+        phone: c.phone,
+        customerName: c.name,
+        message: finalMessage,
+        status: "pending",
+        scheduledAt: isInstant ? new Date() : scheduledAt,
+        createdAt: serverTimestamp()
+      });
+    });
+    await batch.commit();
+
+    console.log(`[Trend Campaign] Cola creada: ${finalList.length} clientes para "${product.name}" (${Math.min(finalList.length, TREND_INSTANT_BATCH_SIZE)} al instante, el resto escalonado).`);
+  } catch (e: any) {
+    console.error("[Trend Campaign] Error:", e.message);
+  }
+}
+
+// Revisa la cola cada 5 minutos y envía lo que ya esté "vencido" (scheduledAt <= ahora),
+// respetando siempre el límite por tanda para no disparar todo de golpe.
+async function dispatchTrendQueue(): Promise<void> {
+  try {
+    const now = new Date();
+    const qPending = query(collection(db, "trendQueue"), where("status", "==", "pending"), limit(TREND_BATCH_SIZE));
+    const snap = await getDocs(qPending);
+    if (snap.empty) return;
+
+    for (const d of snap.docs) {
+      const item = d.data() as any;
+      const scheduledAt = item.scheduledAt?.toDate ? item.scheduledAt.toDate() : new Date(item.scheduledAt);
+      if (scheduledAt > now) continue;
+
+      const sent = await sendTrendOfferButtons(
+        item.phone,
+        TWILIO_FROM_NUMBER || "+14155238886",
+        item.productName,
+        item.message,
+        item.productImage
+      );
+
+      await updateDoc(d.ref, { status: sent ? "sent" : "failed", sentAt: Date.now() });
+
+      if (sent) {
+        await setDoc(doc(db, "customers", `${item.storeId}_${item.phone}`), { lastTrendOfferAt: Date.now() }, { merge: true });
+        await addDoc(collection(db, "activities"), {
+          from: normalizePhone(TWILIO_FROM_NUMBER || ""),
+          to: `+${item.phone}`,
+          message: item.message,
+          status: "respondido",
+          whatsappStatus: "sent",
+          manualAgent: "AI Trend Campaign",
+          createdAt: serverTimestamp(),
+          storeId: item.storeId
+        });
+      }
+    }
+  } catch (e: any) {
+    console.error("[Trend Dispatcher] Error:", e.message);
+  }
 }
 
 async function sendTrendingProducts(to: string, from: string, assignedStoreId: string, offset: number = 0) {
@@ -3066,6 +3404,84 @@ async function loadProductsForStore(assignedStoreId: string): Promise<any[]> {
     }
   }
   return products;
+}
+
+// ── Meta Conversions API (CAPI) Helpers ─────────────────────────────────────
+// Envía eventos server-side a Meta para complementar el pixel del navegador.
+// Usa el mismo event_id que el pixel del cliente para que Meta deduplique
+// el evento (no lo cuenta dos veces) mientras usa AMBAS fuentes para aprender.
+function sha256Hash(value: string): string {
+  return crypto.createHash("sha256").update(value.trim().toLowerCase()).digest("hex");
+}
+
+function normalizePhoneForMeta(phone: string): string {
+  if (!phone) return "";
+  let clean = phone.toLowerCase().replace("whatsapp:", "").replace(/\D/g, "");
+  if (clean.length === 10 && clean.startsWith("3")) {
+    clean = "57" + clean;
+  }
+  return clean;
+}
+
+interface MetaCapiParams {
+  pixelId: string;
+  accessToken: string;
+  eventName: string;
+  eventId: string;
+  eventSourceUrl?: string;
+  customerPhone?: string;
+  fbp?: string;
+  fbc?: string;
+  clientIp?: string;
+  userAgent?: string;
+  customData?: Record<string, any>;
+}
+
+async function sendMetaCapiEvent(params: MetaCapiParams): Promise<void> {
+  const { pixelId, accessToken, eventName, eventId, eventSourceUrl, customerPhone, fbp, fbc, clientIp, userAgent, customData } = params;
+  if (!pixelId || !accessToken) {
+    console.warn(`[Meta CAPI] Faltan pixelId o accessToken, se omite el evento server-side "${eventName}".`);
+    return;
+  }
+  try {
+    const userData: Record<string, any> = {};
+    if (customerPhone) {
+      const normalized = normalizePhoneForMeta(customerPhone);
+      if (normalized) userData.ph = [sha256Hash(normalized)];
+    }
+    if (fbp) userData.fbp = fbp;
+    if (fbc) userData.fbc = fbc;
+    if (clientIp) userData.client_ip_address = clientIp;
+    if (userAgent) userData.client_user_agent = userAgent;
+
+    const eventPayload = {
+      data: [
+        {
+          event_name: eventName,
+          event_time: Math.floor(Date.now() / 1000),
+          event_id: eventId,
+          action_source: "website",
+          event_source_url: eventSourceUrl,
+          user_data: userData,
+          custom_data: customData || {},
+        },
+      ],
+    };
+
+    const url = `https://graph.facebook.com/v19.0/${pixelId}/events?access_token=${accessToken}`;
+    await axios.post(url, eventPayload);
+    console.log(`[Meta CAPI] Evento "${eventName}" enviado correctamente (event_id: ${eventId}).`);
+  } catch (err: any) {
+    console.error(`[Meta CAPI] Error enviando evento "${eventName}":`, err?.response?.data || err.message);
+  }
+}
+
+function getClientIp(req: express.Request): string {
+  const forwarded = req.headers["x-forwarded-for"];
+  if (typeof forwarded === "string" && forwarded.length > 0) {
+    return forwarded.split(",")[0].trim();
+  }
+  return req.socket?.remoteAddress || "";
 }
 
 function normalizePhone(phone: string): string {
@@ -4103,6 +4519,11 @@ async function startServer() {
   // SEED ONLY IF EMPTY to save quota
   seedDatabase().catch(e => console.error("[Jan Sync] Error en arranque:", e));
 
+  // Reparte automáticamente la cola de ofertas de tendencia cada 5 minutos.
+  setInterval(() => {
+    dispatchTrendQueue().catch(e => console.error("[Trend Dispatcher] Error en el ciclo:", e.message));
+  }, 5 * 60 * 1000);
+
   // Admin Config Endpoints
   app.post("/api/admin/upload", express.raw({ type: "*/*", limit: "50mb" }), async (req, res) => {
     const mimeType = req.headers["content-type"] || "application/octet-stream";
@@ -4134,6 +4555,72 @@ async function startServer() {
     const baseUrl = currentAppUrl || process.env.APP_URL || `${protocol}://${host}`;
     
     res.json({ success: true, mediaId: id, url: `${baseUrl}/api/media/${id}${ext}` });
+  });
+
+  // Agrega UN producto sin afectar el resto del catálogo (a diferencia de /api/admin/seed,
+  // que reemplaza TODO el catálogo). Además marca el producto como "en tendencia" y dispara
+  // automáticamente el estudio + envío escalonado a clientes.
+  app.post("/api/admin/products/add-trending", express.json(), async (req, res) => {
+    try {
+      const { name, price, category, description, storeId, imageUrl } = req.body;
+      if (!name || !price) {
+        return res.status(400).json({ success: false, error: "Falta el nombre o el precio del producto." });
+      }
+      const targetStoreId = storeId || "default";
+      const rawId = Math.random().toString(36).substring(7);
+      const finalDocId = `${targetStoreId}_${rawId}`;
+      const productData = {
+        id: rawId,
+        name,
+        price: Number(price),
+        category: category || "General",
+        description: description || "Producto agregado manualmente",
+        imageUrl: imageUrl || "",
+        stock: 20,
+        storeId: targetStoreId,
+        trending: true,
+        trendingAt: Date.now(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+
+      // setDoc con merge = UPSERT de un solo documento. Nunca borra ni toca otros productos.
+      await setDoc(doc(db, "products", finalDocId), productData, { merge: true });
+      console.log(`[Add Product] Producto "${name}" agregado sin afectar el resto del catálogo (${finalDocId}).`);
+
+      // Dispara el estudio + campaña de tendencia en segundo plano (no bloquea la respuesta al admin)
+      triggerTrendCampaign(productData, targetStoreId).catch((e: any) =>
+        console.error("[Trend Campaign] Error al disparar campaña automática:", e.message)
+      );
+
+      res.json({
+        success: true,
+        message: `Producto "${name}" agregado con éxito. La campaña de tendencia se está armando automáticamente.`,
+        product: productData
+      });
+    } catch (e: any) {
+      console.error("[Add Product] Error:", e.message);
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  // Dispara manualmente la campaña de tendencia para un producto YA existente en el catálogo
+  // (para cuando quieras re-lanzar la oferta a mano, como pediste mantener).
+  app.post("/api/admin/products/:docId/send-trend-campaign", express.json(), async (req, res) => {
+    try {
+      const { docId } = req.params;
+      const prodSnap = await getDoc(doc(db, "products", docId));
+      if (!prodSnap.exists()) {
+        return res.status(404).json({ success: false, error: "Producto no encontrado." });
+      }
+      const product = prodSnap.data() as any;
+      const targetStoreId = product.storeId || "default";
+      await triggerTrendCampaign(product, targetStoreId);
+      res.json({ success: true, message: `Campaña de tendencia (re)lanzada para "${product.name}".` });
+    } catch (e: any) {
+      console.error("[Trend Campaign Manual] Error:", e.message);
+      res.status(500).json({ success: false, error: e.message });
+    }
   });
 
   app.post("/api/admin/config", (req, res) => {
@@ -4174,6 +4661,41 @@ async function startServer() {
     });
   });
 
+  // Evento "Contact" server-side para los clicks directos a WhatsApp (no pasan por landing-order)
+  app.post("/api/public/track-contact", express.json(), async (req, res) => {
+    try {
+      const { storeId, eventId, fbp, fbc, eventSourceUrl, customerPhone, value } = req.body;
+      const targetStoreId = storeId || "default";
+      let storeConfig: any = {};
+      try {
+        const storeSnap = await getDoc(doc(db, "stores", targetStoreId));
+        if (storeSnap.exists()) storeConfig = storeSnap.data();
+      } catch (err) {
+        console.error("[Track Contact] Error loading store config:", err);
+      }
+      const capiAccessToken = storeConfig?.metaCapiAccessToken || process.env.META_CAPI_ACCESS_TOKEN || "";
+      if (storeConfig?.metaPixelId && capiAccessToken && eventId) {
+        await sendMetaCapiEvent({
+          pixelId: storeConfig.metaPixelId,
+          accessToken: capiAccessToken,
+          eventName: "Contact",
+          eventId,
+          eventSourceUrl,
+          customerPhone,
+          fbp,
+          fbc,
+          clientIp: getClientIp(req),
+          userAgent: req.headers["user-agent"] as string,
+          customData: { currency: "COP", value: value || 0 },
+        });
+      }
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error("[Track Contact] Error:", err.message);
+      res.json({ success: false });
+    }
+  });
+
   app.post("/api/public/landing-order", express.json(), async (req, res) => {
     try {
       const { 
@@ -4187,7 +4709,11 @@ async function startServer() {
         productId, 
         quantity, 
         totalPrice, 
-        notes 
+        notes,
+        eventId,
+        fbp,
+        fbc,
+        eventSourceUrl
       } = req.body;
 
       const targetStoreId = storeId || "default";
@@ -4228,6 +4754,30 @@ async function startServer() {
       const newOrderId = orderRef.id;
       orderInfo.id = newOrderId;
       console.log(`[Landing Order] Saved landing order successfully with ID: ${newOrderId}`);
+
+      // 3a. Meta CAPI: server-side "Purchase" event, deduplicado con el pixel del navegador (mismo event_id)
+      const capiAccessToken = storeConfig?.metaCapiAccessToken || process.env.META_CAPI_ACCESS_TOKEN || "";
+      if (storeConfig?.metaPixelId && capiAccessToken && eventId) {
+        sendMetaCapiEvent({
+          pixelId: storeConfig.metaPixelId,
+          accessToken: capiAccessToken,
+          eventName: "Purchase",
+          eventId,
+          eventSourceUrl,
+          customerPhone: orderInfo.customerPhone,
+          fbp,
+          fbc,
+          clientIp: getClientIp(req),
+          userAgent: req.headers["user-agent"] as string,
+          customData: {
+            currency: "COP",
+            value: orderInfo.totalPrice,
+            content_ids: [orderInfo.productId],
+            content_type: "product",
+            num_items: orderInfo.quantity,
+          },
+        }).catch(() => {});
+      }
 
       // 3b. Send automatic WhatsApp confirmation to customer
       try {
@@ -4662,26 +5212,25 @@ _El pedido ya se guardó y está listo en tu tablero._`;
         return res.status(400).json({ success: false, error: "No hay un mensaje sugerido generado todavía para enviar." });
       }
 
-      // Send via Twilio/WhatsApp
+      // Send via Twilio/WhatsApp usando un Content Template pre-aprobado (con botones Sí/No).
+      // Un mensaje de texto libre lo bloquea WhatsApp si el cliente no te ha escrito en las
+      // últimas 24h — que es siempre el caso en un seguimiento post-venta días después.
       const finalPhone = normalizePhone(order.customerPhone);
       const botNum = process.env.TWILIO_FROM_NUMBER || "+14155238886";
       const formattedBotNum = botNum.startsWith("whatsapp:") ? botNum : `whatsapp:${botNum}`;
 
       console.log(`[AI Upsell] Sending WhatsApp cross-sell to ${order.customerName} (${finalPhone})`);
-      
-      const client = twilio(
-        process.env.TWILIO_ACCOUNT_SID || "ACmock",
-        process.env.TWILIO_AUTH_TOKEN || "mock"
-      );
 
       let sid = "mock-sid";
+      let sendSucceeded = true;
       if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && !process.env.TWILIO_ACCOUNT_SID.startsWith("ACmock")) {
-        const twilioRes = await client.messages.create({
-          from: formattedBotNum,
-          to: `whatsapp:${finalPhone}`,
-          body: messageToSend
-        });
-        sid = twilioRes.sid;
+        sendSucceeded = await sendUpsellOfferButtons(finalPhone, formattedBotNum, messageToSend);
+        if (!sendSucceeded) {
+          return res.status(502).json({
+            success: false,
+            error: "No se pudo enviar la oferta VIP por WhatsApp. Verifica que el template esté aprobado por Meta (puede tardar minutos a horas la primera vez) y que las credenciales de Twilio sean correctas."
+          });
+        }
       } else {
         console.log("[AI Upsell MOCK] Twilio not fully configured. Outputting message body:");
         console.log("-----------------------------------------");
@@ -5286,6 +5835,54 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
             await updateDoc(doc(db, "activities", activityRefId), {
               status: "respondido",
               response: resumeNoMsg,
+              respondedAt: serverTimestamp()
+            });
+          }
+        } else if (buttonPayload === TREND_YES_ID) {
+          const trendMsg = "¡Genial! 🎉 Dame un momento para confirmarte el pedido. ¿Me confirmas tu nombre completo, dirección y ciudad para despacharlo hoy mismo?";
+          await setDoc(doc(db, "customers", customerProfileId), {
+            etapa: "interesado",
+            checkoutStep: "recolectando_datos"
+          }, { merge: true });
+          await sendWhatsApp(from, trendMsg, undefined, activityRefId, to);
+          if (activityRefId) {
+            await updateDoc(doc(db, "activities", activityRefId), {
+              status: "respondido",
+              response: trendMsg,
+              respondedAt: serverTimestamp()
+            });
+          }
+        } else if (buttonPayload === TREND_NO_ID) {
+          const trendNoMsg = "¡Sin problema! 😊 Seguimos en contacto, cualquier cosa que necesites me escribes.";
+          await sendWhatsApp(from, trendNoMsg, undefined, activityRefId, to);
+          if (activityRefId) {
+            await updateDoc(doc(db, "activities", activityRefId), {
+              status: "respondido",
+              response: trendNoMsg,
+              respondedAt: serverTimestamp()
+            });
+          }
+        } else if (buttonPayload === UPSELL_YES_ID) {
+          const upsellYesMsg = "¡Excelente elección! 🎉 Confírmame tu dirección y ciudad para despacharlo hoy mismo con el descuento VIP.";
+          await setDoc(doc(db, "customers", customerProfileId), {
+            etapa: "interesado",
+            checkoutStep: "recolectando_datos"
+          }, { merge: true });
+          await sendWhatsApp(from, upsellYesMsg, undefined, activityRefId, to);
+          if (activityRefId) {
+            await updateDoc(doc(db, "activities", activityRefId), {
+              status: "respondido",
+              response: upsellYesMsg,
+              respondedAt: serverTimestamp()
+            });
+          }
+        } else if (buttonPayload === UPSELL_NO_ID) {
+          const upsellNoMsg = "¡Entendido! Gracias por tu tiempo. Cualquier cosa que necesites, aquí estoy. 😊";
+          await sendWhatsApp(from, upsellNoMsg, undefined, activityRefId, to);
+          if (activityRefId) {
+            await updateDoc(doc(db, "activities", activityRefId), {
+              status: "respondido",
+              response: upsellNoMsg,
               respondedAt: serverTimestamp()
             });
           }
