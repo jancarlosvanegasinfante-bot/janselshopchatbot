@@ -321,15 +321,70 @@ const FAQ_ITEMS = [
   },
   {
     q: "¿Puedo comprar varios productos con un solo pedido?",
-    a: "¡Claro! Agrega todos los productos que quieras al carrito. Si compras 2 productos tienes 10% de descuento extra, y si llevas 3 o más productos te damos el 15% de descuento.",
+    a: "¡Claro! Agrega todos los productos que quieras al carrito. Al llevar 2 o más productos, recibirás descuentos automáticos estilo promoción según el valor de cada producto, garantizando el mejor precio sin complicaciones.",
   },
 ];
 
+// Helper to calculate dynamic quantity discount per product based on price range to avoid over-discounting
+const getProductQuantityDiscount = (price: number, totalQty: number): number => {
+  if (totalQty < 2) return 0;
+  
+  let baseDiscount = 0;
+  if (price < 10000) {
+    baseDiscount = Math.round(price * 0.05); // 5% max for extremely cheap items
+  } else if (price < 40000) {
+    baseDiscount = 2000;
+  } else if (price < 90000) {
+    baseDiscount = 5000;
+  } else if (price < 180000) {
+    baseDiscount = 10000;
+  } else if (price < 250000) {
+    baseDiscount = 15000;
+  } else {
+    baseDiscount = 20000;
+  }
+
+  // If carrying 3 or more products, they get a slightly better promo discount per item
+  if (totalQty >= 3) {
+    baseDiscount = Math.round(baseDiscount * 1.3);
+  }
+
+  return baseDiscount;
+};
+
+// Helper to calculate dynamic prepayment discount per product based on price range
+const getProductPrepaymentDiscount = (price: number): number => {
+  if (price < 10000) {
+    return Math.round(price * 0.03); // 3% max
+  } else if (price < 40000) {
+    return 1500;
+  } else if (price < 90000) {
+    return 3000;
+  } else if (price < 180000) {
+    return 6000;
+  } else if (price < 250000) {
+    return 10000;
+  } else {
+    return 15000;
+  }
+};
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function LandingPage() {
-  const [cart, setCart] = useState<{ product: typeof TRENDING_PRODUCTS[0]; quantity: number }[]>([
-    { product: TRENDING_PRODUCTS[0], quantity: 1 },
-  ]);
+  const [cart, setCart] = useState<{ product: typeof TRENDING_PRODUCTS[0]; quantity: number }[]>(() => {
+    try {
+      const saved = localStorage.getItem("jan_sel_shop_cart");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.error("Error reading cart from localStorage", e);
+    }
+    return [{ product: TRENDING_PRODUCTS[0], quantity: 1 }];
+  });
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"contraentrega" | "anticipado">("contraentrega");
@@ -456,6 +511,14 @@ export default function LandingPage() {
 
   // ── Effects ──────────────────────────────────────────────────────────────────
   useEffect(() => {
+    try {
+      localStorage.setItem("jan_sel_shop_cart", JSON.stringify(cart));
+    } catch (e) {
+      console.error("Error saving cart to localStorage", e);
+    }
+  }, [cart]);
+
+  useEffect(() => {
     fetch("/api/public/config")
       .then((res) => res.json())
       .then((data) => { 
@@ -568,13 +631,25 @@ export default function LandingPage() {
     const subtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
     const originalSubtotal = cart.reduce((sum, item) => sum + item.product.originalPrice * item.quantity, 0);
     const totalQty = cart.reduce((sum, item) => sum + item.quantity, 0);
-    let quantityDiscount = 0;
-    if (totalQty === 2) quantityDiscount = Math.round(subtotal * 0.1);
-    else if (totalQty >= 3) quantityDiscount = Math.round(subtotal * 0.15);
+    
+    // Calculate custom quantity discount summed over all items
+    const quantityDiscount = cart.reduce((sum, item) => {
+      const discountPerItem = getProductQuantityDiscount(item.product.price, totalQty);
+      return sum + (discountPerItem * item.quantity);
+    }, 0);
+
     const intermediateTotal = subtotal - quantityDiscount;
+
+    // Calculate custom prepayment discount summed over all items
     let prepaymentDiscount = 0;
-    if (paymentMethod === "anticipado") prepaymentDiscount = Math.round(intermediateTotal * 0.08);
-    const finalTotal = intermediateTotal - prepaymentDiscount;
+    if (paymentMethod === "anticipado") {
+      prepaymentDiscount = cart.reduce((sum, item) => {
+        const discountPerItem = getProductPrepaymentDiscount(item.product.price);
+        return sum + (discountPerItem * item.quantity);
+      }, 0);
+    }
+
+    const finalTotal = Math.max(0, intermediateTotal - prepaymentDiscount);
     return { subtotal, originalSubtotal, totalQty, quantityDiscount, prepaymentDiscount, finalTotal, savings: originalSubtotal - finalTotal };
   };
 
@@ -654,10 +729,10 @@ export default function LandingPage() {
     if (cart.length === 0) return toast.error("El carrito está vacío.");
     const selectedMode = directPaymentMode || paymentMethod;
     const itemsText = cart.map((item) => `• *${item.product.name}* (x${item.quantity}) - $${item.product.price.toLocaleString()} COP c/u`).join("\n");
-    const discountText = quantityDiscount > 0 ? `\n🎁 *Descuento (${totalQty === 2 ? "10%" : "15%"}):* -$${quantityDiscount.toLocaleString()} COP` : "";
-    const prepayText = selectedMode === "anticipado" ? `\n🌟 *Descuento Anticipado (8%):* -$${prepaymentDiscount.toLocaleString()} COP` : "";
+    const discountText = quantityDiscount > 0 ? `\n🎁 *Descuento Combo:* -$${quantityDiscount.toLocaleString()} COP` : "";
+    const prepayText = selectedMode === "anticipado" ? `\n🌟 *Descuento Anticipado:* -$${prepaymentDiscount.toLocaleString()} COP` : "";
     const modeLabel = selectedMode === "anticipado"
-      ? "🔴 *Pago Anticipado (Nequi / Daviplata / Bancolombia) - ¡8% aplicado!*"
+      ? "🔴 *Pago Anticipado (Nequi / Daviplata / Bancolombia) - ¡Descuento aplicado!*"
       : "🟢 *Pago Contraentrega (Pagas al recibir en efectivo)*";
     const msg = `¡Hola Jan Sel Shop! 👋 Quiero realizar el siguiente pedido desde la Landing Page:\n\n🛒 *CARRITO:*\n${itemsText}\n\n⚙️ *DESGLOSE:*\n• *Subtotal:* $${subtotal.toLocaleString()} COP${discountText}${prepayText}\n🚚 *Envío:* ¡COMPLETAMENTE GRATIS! 🇨🇴\n💰 *TOTAL:* $${finalTotal.toLocaleString()} COP\n\n💳 *PAGO:* ${modeLabel}\n\n👤 *DATOS:*\n• *Nombre:* ${formData.customerName || "Por confirmar"}\n• *Celular:* ${formData.customerPhone || "Por confirmar"}\n• *Ciudad:* ${formData.city || "Por confirmar"}\n• *Dirección:* ${formData.address || "Por confirmar"}\n• *Indicaciones:* ${formData.addressIndicator || "Ninguna"}\n\n¡Por favor agendar mi despacho hoy! 🚀`;
     const phone = officialBotNumber || "14155238886";
@@ -1244,18 +1319,18 @@ export default function LandingPage() {
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
                 <div className="glass-card border-emerald-500/20 px-8 py-5 rounded-2xl text-center">
-                  <span className="block text-4xl font-black text-emerald-400">10%</span>
-                  <span className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-1">2 Productos</span>
+                  <span className="block text-3xl font-black text-emerald-400">PROMO 2</span>
+                  <span className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-1">Lleva 2 con Descuento</span>
                 </div>
                 <div className="text-slate-600 text-2xl font-black">+</div>
                 <div className="glass-card border-amber-500/20 px-8 py-5 rounded-2xl text-center animate-glow-pulse">
-                  <span className="block text-4xl font-black text-amber-400">15%</span>
-                  <span className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-1">3+ Productos</span>
+                  <span className="block text-3xl font-black text-amber-400">PROMO 3+</span>
+                  <span className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-1">Ahorro Extra desde 3</span>
                 </div>
                 <div className="text-slate-600 text-2xl font-black">+</div>
                 <div className="glass-card border-blue-500/20 px-8 py-5 rounded-2xl text-center">
-                  <span className="block text-4xl font-black text-blue-400">8%</span>
-                  <span className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-1">Pago anticipado</span>
+                  <span className="block text-3xl font-black text-blue-400">DESCUENTO</span>
+                  <span className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-1">Por Pago Anticipado</span>
                 </div>
               </div>
 
@@ -1366,7 +1441,7 @@ export default function LandingPage() {
                   <div className="p-3.5 bg-purple-500/5 border border-purple-500/15 rounded-2xl flex items-start gap-2.5">
                     <Sparkles size={15} className="text-purple-400 shrink-0 mt-0.5" />
                     <p className="text-[10.5px] text-slate-300">
-                      💡 <span className="text-purple-300 font-black">¡Agrega 1 producto más</span> y recibe un <span className="text-white font-extrabold underline">10% de descuento automático</span> en toda tu compra!
+                      💡 <span className="text-purple-300 font-black">¡Agrega 1 producto más</span> y recibe un <span className="text-white font-extrabold underline">descuento automático</span> en toda tu compra!
                     </p>
                   </div>
                 )}
@@ -1412,7 +1487,7 @@ export default function LandingPage() {
                     }`}
                   >
                     <span className="absolute -top-1 -right-4 bg-gradient-to-r from-red-500 to-amber-500 text-black font-black text-[7px] uppercase tracking-widest px-5 py-1.5 rotate-12">
-                      -8% 🔥
+                      PROMO 🔥
                     </span>
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-black text-white flex items-center gap-1.5">
@@ -1422,7 +1497,7 @@ export default function LandingPage() {
                         {paymentMethod === "anticipado" && <div className="w-1.5 h-1.5 rounded-full bg-black" />}
                       </div>
                     </div>
-                    <p className="text-[10px] text-slate-500 leading-normal">Nequi, Daviplata o Transferencia. Te aplicamos <span className="text-emerald-400 font-extrabold">8% DE DESCUENTO</span> extra.</p>
+                    <p className="text-[10px] text-slate-500 leading-normal">Nequi, Daviplata o Transferencia. Te aplicamos <span className="text-emerald-400 font-extrabold">DESCUENTO EXTRA</span>.</p>
                   </button>
                 </div>
 
@@ -1437,7 +1512,7 @@ export default function LandingPage() {
                     >
                       <div className="flex items-center gap-2 text-amber-300 font-extrabold text-xs">
                         <Sparkles size={14} className="animate-pulse" />
-                        ¡EXCELENTE! Ahorras 8% en tu compra
+                        ¡EXCELENTE! Ahorras dinero extra en tu compra
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         {[
@@ -1630,13 +1705,13 @@ export default function LandingPage() {
                   </div>
                   {quantityDiscount > 0 && (
                     <div className="flex justify-between text-emerald-400 bg-emerald-500/5 px-3 py-2 rounded-xl border border-emerald-500/10">
-                      <span>Dto. Cantidad ({totalQty >= 3 ? "15%" : "10%"})</span>
+                      <span>Dto. Cantidad</span>
                       <span className="font-black font-mono">-${quantityDiscount.toLocaleString()}</span>
                     </div>
                   )}
                   {prepaymentDiscount > 0 && (
                     <div className="flex justify-between text-amber-400 bg-amber-400/5 px-3 py-2 rounded-xl border border-amber-400/10">
-                      <span>Dto. Anticipado (8%)</span>
+                      <span>Dto. Anticipado</span>
                       <span className="font-black font-mono">-${prepaymentDiscount.toLocaleString()}</span>
                     </div>
                   )}
@@ -2027,7 +2102,7 @@ export default function LandingPage() {
                     <div className="space-y-2 text-xs">
                       <div className="flex justify-between text-slate-400"><span>Subtotal ({totalQty} und.):</span><span className="text-white font-mono font-bold">${subtotal.toLocaleString()}</span></div>
                       {quantityDiscount > 0 && (
-                        <div className="flex justify-between text-emerald-400"><span>Dto. Cantidad ({totalQty >= 3 ? "15%" : "10%"}):</span><span className="font-bold">-${quantityDiscount.toLocaleString()}</span></div>
+                        <div className="flex justify-between text-emerald-400"><span>Dto. Cantidad:</span><span className="font-bold">-${quantityDiscount.toLocaleString()}</span></div>
                       )}
                       <div className="flex justify-between text-slate-400"><span>Envío:</span><span className="text-emerald-400 font-black">¡GRATIS! 🚚</span></div>
                       <div className="h-px bg-white/5 my-2" />

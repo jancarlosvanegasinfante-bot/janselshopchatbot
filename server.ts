@@ -2176,44 +2176,39 @@ async function ensureAllTemplates(): Promise<{
     }
 
     // 3. Categories Menu
-    if (d?.categoriesTemplateSid) {
-      result.categoriesSid = d.categoriesTemplateSid;
+    if (d?.categoriesTemplateSidV3) {
+      result.categoriesSid = d.categoriesTemplateSidV3;
     } else {
-      console.log("[WhatsApp Buttons] Creando template de categorías...");
+      console.log("[WhatsApp Buttons] Creando template de categorías v3...");
       const content = await (twilioClient as any).content.v1.contents.create({
-        friendlyName: `jan_categories_${Date.now()}`,
+        friendlyName: `jan_categories_v3_${Date.now()}`,
         language: "es",
         variables: {},
         types: {
           "twilio/quick-reply": {
-            body: "Tenemos las mejores ofertas en todas las categorías de Colombia. Selecciona una sección para ver los productos destacados 👇",
+            body: "Tenemos las mejores ofertas de Colombia. ¡Mira los más vendidos del día o explora nuestras categorías! 👇",
             actions: [
+              { title: "🔥 Tendencias 🔥", id: "CAT_TRENDS" },
               { title: "Tecnología 💻", id: "CAT_TECH" },
-              { title: "Hogar y Aseo 🧼", id: "CAT_HOME" },
-              { title: "Otras Secciones 📑", id: "CAT_OTHER" }
+              { title: "Más Secciones ➡️", id: "CAT_OTHER" }
             ]
           },
           "twilio/text": {
-            body: "Selecciona una sección para ver los productos destacados:\n\n- Tecnología 💻\n- Hogar y Aseo 🧼\n- Otras Secciones 📑"
+            body: "Selecciona una sección para ver los productos destacados:\n\n- 🔥 Tendencias 🔥\n- Tecnología 💻\n- Más Secciones ➡️"
           }
         }
       });
       result.categoriesSid = content.sid;
-      await setDoc(doc(db, "config", "system"), { categoriesTemplateSid: content.sid }, { merge: true });
+      await setDoc(doc(db, "config", "system"), { categoriesTemplateSidV3: content.sid }, { merge: true });
     }
 
     // 4. Other Categories Menu
-    // NOTA: usamos la key "otherCategoriesTemplateSidV2" (no la vieja
-    // "otherCategoriesTemplateSid") a propósito. Este template ya existía en
-    // producción con solo 2 acciones + "Menú Principal"; si seguíamos leyendo
-    // la key vieja, Twilio habría devuelto el SID viejo cacheado en Firestore
-    // y el nuevo botón "Más Secciones ➡️" nunca habría aparecido de verdad.
-    if (d?.otherCategoriesTemplateSidV2) {
-      result.otherCategoriesSid = d.otherCategoriesTemplateSidV2;
+    if (d?.otherCategoriesTemplateSidV3) {
+      result.otherCategoriesSid = d.otherCategoriesTemplateSidV3;
     } else {
-      console.log("[WhatsApp Buttons] Creando template de otras categorías (v2, con Más Secciones)...");
+      console.log("[WhatsApp Buttons] Creando template de otras categorías v3...");
       const content = await (twilioClient as any).content.v1.contents.create({
-        friendlyName: `jan_other_cats_v2_${Date.now()}`,
+        friendlyName: `jan_other_cats_v3_${Date.now()}`,
         language: "es",
         variables: {},
         types: {
@@ -2221,45 +2216,45 @@ async function ensureAllTemplates(): Promise<{
             body: "También contamos con estas increíbles secciones. Selecciona una opción 👇",
             actions: [
               { title: "Autos y Herram. 🚗", id: "CAT_AUTOS" },
-              { title: "Salud y Belleza 🧴", id: "CAT_BEAUTY" },
+              { title: "Hogar y Aseo 🧼", id: "CAT_HOME" },
               { title: "Más Secciones ➡️", id: "CAT_OTHER2" }
             ]
           },
           "twilio/text": {
-            body: "Otras secciones disponibles:\n\n- Autos y Herram. 🚗\n- Salud y Belleza 🧴\n- Más Secciones ➡️"
+            body: "Otras secciones disponibles:\n\n- Autos y Herram. 🚗\n- Hogar y Aseo 🧼\n- Más Secciones ➡️"
           }
         }
       });
       result.otherCategoriesSid = content.sid;
-      await setDoc(doc(db, "config", "system"), { otherCategoriesTemplateSidV2: content.sid }, { merge: true });
+      await setDoc(doc(db, "config", "system"), { otherCategoriesTemplateSidV3: content.sid }, { merge: true });
     }
 
 
-    // 4b. Other Categories Menu (nivel 3) — Moda, Mascotas/Bebé/Juguetería, Volver
-    if (d?.otherCategories2TemplateSid) {
-      result.otherCategories2Sid = d.otherCategories2TemplateSid;
+    // 4b. Other Categories Menu (nivel 3)
+    if (d?.otherCategories2TemplateSidV2) {
+      result.otherCategories2Sid = d.otherCategories2TemplateSidV2;
     } else {
-      console.log("[WhatsApp Buttons] Creando template de otras categorías (nivel 3)...");
+      console.log("[WhatsApp Buttons] Creando template de otras categorías v2 (nivel 3)...");
       const content = await (twilioClient as any).content.v1.contents.create({
-        friendlyName: `jan_other_cats2_${Date.now()}`,
+        friendlyName: `jan_other_cats2_v2_${Date.now()}`,
         language: "es",
         variables: {},
         types: {
           "twilio/quick-reply": {
             body: "¡Todavía hay más! Selecciona una opción 👇",
             actions: [
-              { title: "Moda 👗", id: "CAT_MODA" },
-              { title: "Mascotas y Bebés 🐾", id: "CAT_PETS" },
+              { title: "Salud y Belleza 🧴", id: "CAT_BEAUTY" },
+              { title: "Moda y Variedades 👗", id: "CAT_MODAPETS" },
               { title: "Menú Principal 🔙", id: "MENU_BACK" }
             ]
           },
           "twilio/text": {
-            body: "Más secciones disponibles:\n\n- Moda 👗\n- Mascotas y Bebés 🐾\n- Menú Principal 🔙"
+            body: "Más secciones disponibles:\n\n- Salud y Belleza 🧴\n- Moda y Variedades 👗\n- Menú Principal 🔙"
           }
         }
       });
       result.otherCategories2Sid = content.sid;
-      await setDoc(doc(db, "config", "system"), { otherCategories2TemplateSid: content.sid }, { merge: true });
+      await setDoc(doc(db, "config", "system"), { otherCategories2TemplateSidV2: content.sid }, { merge: true });
     }
 
     // 5. Keep Chatting Menu
@@ -2389,6 +2384,77 @@ const CATEGORY_PAGE_SIZE = 9; // dejamos 1 slot libre para el item "Ver más" (l
 
 function normalizeCatText(s: string): string {
   return String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+async function sendTrendingProducts(to: string, from: string, assignedStoreId: string, offset: number = 0) {
+  try {
+    const products = await loadProductsForStore(assignedStoreId);
+    
+    const TRENDING_IDS = [
+      "carplay-para-moto",
+      "modem-wifi-portatil",
+      "camara-dvr-25",
+      "inter-comunicador-y10",
+      "holder-cargador-inalambr",
+      "funda-protectora-para-moto",
+      "destornillador-atornillador-electrico",
+      "volante-seguro-pro",
+      "cargador-bateria-inteligente",
+      "kit-renovacion-veh",
+      "lampara-led-sensor",
+      "candado-alarma-grande",
+      "compresor-portatil-digital",
+      "hidro-lavadora-48v",
+      "mini-aspiradora-portatil",
+      "kit-saca-golpes"
+    ];
+
+    const matched = products.filter((p: any) => {
+      const origId = p.id.includes("_") ? p.id.split("_").slice(1).join("_") : p.id;
+      return TRENDING_IDS.includes(origId);
+    });
+
+    matched.sort((a: any, b: any) => {
+      const aOrig = a.id.includes("_") ? a.id.split("_").slice(1).join("_") : a.id;
+      const bOrig = b.id.includes("_") ? b.id.split("_").slice(1).join("_") : b.id;
+      return TRENDING_IDS.indexOf(aOrig) - TRENDING_IDS.indexOf(bOrig);
+    });
+
+    const page = matched.slice(offset, offset + CATEGORY_PAGE_SIZE);
+    const hasMore = matched.length > offset + CATEGORY_PAGE_SIZE;
+
+    let responseText = `🔥 *PRODUCTOS EN TENDENCIA — JAN SEL SHOP* 🔥\n\nEstos son nuestros productos más vendidos y recomendados de hoy en la landing:\n`;
+    
+    responseText += `\n⚠️ *RECUERDA:* Vendemos cualquier tipo de producto que imagines. Si buscas algo específico que no ves en esta lista, ¡solo pregúntame por él aquí mismo! 📲\n`;
+
+    const TWILIO_BODY_LIMIT = 1550;
+    if (responseText.length > TWILIO_BODY_LIMIT) {
+      responseText = responseText.slice(0, TWILIO_BODY_LIMIT - 20).trimEnd() + "\n…(sigue en la lista 👇)";
+    }
+
+    await sendWhatsApp(to, responseText, undefined, undefined, from);
+
+    if (matched.length === 0) return;
+
+    const cleanClientPhone = to.replace('whatsapp:', '').trim();
+    const customerProfileId = `${assignedStoreId}_${cleanClientPhone}`;
+
+    await setDoc(doc(db, "customers", customerProfileId), {
+      lastCategorySearch: { categories: ["trends"], categoryLabel: "Tendencias 🔥", nextOffset: offset + CATEGORY_PAGE_SIZE, isTrends: true }
+    }, { merge: true });
+
+    const categoryKey = `trends_p${offset}`;
+
+    setTimeout(async () => {
+      const sent = await sendProductListPicker(to, from, page, categoryKey, customerProfileId, hasMore);
+      if (!sent) {
+        await sendWhatsApp(to, "¿Cuál de estos productos en tendencia te interesó? 🚛💨 ¡Escríbeme el nombre o número y te lo reservo de una! 🔥", undefined, undefined, from);
+      }
+    }, 1500);
+
+  } catch (e: any) {
+    console.error(`[WhatsApp Buttons] Error enviando tendencias destacadas:`, e.message);
+  }
 }
 
 // `category` puede ser un string (una sola palabra clave) o un array de
@@ -5195,6 +5261,15 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
               respondedAt: serverTimestamp()
             });
           }
+        } else if (buttonPayload === "CAT_TRENDS") {
+          await sendTrendingProducts(from, to, assignedStoreId);
+          if (activityRefId) {
+            await updateDoc(doc(db, "activities", activityRefId), {
+              status: "respondido",
+              response: "[Productos enviados: Tendencias 🔥]",
+              respondedAt: serverTimestamp()
+            });
+          }
         } else if (buttonPayload === "CAT_HOME") {
           await sendCategoryFeaturedProducts(from, to, ["hogar", "cocina", "aseo"], "Hogar, Cocina y Aseo 🧼", assignedStoreId);
           if (activityRefId) {
@@ -5258,9 +5333,37 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
               respondedAt: serverTimestamp()
             });
           }
+        } else if (buttonPayload === "CAT_MODAPETS") {
+          await sendCategoryFeaturedProducts(from, to, ["moda", "mascotas", "bebe", "jugueteria"], "Moda, Mascotas y Juguetería 👗🐾", assignedStoreId);
+          if (activityRefId) {
+            await updateDoc(doc(db, "activities", activityRefId), {
+              status: "respondido",
+              response: "[Productos enviados: Moda, Mascotas y Juguetería]",
+              respondedAt: serverTimestamp()
+            });
+          }
         } else if (buttonPayload === "MORE_PAGE") {
           const lastSearch = customerData?.lastCategorySearch;
-          if (!lastSearch || !Array.isArray(lastSearch.categories)) {
+          if (!lastSearch) {
+            await sendWhatsApp(from, "Uy, esa búsqueda ya expiró 😅. Elige una categoría de nuevo:", undefined, activityRefId, to);
+            await sendCategoriesMenu(from, to);
+            if (activityRefId) {
+              await updateDoc(doc(db, "activities", activityRefId), {
+                status: "respondido",
+                response: "[Búsqueda expirada, menú de categorías enviado]",
+                respondedAt: serverTimestamp()
+              });
+            }
+          } else if (lastSearch.isTrends) {
+            await sendTrendingProducts(from, to, assignedStoreId, lastSearch.nextOffset || 0);
+            if (activityRefId) {
+              await updateDoc(doc(db, "activities", activityRefId), {
+                status: "respondido",
+                response: "[Página siguiente de tendencias enviada]",
+                respondedAt: serverTimestamp()
+              });
+            }
+          } else if (!Array.isArray(lastSearch.categories)) {
             await sendWhatsApp(from, "Uy, esa búsqueda ya expiró 😅. Elige una categoría de nuevo:", undefined, activityRefId, to);
             await sendCategoriesMenu(from, to);
             if (activityRefId) {
@@ -6083,13 +6186,13 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
       (cleanMsg.includes("producto") && (cleanMsg.includes("que") || cleanMsg.includes("cual") || cleanMsg.includes("ver") || cleanMsg.includes("mostrar") || cleanMsg.includes("tienen") || cleanMsg.includes("tienes")));
 
       if (isCatalogRequest && from.startsWith("whatsapp:")) {
-        console.log(`[WhatsApp Interceptor] Catalog request detected from ${from}. Replying deterministically with the interactive menu (no text list)...`);
+        console.log(`[WhatsApp Interceptor] Catalog request detected from ${from}. Replying deterministically with trending products first...`);
 
-        const CATALOG_SHORT_MESSAGE = `¡Qué más parce! 👋 Te doy la bienvenida a *Jan Sel Shop*! 💎\n\nTenemos un catálogo gigante con *más de 360 productos espectaculares*. Cualquier cosa que busques o te imagines, ¡te la conseguimos de una! 🚀\n\n🔥 *ENVÍO GRATIS A TODA COLOMBIA* 🇨🇴\n🚛 *PAGO CONTRA ENTREGA*\n\n👇 Toca una categoría para ver los productos, o escríbeme directamente qué buscas y te confirmo disponibilidad y precio de una.`;
+        const CATALOG_SHORT_MESSAGE = `¡Qué más parce! 👋 Te doy la bienvenida a *Jan Sel Shop*! 💎\n\nTenemos un catálogo gigante con *más de 360 productos espectaculares*. Cualquier cosa que busques o te imagines, ¡te la conseguimos de una! 🚀\n\n🔥 *ENVÍO GRATIS A TODA COLOMBIA* 🇨🇴\n🚛 *PAGO CONTRA ENTREGA*\n\n👇 ¡Abajo te dejo nuestros *Productos en Tendencia* más vendidos de hoy para que los mires de una!`;
 
         await sendWhatsApp(from, CATALOG_SHORT_MESSAGE, undefined, activityRef.id, to);
         await new Promise(resolve => setTimeout(resolve, 1200));
-        await sendCategoriesMenu(from, to);
+        await sendTrendingProducts(from, to, assignedStoreId);
 
         await updateDoc(doc(db, "activities", activityRef.id), {
           status: "respondido",

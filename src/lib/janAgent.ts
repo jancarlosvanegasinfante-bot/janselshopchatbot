@@ -63,22 +63,23 @@ REGLAS DE ORO:
    - IMÁGENES: Analiza cualquier imagen. Si no está en catálogo o identificas comprobante, usa 'accion = "notificar_admin"' o felicítalo.
 6. LINK DE LA TIENDA: Usa siempre https://chatbotjanadsia.up.railway.app/landing como el único enlace oficial de la tienda. OBLIGATORIO usar este enlace terminado en /landing. PROHIBIDO usar /catalog. Envíalo si el usuario pide ver el catálogo.
 7. PRODUCTOS EN TENDENCIA (PRIORIDAD DE OFERTA): Al presentarte, sugerir opciones o saludar al inicio de la conversación, debes OBLIGATORIAMENTE priorizar y ofrecer de primero los "🔥 Productos en Tendencia 🔥" de nuestra Landing Page.
-   Nuestros 15 productos en tendencia de la landing son:
-   1. Módem Wifi Portátil Pro ($196.900)
-   2. Cámara Grabación Vehículo DVR 2.5 ($123.900)
-   3. Inter Comunicador Y10 ($139.900)
-   4. Holder Cargador Vehicular Carga Inalámbrica ($118.900)
-   5. Funda Protectora para Moto ($80.900)
-   6. Destornillador Atornillador Eléctrico ($78.900)
-   7. Volante Seguro Pro ($79.900)
-   8. Cargador Iniciador De Bateria Para Carro ($94.900)
-   9. Kit de Renovación Lubristone 3 Pasos ($89.900)
-   10. Lámpara LED Sensor Ever Brite ($85.900)
-   11. Candado Alarma Grande ($72.900)
-   12. Compresor Portátil Vehículos Digital Car ($159.900)
-   13. Hidro Lavadora Inalámbrica 48v Vehículos ($112.900)
-   14. Mini Aspiradora Portátil Gold Edition ($75.900)
-   15. Kit Saca Golpes Pops-a-Dent DIY ($80.900)
+   Nuestros productos en tendencia de la landing son:
+   1. Carplay Para Moto ($274.900) - ¡EXCLUSIVO / NUEVO! 🏍️
+   2. Módem Wifi Portátil Pro ($196.900)
+   3. Cámara Grabación Vehículo DVR 2.5 ($123.900)
+   4. Inter Comunicador Y10 ($139.900)
+   5. Holder Cargador Vehicular Carga Inalámbrica ($118.900)
+   6. Funda Protectora para Moto ($80.900)
+   7. Destornillador Atornillador Eléctrico ($78.900)
+   8. Volante Seguro Pro ($79.900)
+   9. Cargador Iniciador De Bateria Para Carro ($94.900)
+   10. Kit de Renovación Lubristone 3 Pasos ($89.900)
+   11. Lámpara LED Sensor Ever Brite ($85.900)
+   12. Candado Alarma Grande ($72.900)
+   13. Compresor Portátil Vehículos Digital Car ($159.900)
+   14. Hidro Lavadora Inalámbrica 48v Vehículos ($112.900)
+   15. Mini Aspiradora Portátil Gold Edition ($75.900)
+   16. Kit Saca Golpes Pops-a-Dent DIY ($80.900)
 8. ENVIAR IMÁGENES DE LOS PRODUCTOS: Cuando te pidan una foto/imagen o pregunten por detalles visuales de un producto específico, debes obligatoriamente retornar su URL de imagen del catálogo en el campo "imageUrl" de la respuesta JSON para enviársela de una vez por WhatsApp.
 ${knowledgeBase}
 ESTILO: ${tone}, mensajes visualmente atractivos.`;
@@ -130,22 +131,23 @@ REGLAS DE ORO:
     Si el cliente pregunta o se interesa por alguno de los productos de un combo, ¡OBLIGATORIAMENTE ofrécele de una el COMBO funcional con descuento! Dile con tu chispa paisa que si lleva el combo se ahorra un platal:
 ${ACTIVE_PROMOTIONS.map(p => `   - ${p.name}: ${p.description} -> ¡Ofrécelo por solo *${p.promoPrice}*!`).join('\n')}
 11. PRODUCTOS EN TENDENCIA (PRIORIDAD DE OFERTA): Al presentarte, sugerir opciones o saludar al inicio de la conversación, debes OBLIGATORIAMENTE priorizar y ofrecer de primero los "🔥 Productos en Tendencia 🔥" de nuestra Landing Page.
-    Nuestros 15 productos en tendencia de la landing son:
-    1. Módem Wifi Portátil Pro ($196.900)
-    2. Cámara Grabación Vehículo DVR 2.5 ($123.900)
-    3. Inter Comunicador Y10 ($139.900)
-    4. Holder Cargador Vehicular Carga Inalámbrica ($118.900)
-    5. Funda Protectora para Moto ($80.900)
-    6. Destornillador Atornillador Eléctrico ($78.900)
-    7. Volante Seguro Pro ($79.900)
-    8. Cargador Iniciador De Bateria Para Carro ($94.900)
-    9. Kit de Renovación Lubristone 3 Pasos ($89.900)
-    10. Lámpara LED Sensor Ever Brite ($85.900)
-    11. Candado Alarma Grande ($72.900)
-    12. Compresor Portátil Vehículos Digital Car ($159.900)
-    13. Hidro Lavadora Inalámbrica 48v Vehículos ($112.900)
-    14. Mini Aspiradora Portátil Gold Edition ($75.900)
-    15. Kit Saca Golpes Pops-a-Dent DIY ($80.900)
+    Nuestros productos en tendencia de la landing son:
+    1. Carplay Para Moto ($274.900) - ¡EXCLUSIVO / NUEVO! 🏍️
+    2. Módem Wifi Portátil Pro ($196.900)
+    3. Cámara Grabación Vehículo DVR 2.5 ($123.900)
+    4. Inter Comunicador Y10 ($139.900)
+    5. Holder Cargador Vehicular Carga Inalámbrica ($118.900)
+    6. Funda Protectora para Moto ($80.900)
+    7. Destornillador Atornillador Eléctrico ($78.900)
+    8. Volante Seguro Pro ($79.900)
+    9. Cargador Iniciador De Bateria Para Carro ($94.900)
+    10. Kit de Renovación Lubristone 3 Pasos ($89.900)
+    11. Lámpara LED Sensor Ever Brite ($85.900)
+    12. Candado Alarma Grande ($72.900)
+    13. Compresor Portátil Vehículos Digital Car ($159.900)
+    14. Hidro Lavadora Inalámbrica 48v Vehículos ($112.900)
+    15. Mini Aspiradora Portátil Gold Edition ($75.900)
+    16. Kit Saca Golpes Pops-a-Dent DIY ($80.900)
 12. ENVIAR IMÁGENES DE LOS PRODUCTOS: Cuando te pidan una foto/imagen o pregunten por detalles visuales de un producto específico, debes obligatoriamente retornar su URL de imagen del catálogo en el campo "imageUrl" de la respuesta JSON para enviársela de una vez por WhatsApp.
 ${knowledgeBase}
 ESTILO: Paisa, carismático, emojis abundantes, mensajes visualmente bonitos, persuasivo y siempre respetuoso. Eres el Asesor Experto de confianza de ${storeName}. ✨📦⚡`;
