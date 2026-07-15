@@ -980,6 +980,46 @@ function isNegativeText(text: string): boolean {
   return /^(no+|no gracias|nel|no porfa|no por ahora|no por favor|nop)$/.test(t);
 }
 
+function getColombiaLocalTimeFormatted(): string {
+  try {
+    return new Intl.DateTimeFormat("es-CO", {
+      timeZone: "America/Bogota",
+      dateStyle: "full",
+      timeStyle: "medium"
+    }).format(new Date());
+  } catch (e) {
+    return new Date().toISOString();
+  }
+}
+
+function getTimeGreeting(): string {
+  try {
+    const colTimeStr = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Bogota",
+      hour: "numeric",
+      hour12: false
+    }).format(new Date());
+    
+    const hour = parseInt(colTimeStr, 10);
+    if (hour >= 5 && hour < 12) {
+      return "¡Buenos días! ☀️";
+    } else if (hour >= 12 && hour < 18) {
+      return "¡Buenas tardes! 🌤️";
+    } else {
+      return "¡Buenas noches! 🌙";
+    }
+  } catch (error) {
+    const hour = (new Date().getUTCHours() - 5 + 24) % 24;
+    if (hour >= 5 && hour < 12) {
+      return "¡Buenos días! ☀️";
+    } else if (hour >= 12 && hour < 18) {
+      return "¡Buenas tardes! 🌤️";
+    } else {
+      return "¡Buenas noches! 🌙";
+    }
+  }
+}
+
 async function processInferenceOnServer(activityId: string, data: any) {
   try {
     await updateDoc(doc(db, "activities", activityId), { 
@@ -1216,11 +1256,19 @@ DATOS DEL PEDIDO CAPTURADOS HASTA EL MOMENTO EN ESTE CHECKOUT: ${JSON.stringify(
 REGLA DE CONTEXTO DE CHECKOUT: Si el cliente está enviando un mensaje libre, foto o audio que cambia, corrige o complementa estos datos, utiliza esta información para actualizar el pedido en "datos_pedido" y proponer "accion": "confirmar_pedido" (si ya tienes todo corregido y completo) o "accion": "iniciar_checkout" (para arrancar un flujo nuevo con el producto corregido/correcto si cambió de opinión).`
       : "";
 
+    const isAwaitingHuman = customerProfile?.etapa === "asesoria_solicitada";
+    const asesoriaContext = isAwaitingHuman
+      ? `\n📌 CONTEXTO DE ASESORÍA HUMANA SOLICITADA: El cliente solicitó hablar con un asesor humano y está en cola de espera. Mientras el asesor humano ingresa al chat, tu tarea es acompañarlo, charlar con él de forma súper natural, cercana, cálida e interactiva. Mantén tus mensajes un poco más cortos, escúchalo de manera muy comprensiva, aclara sus dudas con amabilidad, ofrece o filtra productos de nuestro catálogo que se ajusten a su interés actual de manera prudente, pero sin presionarlo. Mantén viva la conversación y haz que la espera sea agradable, sin dejar el chat en silencio.`
+      : "";
+
+    const colombianTimeStr = getColombiaLocalTimeFormatted();
+
     const promptText = `ESTÁS ATENDIENDO EN LA TIENDA: ${storeConfig.name || "Jan Sel Shop"} (Slug: ${assignedStoreId})
 CLIENTE: ${fromPhone}
 NOMBRE: ${customerProfile?.name || "Desconocido"}
+HORA LOCAL EN COLOMBIA: ${colombianTimeStr}
 ETAPA CRM: ${customerProfile?.etapa || "nuevo"} (Probabilidad de compra: ${customerProfile?.score || 0}%)
-INTENCIÓN ANTERIOR: ${customerProfile?.intencion || "Ninguna"}${checkoutContext}
+INTENCIÓN ANTERIOR: ${customerProfile?.intencion || "Ninguna"}${checkoutContext}${asesoriaContext}
 HISTORIAL:
 ${history}
 
@@ -1444,7 +1492,7 @@ Asegúrate de que la propiedad "mensaje" contenga tu respuesta real dirigida al 
     let jsonResponse;
     const safeFallbackResponse = {
       accion: "respuesta",
-      mensaje: "Uy parce, me enredé un poquito procesando eso. ¿Me repites porfa en un mensaje más cortico?",
+      mensaje: "Hola, me enredé un poquito procesando eso. ¿Me repites porfa en un mensaje más cortico?",
       intencion: "error",
       nivel_interes: "bajo"
     };
@@ -5206,13 +5254,13 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
               console.error("[Server AI] Error notificando asesoría de botón:", e);
             }
           }
-          const helpMsg = "¡Perfecto! Ya le he avisado a un asesor humano 🙋‍♂️. Te escribirá en un momento. Mientras tanto, si tienes otra duda, puedes escribirme por acá. 😊";
-          await sendWhatsApp(from, helpMsg, undefined, activityRefId, to);
+          
           if (activityRefId) {
-            await updateDoc(doc(db, "activities", activityRefId), {
-              status: "respondido",
-              response: helpMsg,
-              respondedAt: serverTimestamp()
+            processInferenceOnServer(activityRefId, { 
+              ...activityData, 
+              message: "Quiero hablar con un asesor 🙋‍♂️" 
+            }).catch(e => {
+              console.error("[Server Inference] Error in button MENU_HUMAN inference:", e.message);
             });
           }
         } else if (buttonPayload === "RESUME_CHECKOUT") {
@@ -5754,13 +5802,7 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
         } catch (e) {
           console.error("[Advisor Interceptor] Error notificando asesoría:", e);
         }
-        await sendWhatsApp(from, "¡Perfecto! Ya le he avisado a un asesor humano 🙋‍♂️. Te escribirá en un momento. Mientras tanto, si tienes otra duda, puedes escribirme por acá. 😊", undefined, activityRef.id, to);
-        await updateDoc(doc(db, "activities", activityRef.id), {
-          status: "respondido",
-          response: "¡Perfecto! Ya le he avisado a un asesor humano 🙋‍♂️. Te escribirá en un momento. Mientras tanto, si tienes otra duda, puedes escribirme por acá. 😊",
-          respondedAt: serverTimestamp()
-        });
-        return res.status(200).send("");
+        // Dejamos que continúe hacia el flujo normal de la IA para que responda de forma natural
       }
 
       // ==============================================
@@ -5880,7 +5922,7 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
             checkoutData: null,
             etapa: "interesado"
           }, { merge: true });
-          const cancelMsg = `¡Listo, parce! Cancelamos tu proceso de compra. 🙂 ¿En qué más te puedo colaborar hoy?`;
+          const cancelMsg = `¡Listo! Cancelamos tu proceso de compra. 🙂 ¿En qué más te puedo colaborar hoy?`;
           await sendWhatsApp(from, cancelMsg, undefined, activityRef.id, to);
           await updateDoc(doc(db, "activities", activityRef.id), {
             status: "respondido",
@@ -6234,7 +6276,8 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
       if (isCatalogRequest && from.startsWith("whatsapp:")) {
         console.log(`[WhatsApp Interceptor] Catalog request detected from ${from}. Replying deterministically with trending products first...`);
 
-        const CATALOG_SHORT_MESSAGE = `¡Qué más parce! 👋 Te doy la bienvenida a *Jan Sel Shop*! 💎\n\nTenemos un catálogo gigante con *más de 360 productos espectaculares*. Cualquier cosa que busques o te imagines, ¡te la conseguimos de una! 🚀\n\n🔥 *ENVÍO GRATIS A TODA COLOMBIA* 🇨🇴\n🚛 *PAGO CONTRA ENTREGA*\n\n👇 ¡Abajo te dejo nuestros *Productos en Tendencia* más vendidos de hoy para que los mires de una!`;
+        const greeting = getTimeGreeting();
+        const CATALOG_SHORT_MESSAGE = `${greeting} 👋 Te doy la bienvenida a *Jan Sel Shop*! 💎\n\nTenemos un catálogo gigante con *más de 360 productos espectaculares*. Cualquier cosa que busques o te imagines, ¡te la conseguimos de una! 🚀\n\n🔥 *ENVÍO GRATIS A TODA COLOMBIA* 🇨🇴\n🚛 *PAGO CONTRA ENTREGA*\n\n👇 ¡Abajo te dejo nuestros *Productos en Tendencia* más vendidos de hoy para que los mires de una!`;
 
         await sendWhatsApp(from, CATALOG_SHORT_MESSAGE, undefined, activityRef.id, to);
         await new Promise(resolve => setTimeout(resolve, 1200));
@@ -6261,19 +6304,23 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
       // ==============================================
       const greetingWords = [
         "hola", "buenas", "buenos dias", "buenas tardes", "buenas noches", 
-        "que tal", "alo", "buen dia", "saludos", "epale", "parce", "oe", "que mas"
+        "que tal", "alo", "buen dia", "saludos", "epale", "oe", "que mas"
       ];
       const isGreeting = (cleanMsg.length <= 15 && greetingWords.some(w => cleanMsg === w || cleanMsg.startsWith(w))) ||
                          (cleanMsg.length <= 25 && (cleanMsg === "hola buenas" || cleanMsg === "hola buenos dias" || cleanMsg === "hola buen dia"));
 
-      if (isGreeting && from.startsWith("whatsapp:")) {
+      const isAwaitingHuman = customerData?.etapa === "asesoria_solicitada";
+
+      if (isGreeting && from.startsWith("whatsapp:") && !isAwaitingHuman) {
         console.log(`[WhatsApp Greeting Interceptor] Greeting detected from ${from}. Replying deterministically...`);
 
-        // Saludo personalizado si es cliente recurrente con pedido anterior
-        let WELCOME_MESSAGE = `¡Qué más parce! 👋 Te doy la bienvenida a *Jan Sel Shop*! 💎\n\n¿Cómo vas? Contame en qué te puedo colaborar hoy o qué estás buscando de nuestro catálogo. ¡Aquí abajo te dejo unas opciones rápidas para empezar de una! 👇`;
+        const greeting = getTimeGreeting();
+        // Saludo personalizado si es cliente recurrente con pedido anterior o si tenemos su nombre
+        let WELCOME_MESSAGE = `${greeting} 👋 Te doy la bienvenida a *Jan Sel Shop*! 💎\n\n¿Cómo estás? Cuéntame en qué te puedo colaborar hoy o qué estás buscando de nuestro catálogo. ¡Aquí abajo te dejo unas opciones rápidas para empezar de una! 👇`;
 
         try {
           if (customerData?.name) {
+            const firstName = String(customerData.name).split(" ")[0];
             const prevOrdersQ = query(
               collection(db, "orders"),
               where("customerPhone", "==", cleanFrom),
@@ -6283,8 +6330,9 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
             const prevOrdersSnap = await getDocs(prevOrdersQ);
             if (!prevOrdersSnap.empty) {
               const lastOrder = prevOrdersSnap.docs[0].data() as any;
-              const firstName = String(customerData.name).split(" ")[0];
-              WELCOME_MESSAGE = `¡Hola de nuevo, *${firstName}*! 👋 Qué gusto verte otra vez por *Jan Sel Shop* 💎\n\n¿Cómo te fue con tu *${lastOrder.productName || "pedido anterior"}*? Cuéntame en qué te puedo colaborar hoy. 👇`;
+              WELCOME_MESSAGE = `${greeting} *${firstName}*! 👋 Qué gusto verte otra vez por *Jan Sel Shop* 💎\n\n¿Cómo te fue con tu *${lastOrder.productName || "pedido anterior"}*? Cuéntame en qué te puedo colaborar hoy. 👇`;
+            } else {
+              WELCOME_MESSAGE = `${greeting} *${firstName}*! 👋 Te doy la bienvenida a *Jan Sel Shop*! 💎\n\n¿Cómo estás? Cuéntame en qué te puedo colaborar hoy o qué estás buscando de nuestro catálogo. ¡Aquí abajo te dejo unas opciones rápidas para empezar de una! 👇`;
             }
           }
         } catch (e) {
