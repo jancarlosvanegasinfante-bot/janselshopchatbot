@@ -1,6 +1,20 @@
 {
   "products": [
     {
+      "id": "carplay-para-moto",
+      "name": "Carplay Para Moto",
+      "category": "tecnologia",
+      "cost": 150000,
+      "stock": 38,
+      "freight": 15000,
+      "imageUrl": "/src/assets/images/carplay_moto_1784124208692.jpg",
+      "currency": "COP",
+      "provider": "Dropi",
+      "description": "Pantalla inteligente táctil de 5 pulgadas para motocicleta con Apple CarPlay y Android Auto inalámbrico. Diseño resistente al agua IPX7, conectividad Bluetooth 5.0, voltaje compatible de 12V-24V. Conecta tu teléfono, navega de forma segura con GPS (Google Maps, Waze) y disfruta de tu música favorita en tu ruta con total control y comodidad.",
+      "price": 274900,
+      "videoUrl": ""
+    },
+    {
       "imageUrl": "/src/assets/images/INICIADOR DE VEHICULOS.png",
       "provider": "Dropi",
       "currency": "COP",

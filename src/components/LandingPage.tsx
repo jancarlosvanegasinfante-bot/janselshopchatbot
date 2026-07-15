@@ -34,6 +34,19 @@ import toast from "react-hot-toast";
 // ─── Products ────────────────────────────────────────────────────────────────
 const TRENDING_PRODUCTS = [
   {
+    id: "carplay-para-moto",
+    name: "Carplay Para Moto",
+    category: "motos",
+    description: "Pantalla inteligente táctil de 5 pulgadas para motocicleta con Apple CarPlay y Android Auto inalámbrico. Diseño resistente al agua IPX7, conectividad Bluetooth 5.0, voltaje compatible de 12V-24V. Conecta tu teléfono, navega de forma segura con GPS (Google Maps, Waze) y disfruta de tu música favorita.",
+    price: 274900,
+    originalPrice: 390000,
+    imageUrl: "/src/assets/images/carplay_moto_1784124208692.jpg",
+    rating: 4.9,
+    reviews: 124,
+    stock: 38,
+    badge: "🏍️ EXCLUSIVO / NUEVO",
+  },
+  {
     id: "modem-wifi-portatil",
     name: "Módem Wifi Portátil Pro",
     category: "tecnología",

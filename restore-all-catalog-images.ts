@@ -182,7 +182,11 @@ let optimizedFallbacks = 0;
 catalog.products = catalog.products.map((p: any) => {
   let targetUrl = p.imageUrl;
 
-  if (originalMap[p.id]) {
+  if (p.imageUrl && (p.imageUrl.startsWith("/src/assets/") || p.imageUrl.startsWith("/assets/"))) {
+    // Preserve local asset images
+    targetUrl = p.imageUrl;
+    preservedOriginals++;
+  } else if (originalMap[p.id]) {
     // Priority 1: Original map verified MercadoLibre image
     targetUrl = originalMap[p.id];
     preservedOriginals++;
