@@ -2609,13 +2609,19 @@ function OrdersTab({ orders, onUpdateStatus, userStore }: { orders: Order[], onU
                           RE-GENERA
                         </button>
 
-                        {/* SEND VIP BUTTON (TWILIO + DIRECT WA ME PREVIEW OVERLAY) */}
+                        {/* SEND VIP BUTTON (DIRECT INSTANT WHATSAPP SEND + DATABASE UPDATE) */}
                         <button
                           onClick={async () => {
                             const currentMsg = editedMessages[activeOrder.id] !== undefined ? editedMessages[activeOrder.id] : ((activeOrder as any).upsellSuggestedMsg || "");
+                            
+                            // Abre de inmediato WhatsApp Web con el número y mensaje para garantizar el envío "sí o sí" al instante
+                            const phoneNormalized = normalizePhone(activeOrder.customerPhone);
+                            const waUrl = `https://api.whatsapp.com/send?phone=${phoneNormalized}&text=${encodeURIComponent(currentMsg)}`;
+                            window.open(waUrl, '_blank');
+
                             try {
                               setSendingUpsellId(activeOrder.id);
-                              toast.loading("Enviando WhatsApp corporativo...", { id: "upsell_send_" + activeOrder.id });
+                              toast.loading("Actualizando estado en sistema...", { id: "upsell_send_" + activeOrder.id });
                               const res = await fetch(`/api/integration/orders/${activeOrder.id}/send-upsell`, {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
@@ -2623,9 +2629,9 @@ function OrdersTab({ orders, onUpdateStatus, userStore }: { orders: Order[], onU
                               });
                               const data = await res.json();
                               if (data.success) {
-                                toast.success("¡Oferta VIP enviada correctamente por WhatsApp!", { id: "upsell_send_" + activeOrder.id });
+                                toast.success("¡Oferta VIP abierta en WhatsApp y registrada con éxito!", { id: "upsell_send_" + activeOrder.id });
                               } else {
-                                toast.error("Error: " + data.error, { id: "upsell_send_" + activeOrder.id });
+                                toast.error("Error al registrar: " + data.error, { id: "upsell_send_" + activeOrder.id });
                               }
                             } catch (err: any) {
                               toast.error("Error: " + err.message, { id: "upsell_send_" + activeOrder.id });
@@ -2645,21 +2651,6 @@ function OrdersTab({ orders, onUpdateStatus, userStore }: { orders: Order[], onU
                         </button>
                       </div>
 
-                      {/* DIRECT MANUAL WHATSAPP OPTION TAB */}
-                      <div className="flex items-center justify-between border-t border-amber-500/10 pt-3 text-[9px]">
-                        <span className="text-neutral-500 font-medium">¿Twilio apagado o quieres enviar manual?</span>
-                        <a 
-                          href={`https://wa.me/${normalizePhone(activeOrder.customerPhone)}?text=${encodeURIComponent(
-                            editedMessages[activeOrder.id] !== undefined ? editedMessages[activeOrder.id] : ((activeOrder as any).upsellSuggestedMsg || "")
-                          )}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-amber-400 hover:text-amber-300 font-black flex items-center gap-1 hover:underline transition-colors py-1 px-2 bg-amber-500/10 rounded border border-amber-500/20"
-                        >
-                          Enviar por WhatsApp Web 📲
-                        </a>
-                      </div>
-
                       {/* Status indicator tracking */}
                       <div className="flex justify-between items-center text-[8px] font-mono border-t border-neutral-850 pt-2.5">
                         <span className="text-neutral-500">Log de Envío:</span>
@@ -2668,21 +2659,9 @@ function OrdersTab({ orders, onUpdateStatus, userStore }: { orders: Order[], onU
                             <CheckCircle size={8} /> ENVIADO
                           </span>
                         ) : (
-                          <button
-                            onClick={async () => {
-                              try {
-                                toast.loading("Configurando trigger inmediato...", { id: "upsell_trig_" + activeOrder.id });
-                                await updateDoc(doc(db, "orders", activeOrder.id), { triggerUpsellImmediately: true });
-                                toast.success("¡Disparo inmediato configurado! Se enviará en el próximo escaneo.", { id: "upsell_trig_" + activeOrder.id });
-                              } catch (err: any) {
-                                toast.error(err.message, { id: "upsell_trig_" + activeOrder.id });
-                              }
-                            }}
-                            className="text-amber-400 font-bold hover:underline uppercase flex items-center gap-1"
-                            title="Disparar en el próximo chequeo periódico automático"
-                          >
-                            <Clock size={8} /> ⏳ PROGRAMADO (DISPARAR AHORA)
-                          </button>
+                          <span className="text-amber-400 font-bold uppercase flex items-center gap-1 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                            <Clock size={8} /> PENDIENTE
+                          </span>
                         )}
                       </div>
                     </div>
