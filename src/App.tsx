@@ -2613,15 +2613,10 @@ function OrdersTab({ orders, onUpdateStatus, userStore }: { orders: Order[], onU
                         <button
                           onClick={async () => {
                             const currentMsg = editedMessages[activeOrder.id] !== undefined ? editedMessages[activeOrder.id] : ((activeOrder as any).upsellSuggestedMsg || "");
-                            
-                            // Abre de inmediato WhatsApp Web con el número y mensaje para garantizar el envío "sí o sí" al instante
-                            const phoneNormalized = normalizePhone(activeOrder.customerPhone);
-                            const waUrl = `https://api.whatsapp.com/send?phone=${phoneNormalized}&text=${encodeURIComponent(currentMsg)}`;
-                            window.open(waUrl, '_blank');
 
                             try {
                               setSendingUpsellId(activeOrder.id);
-                              toast.loading("Actualizando estado en sistema...", { id: "upsell_send_" + activeOrder.id });
+                              toast.loading("Enviando WhatsApp corporativo...", { id: "upsell_send_" + activeOrder.id });
                               const res = await fetch(`/api/integration/orders/${activeOrder.id}/send-upsell`, {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
@@ -2629,9 +2624,9 @@ function OrdersTab({ orders, onUpdateStatus, userStore }: { orders: Order[], onU
                               });
                               const data = await res.json();
                               if (data.success) {
-                                toast.success("¡Oferta VIP abierta en WhatsApp y registrada con éxito!", { id: "upsell_send_" + activeOrder.id });
+                                toast.success("¡Oferta VIP enviada correctamente por WhatsApp!", { id: "upsell_send_" + activeOrder.id });
                               } else {
-                                toast.error("Error al registrar: " + data.error, { id: "upsell_send_" + activeOrder.id });
+                                toast.error("Error: " + data.error, { id: "upsell_send_" + activeOrder.id });
                               }
                             } catch (err: any) {
                               toast.error("Error: " + err.message, { id: "upsell_send_" + activeOrder.id });
