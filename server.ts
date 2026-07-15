@@ -1210,11 +1210,17 @@ async function processInferenceOnServer(activityId: string, data: any) {
       return `- ${p.name} ($${p.price}) [id: ${p.id}]${p.category ? ` [Cat: ${p.category}]` : ""}${desc ? ` - ${desc}` : ""}${isImageMatch ? " ⭐ COINCIDE CON LA FOTO QUE ENVIÓ EL CLIENTE" : ""}`;
     }).join("\n");
 
+    const checkoutContext = customerProfile?.checkoutStep 
+      ? `\nPASO DE CHECKOUT DETERMINÍSTICO ACTIVO EN CURSO: "${customerProfile.checkoutStep}"
+DATOS DEL PEDIDO CAPTURADOS HASTA EL MOMENTO EN ESTE CHECKOUT: ${JSON.stringify(customerProfile.checkoutData || {})}
+REGLA DE CONTEXTO DE CHECKOUT: Si el cliente está enviando un mensaje libre, foto o audio que cambia, corrige o complementa estos datos, utiliza esta información para actualizar el pedido en "datos_pedido" y proponer "accion": "confirmar_pedido" (si ya tienes todo corregido y completo) o "accion": "iniciar_checkout" (para arrancar un flujo nuevo con el producto corregido/correcto si cambió de opinión).`
+      : "";
+
     const promptText = `ESTÁS ATENDIENDO EN LA TIENDA: ${storeConfig.name || "Jan Sel Shop"} (Slug: ${assignedStoreId})
 CLIENTE: ${fromPhone}
 NOMBRE: ${customerProfile?.name || "Desconocido"}
 ETAPA CRM: ${customerProfile?.etapa || "nuevo"} (Probabilidad de compra: ${customerProfile?.score || 0}%)
-INTENCIÓN ANTERIOR: ${customerProfile?.intencion || "Ninguna"}
+INTENCIÓN ANTERIOR: ${customerProfile?.intencion || "Ninguna"}${checkoutContext}
 HISTORIAL:
 ${history}
 
@@ -5537,7 +5543,7 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
     // ejemplo, si el cliente tocó un item pero por algún motivo llegó como
     // texto plano, o si escribió el nombre del producto/acción a mano),
     // intentamos resolverlo igual antes de caer en el flujo genérico de IA.
-    if (!buttonPayload && messageBody) {
+    if (!buttonPayload && messageBody && !(numMedia > 0 || (mediaItems && mediaItems.length > 0))) {
       try {
         const normalizedMsg = normalizeCatText(messageBody).trim();
 
@@ -5818,10 +5824,50 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
         return res.status(200).send("");
       }
 
+      // Bypass conditions for the deterministic state machine to let the IA process the message:
+      let shouldBypassCheckout = false;
+      const hasMedia = numMedia > 0 || (mediaItems && mediaItems.length > 0);
+
+      if (hasMedia) {
+        shouldBypassCheckout = true;
+        console.log(`[Checkout State Machine] Bypassing checkout state machine for ${cleanFrom} because media was received.`);
+      }
+
+      const currentStep = customerData?.checkoutStep;
+      if (!shouldBypassCheckout && customerData && currentStep === "confirmacion") {
+        const normConfirm = cleanMsg.replace(/[^a-z]/g, "");
+        const fieldMap: Record<string, string> = {
+          nombre: "nombre", telefono: "telefono", numero: "telefono",
+          ciudad: "ciudad", direccion: "direccion", referencia: "referencia",
+          producto: "producto", cantidad: "cantidad"
+        };
+        const fieldRequested = Object.keys(fieldMap).find(k => normConfirm === k || normConfirm.includes(k));
+        const isAwaitingField = customerData.checkoutData?._awaitingFieldChoice && fieldRequested;
+        const isYes = ["si", "sii", "sigo", "correcto", "confirmar", "confirmo", "deuna", "dale", "yes"].some(k => normConfirm === k || normConfirm.startsWith(k));
+        const isNo = ["no", "cancelar", "cambiar", "corregir", "incorrecto"].some(k => normConfirm === k || normConfirm.startsWith(k));
+
+        if (!isAwaitingField && !isYes && !isNo) {
+          shouldBypassCheckout = true;
+          console.log(`[Checkout State Machine] Bypassing confirmacion step for ${cleanFrom} because message "${finalMessage}" is not a standard Yes/No confirmation.`);
+        }
+      }
+
+      if (!shouldBypassCheckout && customerData && currentStep === "producto") {
+        const products = await loadProductsForStore(assignedStoreId);
+        const match = products.find((p: any) =>
+          (p.name && p.name.toLowerCase().includes(finalMessage.toLowerCase())) ||
+          (p.name && finalMessage.toLowerCase().includes(p.name.toLowerCase()))
+        );
+        if (!match) {
+          shouldBypassCheckout = true;
+          console.log(`[Checkout State Machine] Bypassing producto step for ${cleanFrom} because input "${finalMessage}" does not match any product in catalog.`);
+        }
+      }
+
       // ==============================================
       // 1. ACTIVE CHECKOUT STATE MACHINE (DETERMINISTIC)
       // ==============================================
-      if (customerData && customerData.checkoutStep && from.startsWith("whatsapp:")) {
+      if (customerData && customerData.checkoutStep && from.startsWith("whatsapp:") && !shouldBypassCheckout) {
         const currentStep = customerData.checkoutStep;
         const checkoutData = customerData.checkoutData || {};
 

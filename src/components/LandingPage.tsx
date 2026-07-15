@@ -325,47 +325,44 @@ const FAQ_ITEMS = [
   },
 ];
 
-// Helper to calculate dynamic quantity discount per product based on price range to avoid over-discounting
-const getProductQuantityDiscount = (price: number, totalQty: number): number => {
-  if (totalQty < 2) return 0;
-  
-  let baseDiscount = 0;
+// Helper to get structured pricing discounts based on price range to avoid over-discounting
+const getProductPriceConfig = (price: number) => {
   if (price < 10000) {
-    baseDiscount = Math.round(price * 0.05); // 5% max for extremely cheap items
+    return {
+      qtyBase: Math.round(price * 0.15),
+      qtyStep: Math.round(price * 0.08),
+      prepay: Math.round(price * 0.03)
+    };
   } else if (price < 40000) {
-    baseDiscount = 2000;
+    return {
+      qtyBase: 3000,
+      qtyStep: 1500,
+      prepay: 1500
+    };
   } else if (price < 90000) {
-    baseDiscount = 5000;
+    return {
+      qtyBase: 6000,
+      qtyStep: 3000,
+      prepay: 3000
+    };
   } else if (price < 180000) {
-    baseDiscount = 10000;
+    return {
+      qtyBase: 12000,
+      qtyStep: 6000,
+      prepay: 6000
+    };
   } else if (price < 250000) {
-    baseDiscount = 15000;
+    return {
+      qtyBase: 16000,
+      qtyStep: 8000,
+      prepay: 10000
+    };
   } else {
-    baseDiscount = 20000;
-  }
-
-  // If carrying 3 or more products, they get a slightly better promo discount per item
-  if (totalQty >= 3) {
-    baseDiscount = Math.round(baseDiscount * 1.3);
-  }
-
-  return baseDiscount;
-};
-
-// Helper to calculate dynamic prepayment discount per product based on price range
-const getProductPrepaymentDiscount = (price: number): number => {
-  if (price < 10000) {
-    return Math.round(price * 0.03); // 3% max
-  } else if (price < 40000) {
-    return 1500;
-  } else if (price < 90000) {
-    return 3000;
-  } else if (price < 180000) {
-    return 6000;
-  } else if (price < 250000) {
-    return 10000;
-  } else {
-    return 15000;
+    return {
+      qtyBase: 20000,
+      qtyStep: 10000,
+      prepay: 15000
+    };
   }
 };
 
@@ -632,21 +629,38 @@ export default function LandingPage() {
     const originalSubtotal = cart.reduce((sum, item) => sum + item.product.originalPrice * item.quantity, 0);
     const totalQty = cart.reduce((sum, item) => sum + item.quantity, 0);
     
-    // Calculate custom quantity discount summed over all items
-    const quantityDiscount = cart.reduce((sum, item) => {
-      const discountPerItem = getProductQuantityDiscount(item.product.price, totalQty);
-      return sum + (discountPerItem * item.quantity);
-    }, 0);
+    // Expand all items into individual units sorted by price descending
+    const individualUnits: number[] = [];
+    cart.forEach((item) => {
+      for (let i = 0; i < item.quantity; i++) {
+        individualUnits.push(item.product.price);
+      }
+    });
+    individualUnits.sort((a, b) => b - a);
+
+    // Calculate quantity discount progressively
+    let quantityDiscount = 0;
+    if (individualUnits.length >= 2) {
+      // 2nd unit gets the qtyBase discount of its price range
+      const config1 = getProductPriceConfig(individualUnits[1]);
+      quantityDiscount += config1.qtyBase;
+
+      // 3rd and subsequent units get the qtyStep discount of their respective price ranges
+      for (let i = 2; i < individualUnits.length; i++) {
+        const configN = getProductPriceConfig(individualUnits[i]);
+        quantityDiscount += configN.qtyStep;
+      }
+    }
 
     const intermediateTotal = subtotal - quantityDiscount;
 
-    // Calculate custom prepayment discount summed over all items
+    // Calculate prepayment discount progressively over all units
     let prepaymentDiscount = 0;
     if (paymentMethod === "anticipado") {
-      prepaymentDiscount = cart.reduce((sum, item) => {
-        const discountPerItem = getProductPrepaymentDiscount(item.product.price);
-        return sum + (discountPerItem * item.quantity);
-      }, 0);
+      individualUnits.forEach((price) => {
+        const config = getProductPriceConfig(price);
+        prepaymentDiscount += config.prepay;
+      });
     }
 
     const finalTotal = Math.max(0, intermediateTotal - prepaymentDiscount);
