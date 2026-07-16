@@ -117,11 +117,11 @@ export default function Catalog() {
             className="mb-8"
           >
             <img 
-              src="/src/assets/images/logo.jpg" 
+              src="/images/logo.jpg" 
               alt="Jansel Shop Logo" 
               className="w-24 h-24 object-contain rounded-2xl shadow-[0_0_30px_rgba(0,180,255,0.4)] mx-auto hover:scale-105 transition-transform"
               onError={(e) => {
-                e.currentTarget.src = "/src/assets/images/logo.png";
+                e.currentTarget.src = "/images/logo.png";
                 e.currentTarget.onerror = null;
               }}
             />
@@ -319,9 +319,19 @@ export default function Catalog() {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                         loading="lazy"
                         referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          // Simply hide the broken image - React handles the rest
+                          e.currentTarget.style.display = 'none';
+                          // Show a simple product icon fallback next to it
+                          const fallback = document.createElement('div');
+                          fallback.className = 'w-full h-full flex items-center justify-center bg-neutral-900';
+                          fallback.textContent = '📦';
+                          fallback.style.fontSize = '2rem';
+                          e.currentTarget.parentElement?.appendChild(fallback);
+                        }}
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center">
+                      <div className="w-full h-full flex items-center justify-center bg-neutral-900">
                         <ShoppingBag className="text-white/10" size={48} />
                       </div>
                     )}

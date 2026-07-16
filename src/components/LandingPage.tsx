@@ -40,7 +40,7 @@ const TRENDING_PRODUCTS = [
     description: "Pantalla inteligente táctil de 5 pulgadas para motocicleta con Apple CarPlay y Android Auto inalámbrico. Diseño resistente al agua IPX7, conectividad Bluetooth 5.0, voltaje compatible de 12V-24V. Conecta tu teléfono, navega de forma segura con GPS (Google Maps, Waze) y disfruta de tu música favorita.",
     price: 274900,
     originalPrice: 390000,
-    imageUrl: "/src/assets/images/carplay_moto_1784124208692.jpg",
+    imageUrl: "/images/carplay_moto_1784124208692.jpg",
     rating: 4.9,
     reviews: 124,
     stock: 38,
@@ -53,7 +53,7 @@ const TRENDING_PRODUCTS = [
     description: "Módem router wifi portátil 4G/5G LTE recargable de alta velocidad. Conecta hasta 10 dispositivos simultáneamente sin enredos en cualquier parte de Colombia.",
     price: 196900,
     originalPrice: 280000,
-    imageUrl: "/src/assets/images/WIFIPORTATIL.png",
+    imageUrl: "/images/WIFIPORTATIL.png",
     rating: 4.9,
     reviews: 142,
     stock: 12,
@@ -66,7 +66,7 @@ const TRENDING_PRODUCTS = [
     description: "Cámara de seguridad para vehículos con grabación continua en resolución HD. Registra todo tu camino de forma continua protegiendo tus recorridos.",
     price: 123900,
     originalPrice: 199000,
-    imageUrl: "/src/assets/images/CAMARA DUAL.png",
+    imageUrl: "/images/CAMARA DUAL.png",
     rating: 4.9,
     reviews: 97,
     stock: 16,
@@ -79,7 +79,7 @@ const TRENDING_PRODUCTS = [
     description: "Intercomunicador Bluetooth Y10 para cascos de moto con luces RGB, reducción de ruido de alta fidelidad y manos libres totalmente impermeable.",
     price: 139900,
     originalPrice: 199000,
-    imageUrl: "/src/assets/images/INTERCOMUNICADOR.png",
+    imageUrl: "/images/INTERCOMUNICADOR.png",
     rating: 4.8,
     reviews: 98,
     stock: 15,
@@ -92,7 +92,7 @@ const TRENDING_PRODUCTS = [
     description: "Soporte inteligente de alta velocidad para rejilla del auto que carga tu celular por inducción magnética mientras conduces de forma segura.",
     price: 118900,
     originalPrice: 160000,
-    imageUrl: "/src/assets/images/CARGADOR MAGNETICO.png",
+    imageUrl: "/images/CARGADOR MAGNETICO.png",
     rating: 4.8,
     reviews: 83,
     stock: 14,
@@ -105,7 +105,7 @@ const TRENDING_PRODUCTS = [
     description: "Pijama carpa de alta calidad e impermeable para motocicleta con protección UV. Protege contra la lluvia ácida, sol inclemente, polvo y rayones.",
     price: 80900,
     originalPrice: 110000,
-    imageUrl: "/src/assets/images/FUNDA PARA MOTO.png",
+    imageUrl: "/images/FUNDA PARA MOTO.png",
     rating: 4.8,
     reviews: 109,
     stock: 19,
@@ -118,7 +118,7 @@ const TRENDING_PRODUCTS = [
     description: "Destornillador eléctrico recargable inalámbrico de diseño compacto con juego completo de puntas de acero y cable de carga USB.",
     price: 78900,
     originalPrice: 149000,
-    imageUrl: "/src/assets/images/ATORNILLADOR INALAMBRICO.png",
+    imageUrl: "/images/ATORNILLADOR INALAMBRICO.png",
     rating: 4.4,
     reviews: 86,
     stock: 9,
@@ -131,7 +131,7 @@ const TRENDING_PRODUCTS = [
     description: "Traba de alta seguridad para el volante de tu vehículo que se ancla directamente al broche del cinturón de seguridad. Fabricado con cable de acero trenzado ultra resistente.",
     price: 79900,
     originalPrice: 99000,
-    imageUrl: "/src/assets/images/SEGURO PARA VOLANTE.png",
+    imageUrl: "/images/SEGURO PARA VOLANTE.png",
     rating: 4.3,
     reviews: 118,
     stock: 7,
@@ -144,7 +144,7 @@ const TRENDING_PRODUCTS = [
     description: "Cargador inteligente de batería de 12V con reparación de pulso para autos y motos. Pantalla LCD que muestra voltaje, corriente y nivel de carga.",
     price: 94900,
     originalPrice: 120000,
-    imageUrl: "/src/assets/images/INICIADOR DE VEHICULOS.png",
+    imageUrl: "/images/INICIADOR DE VEHICULOS.png",
     rating: 4.2,
     reviews: 94,
     stock: 499,
@@ -157,7 +157,7 @@ const TRENDING_PRODUCTS = [
     description: "Incluye Quita rayones, Acondicionador de partes negras y Renovador de farolas de alta potencia. Recupera la estética original de tu vehículo en solo 3 pasos.",
     price: 89900,
     originalPrice: 130000,
-    imageUrl: "/src/assets/images/KIT RENOVACION VEHICULO .png",
+    imageUrl: "/images/KIT RENOVACION VEHICULO .png",
     rating: 4.2,
     reviews: 112,
     stock: 20,
@@ -170,7 +170,7 @@ const TRENDING_PRODUCTS = [
     description: "Lámpara solar Ever Brite con sensor inteligente de movimiento, panel de 0.44W de alta eficiencia, batería de litio de 600 mAh y luces LED ultra brillantes.",
     price: 85900,
     originalPrice: 110000,
-    imageUrl: "/src/assets/images/LAMPARA LED.png",
+    imageUrl: "/images/LAMPARA LED.png",
     rating: 4.1,
     reviews: 112,
     stock: 24,
@@ -183,7 +183,7 @@ const TRENDING_PRODUCTS = [
     description: "Candado de seguridad antirrobo ultra resistente con alarma integrada de 110dB que se activa ante el primer intento de golpe, vibración o forcejeo.",
     price: 72900,
     originalPrice: 95000,
-    imageUrl: "/src/assets/images/CANDADO ALARMA.jpeg",
+    imageUrl: "/images/CANDADO ALARMA.jpeg",
     rating: 4.1,
     reviews: 73,
     stock: 18,
@@ -196,7 +196,7 @@ const TRENDING_PRODUCTS = [
     description: "Compresor inteligente inalámbrico con pantalla digital y apagado automático inteligente al llegar a la presión programada. Ideal para llantas y balones.",
     price: 159900,
     originalPrice: 250000,
-    imageUrl: "/src/assets/images/COMPRESOR.jpeg",
+    imageUrl: "/images/COMPRESOR.jpeg",
     rating: 4.9,
     reviews: 155,
     stock: 6,
@@ -209,7 +209,7 @@ const TRENDING_PRODUCTS = [
     description: "Potente hidrolavadora de agua inalámbrica de alta presión ideal para lavar vehículos, motocicletas y ventanas de forma portátil sin enchufe eléctrico.",
     price: 112900,
     originalPrice: 180000,
-    imageUrl: "/src/assets/images/HIDROLAVADORA INALAMBRICA.jpeg",
+    imageUrl: "/images/HIDROLAVADORA INALAMBRICA.jpeg",
     rating: 4.9,
     reviews: 134,
     stock: 11,
@@ -222,7 +222,7 @@ const TRENDING_PRODUCTS = [
     description: "Aspiradora de mano premium con diseño compacto y succión de alta potencia para remover suciedad de cojinería, rejillas y esquinas difíciles.",
     price: 75900,
     originalPrice: 120000,
-    imageUrl: "/src/assets/images/MINIASPIRADORA.jpeg",
+    imageUrl: "/images/MINIASPIRADORA.jpeg",
     rating: 4.8,
     reviews: 55,
     stock: 20,
@@ -235,7 +235,7 @@ const TRENDING_PRODUCTS = [
     description: "Kit completo de reparación casera para remover abolladuras y golpes en la lámina del auto sin comprometer la pintura original.",
     price: 80900,
     originalPrice: 120000,
-    imageUrl: "/src/assets/images/KIT SACAGOLPES.png",
+    imageUrl: "/images/KIT SACAGOLPES.png",
     rating: 4.4,
     reviews: 121,
     stock: 20,
@@ -950,7 +950,7 @@ export default function LandingPage() {
             <div className="relative">
               <div className="absolute inset-0 rounded-2xl bg-amber-400/20 blur-md animate-pulse" />
               <img
-                src="/src/assets/images/logo.jpeg"
+                src="/images/logo.jpeg"
                 alt="Jansel Shop Logo"
                 className="relative w-12 h-12 object-contain rounded-2xl border border-amber-400/20 shadow-lg"
                 onError={(e) => { e.currentTarget.style.display = "none"; }}
@@ -2064,7 +2064,7 @@ export default function LandingPage() {
             {/* Brand */}
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <img src="/src/assets/images/logo.jpeg" alt="Logo" className="w-10 h-10 rounded-xl object-contain border border-white/10"
+                <img src="/images/logo.jpeg" alt="Logo" className="w-10 h-10 rounded-xl object-contain border border-white/10"
                   onError={(e) => { e.currentTarget.style.display = "none"; }} />
                 <div>
                   <div className="font-black text-base text-gradient-gold">JANSEL SHOP</div>
@@ -2273,7 +2273,7 @@ export default function LandingPage() {
                 <div className="relative">
                   <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-[#0e111d] z-10" />
                   <img
-                    src="/src/assets/images/logo.jpeg"
+                    src="/images/logo.jpeg"
                     alt="Jansel Shop Logo"
                     className="w-10 h-10 rounded-xl object-contain border border-white/10"
                     onError={(e) => { e.currentTarget.style.display = "none"; }}

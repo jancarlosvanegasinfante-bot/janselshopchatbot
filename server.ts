@@ -4,13 +4,12 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
 import twilio from "twilio";
-import { readFileSync, existsSync } from "fs";
+import { readFileSync, existsSync, writeFileSync, readdirSync, mkdirSync, copyFileSync } from "fs";
 import "dotenv/config";
 
 import { createClient } from "@supabase/supabase-js";
 import sgMail from '@sendgrid/mail';
 import { getSystemInstruction } from "./src/lib/janAgent.js";
-import { writeFileSync } from "fs";
 import crypto from "crypto";
 
 // 1. Initialize Supabase / Local JSON File Storage
@@ -62,6 +61,35 @@ function saveLocalDb() {
 
 // Initial load on boot
 loadLocalDb();
+
+// Automatically ensure public/images contains all assets on boot
+function ensurePublicImages() {
+  const srcDir = path.join(process.cwd(), "src", "assets", "images");
+  const destDir = path.join(process.cwd(), "public", "images");
+  console.log("[Image Sync] Running automatic public images sync on boot...");
+  try {
+    if (!existsSync(destDir)) {
+      mkdirSync(destDir, { recursive: true });
+    }
+    if (existsSync(srcDir)) {
+      const files = readdirSync(srcDir);
+      let copied = 0;
+      for (const file of files) {
+        const srcFile = path.join(srcDir, file);
+        const destFile = path.join(destDir, file);
+        // Only copy if it doesn't exist or is different
+        copyFileSync(srcFile, destFile);
+        copied++;
+      }
+      console.log(`[Image Sync] Successfully synchronized ${copied} images from ${srcDir} to ${destDir}`);
+    } else {
+      console.warn(`[Image Sync] Warning: Source assets folder ${srcDir} does not exist.`);
+    }
+  } catch (err: any) {
+    console.error("[Image Sync] Error synchronizing images:", err.message);
+  }
+}
+ensurePublicImages();
 
 // Preload all data from Supabase on startup to avoid empty localDbCache on redeployment or container restart
 async function preloadSupabaseData() {
