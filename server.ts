@@ -62,26 +62,37 @@ function saveLocalDb() {
 // Initial load on boot
 loadLocalDb();
 
-// Automatically ensure public/images contains all assets on boot
+// Automatically ensure public/images and dist/images contain all assets on boot
 function ensurePublicImages() {
   const srcDir = path.join(process.cwd(), "src", "assets", "images");
   const destDir = path.join(process.cwd(), "public", "images");
-  console.log("[Image Sync] Running automatic public images sync on boot...");
+  const distDestDir = path.join(process.cwd(), "dist", "images");
+  console.log("[Image Sync] Running automatic public and dist images sync on boot...");
   try {
     if (!existsSync(destDir)) {
       mkdirSync(destDir, { recursive: true });
     }
+    if (!existsSync(distDestDir)) {
+      mkdirSync(distDestDir, { recursive: true });
+    }
     if (existsSync(srcDir)) {
       const files = readdirSync(srcDir);
-      let copied = 0;
+      let copiedPublic = 0;
+      let copiedDist = 0;
       for (const file of files) {
         const srcFile = path.join(srcDir, file);
+        
+        // Copy to public/images
         const destFile = path.join(destDir, file);
-        // Only copy if it doesn't exist or is different
         copyFileSync(srcFile, destFile);
-        copied++;
+        copiedPublic++;
+
+        // Copy to dist/images
+        const distDestFile = path.join(distDestDir, file);
+        copyFileSync(srcFile, distDestFile);
+        copiedDist++;
       }
-      console.log(`[Image Sync] Successfully synchronized ${copied} images from ${srcDir} to ${destDir}`);
+      console.log(`[Image Sync] Successfully synchronized ${copiedPublic} images to public and ${copiedDist} images to dist`);
     } else {
       console.warn(`[Image Sync] Warning: Source assets folder ${srcDir} does not exist.`);
     }
