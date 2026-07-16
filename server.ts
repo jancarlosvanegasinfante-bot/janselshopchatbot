@@ -3792,6 +3792,9 @@ async function pushOrderToDropi(orderId: string, orderData: any, storeConfig: an
     throw new Error("Token o API Key de Dropi ausente.");
   }
 
+  const quantity = orderData.quantity || 1;
+  const unitPrice = orderData.totalPrice ? Math.round(orderData.totalPrice / quantity) : 0;
+
   const payload = {
     customer: {
       name: orderData.customerName,
@@ -3804,9 +3807,10 @@ async function pushOrderToDropi(orderId: string, orderData: any, storeConfig: an
     carrier: dropiPreferredCarrier || "Servientrega",
     products: [
       {
+        id: orderData.productId && orderData.productId !== "manual" ? orderData.productId : undefined,
         name: orderData.productName,
-        quantity: orderData.quantity || 1,
-        price: orderData.totalPrice || 0
+        quantity: quantity,
+        price: unitPrice
       }
     ],
     notes: orderData.notes || ""

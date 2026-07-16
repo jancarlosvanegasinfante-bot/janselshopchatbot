@@ -2659,13 +2659,13 @@
       "freight": 15000
     },
     {
-      "id": "cortador-de-verduras-en-espiral",
+      "id": "cortador-verduras-espiral",
       "name": "Cortador De Verduras En Espiral",
       "description": "Excelente producto: Cortador De Verduras En Espiral. Calidad garantizada.",
       "category": "cocina",
       "cost": 67500,
       "stock": 198,
-      "imageUrl": "https://loremflickr.com/400/400/vegetable-slicer-grater?lock=3082",
+      "imageUrl": "/images/cortador-de-verduras-en-espiral.jpg",
       "currency": "COP",
       "provider": "Dropi",
       "price": 125900,
@@ -3621,13 +3621,13 @@
       "freight": 15000
     },
     {
-      "id": "papel-de-cocina-adhesivo",
+      "id": "papel-cocina-adhesivo",
       "name": "Papel De Cocina Adhesivo",
       "description": "Excelente producto: Papel De Cocina Adhesivo. Calidad garantizada.",
       "category": "cocina",
       "cost": 29500,
       "stock": 500,
-      "imageUrl": "https://loremflickr.com/400/400/adhesive-contact-paper?lock=2338",
+      "imageUrl": "/images/papel-de-cocina-adesivo.jpg",
       "currency": "COP",
       "provider": "Dropi",
       "price": 85900,
@@ -4258,13 +4258,13 @@
       "freight": 15000
     },
     {
-      "id": "machacador-de-ajos",
+      "id": "machacador-ajos",
       "name": "Machacador De Ajos",
       "description": "Excelente producto: Machacador De Ajos. Calidad garantizada.",
       "category": "cocina",
       "cost": 19500,
       "stock": 500,
-      "imageUrl": "https://loremflickr.com/400/400/kitchenware-cookware?lock=1747",
+      "imageUrl": "/images/machacador-de-ajos.jpg",
       "currency": "COP",
       "provider": "Dropi",
       "price": 75900,
@@ -4700,13 +4700,13 @@
       "freight": 15000
     },
     {
-      "id": "rebanador-de-carne",
+      "id": "rebanador-carne",
       "name": "Rebanador De Carne",
       "description": "Excelente producto: Rebanador De Carne. Calidad garantizada.",
       "category": "cocina",
       "cost": 64500,
       "stock": 334,
-      "imageUrl": "https://loremflickr.com/400/400/kitchenware-cookware?lock=1754",
+      "imageUrl": "/images/rebanador-de-carne.jpg",
       "currency": "COP",
       "provider": "Dropi",
       "price": 122900,
@@ -4848,20 +4848,6 @@
       "videoUrl": ""
     },
     {
-      "id": "cortador-verduras-espiral",
-      "name": "Cortador de Verduras en Espiral",
-      "category": "cocina",
-      "cost": 0,
-      "stock": 20,
-      "freight": 15000,
-      "imageUrl": "/images/cortador-de-verduras-en-espiral.jpg",
-      "currency": "COP",
-      "provider": "Dropi",
-      "description": "Espiralizador de verduras para crear vegetales en forma de espiral. Perfecto para ensaladas y platos saludables.",
-      "price": 0,
-      "videoUrl": ""
-    },
-    {
       "id": "escurridor-gabinete",
       "name": "Escurridor para Gabinete",
       "category": "cocina",
@@ -4942,20 +4928,6 @@
       "currency": "COP",
       "provider": "Dropi",
       "description": "Lonchera térmica de acero inoxidable con compartimentos. Mantiene los alimentos calientes por horas.",
-      "price": 0,
-      "videoUrl": ""
-    },
-    {
-      "id": "machacador-ajos",
-      "name": "Machacador de Ajos",
-      "category": "cocina",
-      "cost": 0,
-      "stock": 20,
-      "freight": 15000,
-      "imageUrl": "/images/machacador-de-ajos.jpg",
-      "currency": "COP",
-      "provider": "Dropi",
-      "description": "Triturador de ajos manual de acero inoxidable. Pica y machaca ajos de forma rápida y sin esfuerzo.",
       "price": 0,
       "videoUrl": ""
     },
@@ -5100,20 +5072,6 @@
       "videoUrl": ""
     },
     {
-      "id": "papel-cocina-adhesivo",
-      "name": "Papel de Cocina Adhesivo",
-      "category": "cocina",
-      "cost": 0,
-      "stock": 20,
-      "freight": 15000,
-      "imageUrl": "/images/papel-de-cocina-adesivo.jpg",
-      "currency": "COP",
-      "provider": "Dropi",
-      "description": "Papel protector adhesivo para cocina antigrasa y resistente al agua. Fácil de instalar y limpiar.",
-      "price": 0,
-      "videoUrl": ""
-    },
-    {
       "id": "pinza-tres-tubos-sirena",
       "name": "Pinza Tres Tubos Sirena",
       "category": "hogar",
@@ -5166,20 +5124,6 @@
       "currency": "COP",
       "provider": "Dropi",
       "description": "Herramienta 2 en 1 para rallar y cortar frutas. Diseño ergonómico y cuchillas de acero inoxidable.",
-      "price": 0,
-      "videoUrl": ""
-    },
-    {
-      "id": "rebanador-carne",
-      "name": "Rebanador de Carne",
-      "category": "cocina",
-      "cost": 0,
-      "stock": 20,
-      "freight": 15000,
-      "imageUrl": "/images/rebanador-de-carne.jpg",
-      "currency": "COP",
-      "provider": "Dropi",
-      "description": "Cortador y rebanador de carne ajustable. Permite rebanar carnes frías, quesos y verduras con espesor regulable.",
       "price": 0,
       "videoUrl": ""
     },

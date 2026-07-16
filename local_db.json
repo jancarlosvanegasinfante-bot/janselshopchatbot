@@ -1,6 +1,6 @@
 {
   "products": {
-    "default_carplay-para-moto": {
+    "carplay-para-moto": {
       "id": "carplay-para-moto",
       "name": "Carplay Para Moto",
       "category": "tecnologia",
@@ -16,7 +16,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:11.917Z"
     },
-    "default_cargador-bateria-inteligente": {
+    "cargador-bateria-inteligente": {
       "imageUrl": "/images/INICIADOR DE VEHICULOS.png",
       "provider": "Dropi",
       "currency": "COP",
@@ -32,7 +32,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:12.281Z"
     },
-    "default_volante-seguro-pro": {
+    "volante-seguro-pro": {
       "imageUrl": "/images/SEGURO PARA VOLANTE.png",
       "provider": "Dropi",
       "currency": "COP",
@@ -48,7 +48,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:12.647Z"
     },
-    "default_cables-inicio-100": {
+    "cables-inicio-100": {
       "imageUrl": "/images/cables-de-bateria.jpg",
       "provider": "Dropi",
       "currency": "COP",
@@ -64,7 +64,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:13.002Z"
     },
-    "default_camara-dvr-25": {
+    "camara-dvr-25": {
       "freight": 15000,
       "stock": 20,
       "price": 123900,
@@ -80,7 +80,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:13.346Z"
     },
-    "default_cera-m1-cojineria": {
+    "cera-m1-cojineria": {
       "currency": "COP",
       "provider": "Dropi",
       "imageUrl": "/images/cera-m10.jpg",
@@ -96,7 +96,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:13.678Z"
     },
-    "default_compresor-aire-2cil": {
+    "compresor-aire-2cil": {
       "currency": "COP",
       "provider": "Dropi",
       "imageUrl": "/images/compresor-ciclon.jpg",
@@ -112,7 +112,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:14.023Z"
     },
-    "default_compresor-portatil-digital": {
+    "compresor-portatil-digital": {
       "videoUrl": "https://vt.tiktok.com/ZS9JyCaBT/",
       "name": "Compresor Portátil Vehículos Digital Car",
       "price": 158900,
@@ -128,7 +128,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:14.478Z"
     },
-    "default_convertidor-veh-carga": {
+    "convertidor-veh-carga": {
       "price": 123900,
       "name": "Inversor de Corriente Car Power Inverter",
       "videoUrl": "https://vt.tiktok.com/ZS9Jf1fCF/",
@@ -144,7 +144,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:14.928Z"
     },
-    "default_hidro-lavadora-48v": {
+    "hidro-lavadora-48v": {
       "videoUrl": "https://vt.tiktok.com/ZS9JU65EG/",
       "name": "Hidro Lavadora Inalámbrica 48v Vehículos",
       "price": 112900,
@@ -160,7 +160,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:15.419Z"
     },
-    "default_holder-cargador-inalambr": {
+    "holder-cargador-inalambr": {
       "stock": 20,
       "freight": 15000,
       "videoUrl": "https://vt.tiktok.com/ZS9JUpKGf/",
@@ -176,7 +176,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:15.896Z"
     },
-    "default_kit-renovacion-veh": {
+    "kit-renovacion-veh": {
       "name": "Kit de Renovación Lubristone 3 Pasos",
       "price": 89900,
       "videoUrl": "https://vt.tiktok.com/ZS9JfDF62/",
@@ -192,7 +192,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:16.336Z"
     },
-    "default_maletin-kit-carretera": {
+    "maletin-kit-carretera": {
       "description": "Kit reglamentario de carretera en un bolso compacto y resistente. Incluye lo necesario para viajar seguro.",
       "category": "autos",
       "id": "maletin-kit-carretera",
@@ -208,7 +208,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:16.785Z"
     },
-    "default_mini-aspiradora-port": {
+    "mini-aspiradora-port": {
       "price": 75900,
       "name": "Mini Aspiradora Portátil Gold Edition",
       "videoUrl": "https://vt.tiktok.com/ZS9JfH7o1/",
@@ -224,7 +224,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:17.247Z"
     },
-    "default_parasol-vehiculo": {
+    "parasol-vehiculo": {
       "description": "Protege el interior de tu auto del calor y los rayos UV. Fácil de instalar.",
       "id": "parasol-vehiculo",
       "category": "autos",
@@ -240,7 +240,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:17.695Z"
     },
-    "default_saca-golpes-herramie": {
+    "saca-golpes-herramie": {
       "id": "saca-golpes-herramie",
       "category": "autos",
       "cost": 24000,
@@ -256,7 +256,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:18.129Z"
     },
-    "default_sistema-antirrobo-veh": {
+    "sistema-antirrobo-veh": {
       "cost": 35000,
       "id": "sistema-antirrobo-veh",
       "category": "autos",
@@ -272,7 +272,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:18.606Z"
     },
-    "default_soporte-silicona-veh": {
+    "soporte-silicona-veh": {
       "stock": 20,
       "freight": 15000,
       "videoUrl": "https://vt.tiktok.com/ZS9JPwRru/",
@@ -288,7 +288,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:19.077Z"
     },
-    "default_ventilador-doble-360": {
+    "ventilador-doble-360": {
       "videoUrl": "https://vt.tiktok.com/ZS9JPE8Sj/",
       "price": 105900,
       "name": "Ventilador Doble 360 Vehículo Mars918",
@@ -304,7 +304,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:19.563Z"
     },
-    "default_maquina-donas-x7": {
+    "maquina-donas-x7": {
       "id": "maquina-donas-x7",
       "name": "Máquina De Donas X7",
       "description": "Prepara deliciosas donas caseras en minutos con esta máquina de diseño compacto y placas antiadherentes.",
@@ -319,7 +319,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:19.938Z"
     },
-    "default_limpiadora-vapor": {
+    "limpiadora-vapor": {
       "id": "limpiadora-vapor",
       "name": "Limpiadora A Vapor",
       "description": "Limpiador a vapor portátil de alta presión con múltiples accesorios para desinfectar y limpiar azulejos, ventanas y cocinas.",
@@ -334,7 +334,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:20.462Z"
     },
-    "default_candado-alarma-grande": {
+    "candado-alarma-grande": {
       "id": "candado-alarma-grande",
       "name": "Candado Alarma Grande",
       "description": "Candado de alta seguridad con alarma integrada de 110dB que se activa ante golpes o forcejeos. Incluye 3 llaves.",
@@ -349,7 +349,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:20.942Z"
     },
-    "default_destornillador-atornillador-electrico": {
+    "destornillador-atornillador-electrico": {
       "id": "destornillador-atornillador-electrico",
       "name": "Destornillador Atornillador Eléctrico",
       "description": "Destornillador eléctrico recargable inalámbrico de diseño compacto con juego completo de puntas y cable de carga USB.",
@@ -364,7 +364,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:21.502Z"
     },
-    "default_inter-comunicador-y10": {
+    "inter-comunicador-y10": {
       "id": "inter-comunicador-y10",
       "name": "Inter Comunicador Y10",
       "description": "Intercomunicador Bluetooth Y10 para cascos de moto con luces RGB, reducción de ruido y manos libres impermeable.",
@@ -379,7 +379,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:21.887Z"
     },
-    "default_religioso-w-213": {
+    "religioso-w-213": {
       "id": "religioso-w-213",
       "name": "Religioso W 213",
       "description": "Cuadro decorativo políptico religioso de 5 paneles de alta calidad con diseño del Sagrado Corazón de Jesús.",
@@ -394,7 +394,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:22.364Z"
     },
-    "default_modem-wifi-portatil": {
+    "modem-wifi-portatil": {
       "id": "modem-wifi-portatil",
       "name": "Módem Wifi Portátil Pro",
       "description": "Módem router wifi portátil 4G/5G LTE recargable de alta velocidad. Conecta hasta 10 dispositivos simultáneamente.",
@@ -409,7 +409,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:22.764Z"
     },
-    "default_potenmax-gomas": {
+    "potenmax-gomas": {
       "id": "potenmax-gomas",
       "name": "Potenmax X 60 Gomas",
       "description": "Potenmax gomas masticables con borojó y chontaduro. Estimulante natural, energético, ayuda a aumentar las defensas y reforzar el organismo.",
@@ -424,7 +424,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:23.245Z"
     },
-    "default_lampara-led-sensor": {
+    "lampara-led-sensor": {
       "id": "lampara-led-sensor",
       "name": "Lámpara Led Sensor Ever Brite",
       "description": "Lámpara solar Ever Brite con sensor de movimiento, panel de 0.44W, batería de litio de 600 mAh y luces LED de alta luminosidad. Ideal para exteriores, jardín y fachadas.",
@@ -439,7 +439,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:23.758Z"
     },
-    "default_pistola-pintura": {
+    "pistola-pintura": {
       "id": "pistola-pintura",
       "name": "Pistola De Pintura Eléctrica",
       "description": "Pistola pulverizadora Wap de pintura eléctrica portátil de alto rendimiento. Permite pintar de forma rápida, uniforme y profesional con diseño ultra ergonómico.",
@@ -454,7 +454,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:24.281Z"
     },
-    "default_combo-compresor-linterna": {
+    "combo-compresor-linterna": {
       "id": "combo-compresor-linterna",
       "name": "Combo Compresor Multifuncional + Linterna",
       "description": "Combo inteligente de compresor de aire digital inalámbrico recargable de alta presión y linterna de alta potencia para emergencias y mantenimiento vial.",
@@ -469,7 +469,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:24.857Z"
     },
-    "default_tina-plegable": {
+    "tina-plegable": {
       "id": "tina-plegable",
       "name": "Tina Plegable",
       "description": "Práctica tina plegable portátil de alta calidad para bebés o mascotas, ultra compacta, segura, ergonómica y fácil de guardar.",
@@ -484,7 +484,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:25.334Z"
     },
-    "default_glucosamina-chondroitin": {
+    "glucosamina-chondroitin": {
       "id": "glucosamina-chondroitin",
       "name": "Glucosamin Chondroitin Msm",
       "description": "Suplemento alimenticio avanzado de Glucosamina, Condroitina y MSM para el fortalecimiento de articulaciones, cartílagos y ligamentos.",
@@ -499,7 +499,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:25.810Z"
     },
-    "default_pista-de-carros": {
+    "pista-de-carros": {
       "id": "pista-de-carros",
       "name": "Pista De Carros",
       "description": "Pista de carros interactiva de alta velocidad con giros extremos de 360 grados, propulsor y luces. Diversión garantizada.",
@@ -514,7 +514,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:26.309Z"
     },
-    "default_masajeador-gun-8820": {
+    "masajeador-gun-8820": {
       "id": "masajeador-gun-8820",
       "name": "Masajeador Gun 8820",
       "description": "Pistola de masaje muscular profunda con 6 velocidades y múltiples cabezales ajustables para aliviar tensión, fatiga y dolor.",
@@ -529,7 +529,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:26.821Z"
     },
-    "default_mini-gun-lanzador-hidrogel": {
+    "mini-gun-lanzador-hidrogel": {
       "id": "mini-gun-lanzador-hidrogel",
       "name": "Mini Gun Lanzador De Dardos E Hidrogel",
       "description": "Divertido lanzador semiautomático con dardos suaves de espuma y balines de hidrogel ecológicos para batallas seguras en exteriores.",
@@ -544,7 +544,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:27.307Z"
     },
-    "default_fbmax-1000ml": {
+    "fbmax-1000ml": {
       "id": "fbmax-1000ml",
       "name": "Fbmax 1000 Ml",
       "description": "Bebida energizante premium y suplemento natural concentrado FBMAX para potenciar el rendimiento físico, mental y la quema de grasa.",
@@ -559,7 +559,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:27.778Z"
     },
-    "default_cepillo-secador-plancha-aguacate": {
+    "cepillo-secador-plancha-aguacate": {
       "id": "cepillo-secador-plancha-aguacate",
       "name": "Cepillo Secador Y Plancha De Aguacate",
       "description": "Kit profesional de belleza compuesto por cepillo secador giratorio y plancha alisadora con placas infundidas en aceite de aguacate y macadamia.",
@@ -574,7 +574,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:28.245Z"
     },
-    "default_probador-de-corriente": {
+    "probador-de-corriente": {
       "id": "probador-de-corriente",
       "name": "Probador De Corriente",
       "description": "Lápiz detector y probador de corriente digital sin contacto, seguro, con alerta sonora y pantalla retroiluminada.",
@@ -589,7 +589,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:28.708Z"
     },
-    "default_sopladora-larga-inalambrica-2bat": {
+    "sopladora-larga-inalambrica-2bat": {
       "id": "sopladora-larga-inalambrica-2bat",
       "name": "Sopladora Larga Inalambrica 2 Baterias",
       "description": "Sopladora inalámbrica ultra potente de largo alcance, ideal para jardinería, talleres y limpieza de hojas. Incluye 2 baterías de alto rendimiento.",
@@ -604,7 +604,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:29.182Z"
     },
-    "default_shilajit-1000ml": {
+    "shilajit-1000ml": {
       "id": "shilajit-1000ml",
       "name": "Shilajit 1000 Ml",
       "description": "Extracto líquido purificado de Shilajit del Himalaya de 1000 ml. Rico en ácido fúlvico y 84+ minerales para maximizar tu energía y enfoque.",
@@ -619,7 +619,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:29.614Z"
     },
-    "default_mini-martillo-8oz": {
+    "mini-martillo-8oz": {
       "id": "mini-martillo-8oz",
       "name": "Mini Martillo 8 Oz",
       "description": "Martillo de uña mini de 8 oz con mango ergonómico antideslizante de goma. Compacto y sumamente resistente para el hogar.",
@@ -634,7 +634,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:30.152Z"
     },
-    "default_calostrum-calostro-500g": {
+    "calostrum-calostro-500g": {
       "id": "calostrum-calostro-500g",
       "name": "Calostrum Calostro Bovino 500g",
       "description": "Polvo de Calostro Bovino 100% puro y liofilizado de 500g. Potencia el sistema inmune, mejora la digestión y regeneración celular.",
@@ -649,7 +649,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:30.642Z"
     },
-    "default_bichota-500ml": {
+    "bichota-500ml": {
       "id": "bichota-500ml",
       "name": "Bichota 500 Ml",
       "description": "Suplemento alimenticio líquido Bichota de 500 ml formulado con colágeno, biotina y antioxidantes para resaltar la belleza y vitalidad de la mujer.",
@@ -664,7 +664,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:31.109Z"
     },
-    "default_cargador-carro-sky-dolphin": {
+    "cargador-carro-sky-dolphin": {
       "id": "cargador-carro-sky-dolphin",
       "name": "Cargador Carro Sky Dolphin Usb 3a",
       "description": "Cargador vehicular rápido Sky Dolphin de 3 amperios con puerto USB inteligente y protección contra sobrecargas.",
@@ -679,7 +679,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:31.565Z"
     },
-    "default_triturador-de-pollo": {
+    "triturador-de-pollo": {
       "id": "triturador-de-pollo",
       "name": "Triturador De Pollo",
       "description": "Práctico y rápido triturador de carne y pollo manual con asas ergonómicas y base de silicona antideslizante para tu cocina.",
@@ -694,7 +694,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:32.081Z"
     },
-    "default_maquina-barbera-patillera": {
+    "maquina-barbera-patillera": {
       "id": "maquina-barbera-patillera",
       "name": "Maquina Barbera Patillera",
       "description": "Máquina patillera y delineadora profesional inalámbrica con cuchillas ultra afiladas y pantalla LCD de carga. Ideal para contornos.",
@@ -709,7 +709,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:32.557Z"
     },
-    "default_porta-vaso-carro-multifuncional": {
+    "porta-vaso-carro-multifuncional": {
       "id": "porta-vaso-carro-multifuncional",
       "name": "Porta Vaso Para Carro Multifuncional",
       "description": "Expansor multifuncional de portavasos para automóvil con rotación ajustable 360 grados, soporte para celular y compartimento extra.",
@@ -724,7 +724,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:33.052Z"
     },
-    "default_herramienta-recoger-fruta": {
+    "herramienta-recoger-fruta": {
       "id": "herramienta-recoger-fruta",
       "name": "Herramienta Para Recoger Fruta Pequeña",
       "description": "Dispositivo para recolectar fruta desde el suelo o altura de manera segura, sin dañar la planta ni la fruta.",
@@ -739,7 +739,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:33.511Z"
     },
-    "default_juego-candados": {
+    "juego-candados": {
       "id": "juego-candados",
       "name": "Juego Candados",
       "description": "Kit de candados blindados de alta resistencia fabricados en aleación de alta dureza con juego de llaves de seguridad.",
@@ -754,7 +754,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:33.871Z"
     },
-    "default_desengrasante-lava-motor": {
+    "desengrasante-lava-motor": {
       "id": "desengrasante-lava-motor",
       "name": "Desengrasante Lava Motor",
       "description": "Poderoso limpiador desengrasante biodegradable de acción rápida para eliminar aceite pesado y suciedad en motores y autopartes.",
@@ -769,7 +769,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:34.337Z"
     },
-    "default_parlante-para-ducha": {
+    "parlante-para-ducha": {
       "id": "parlante-para-ducha",
       "name": "Parlante Para Ducha",
       "description": "Mini altavoz Bluetooth impermeable IPX4 con ventosa, micrófono integrado para llamadas y excelente calidad de audio.",
@@ -784,7 +784,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:34.818Z"
     },
-    "default_candida-cleanse": {
+    "candida-cleanse": {
       "id": "candida-cleanse",
       "name": "Candida Cleanse",
       "description": "Suplemento natural de limpieza y desintoxicación intestinal para combatir el exceso de levaduras de Candida y mejorar la digestión.",
@@ -799,7 +799,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:35.304Z"
     },
-    "default_resveratrol-nath-1000ml": {
+    "resveratrol-nath-1000ml": {
       "id": "resveratrol-nath-1000ml",
       "name": "Resveratrol Nath X 1000 Ml Nh",
       "description": "Antioxidante natural líquido a base de extracto concentrado de uva Resveratrol de 1000 ml para el cuidado cardiovascular.",
@@ -814,7 +814,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:35.938Z"
     },
-    "default_audifonos-sound15-power": {
+    "audifonos-sound15-power": {
       "id": "audifonos-sound15-power",
       "name": "Audifonos Sound 15 Power Bluetooth",
       "description": "Auriculares inalámbricos de diadema de alta fidelidad, con cancelación pasiva de ruido, graves profundos y almohadillas acolchadas.",
@@ -829,7 +829,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:36.337Z"
     },
-    "default_molino-de-verduras": {
+    "molino-de-verduras": {
       "id": "molino-de-verduras",
       "name": "Molino De Verduras",
       "description": "Molino manual premium giratorio de cocina para rallar, rebanar y triturar todo tipo de verduras en segundos con total seguridad.",
@@ -844,7 +844,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:36.817Z"
     },
-    "default_bombillo-solar-emergencia": {
+    "bombillo-solar-emergencia": {
       "id": "bombillo-solar-emergencia",
       "name": "Bombillo Solar Emergencia",
       "description": "Bombillo solar portátil LED de emergencia recargable con panel solar incorporado, puerto USB de carga y gancho para colgar.",
@@ -859,7 +859,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:37.250Z"
     },
-    "default_cepillo-secador-aguacate-solo": {
+    "cepillo-secador-aguacate-solo": {
       "id": "cepillo-secador-aguacate-solo",
       "name": "Cepillo Secador Aguacate",
       "description": "Cepillo alisador y secador 3 en 1 con revestimiento de cerámica enriquecido con aceite de aguacate para un secado rápido y sin frizz.",
@@ -874,7 +874,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:37.736Z"
     },
-    "default_aceite-post-afeitador-acido": {
+    "aceite-post-afeitador-acido": {
       "id": "aceite-post-afeitador-acido",
       "name": "Aceite Post Afeitador Acido Hialuronico",
       "description": "Aceite reparador post-afeitado ultra hidratante formulado con Ácido Hialurónico para prevenir irritaciones y calmar la piel.",
@@ -889,7 +889,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:38.245Z"
     },
-    "default_juguete-perro-grande": {
+    "juguete-perro-grande": {
       "id": "juguete-perro-grande",
       "name": "Juguete Perro Grande",
       "description": "Mordedor ultra duradero y súper resistente de caucho no tóxico para perros medianos y grandes. Ideal para masticadores fuertes.",
@@ -904,7 +904,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:38.606Z"
     },
-    "default_camara-exterior-doble-lente": {
+    "camara-exterior-doble-lente": {
       "id": "camara-exterior-doble-lente",
       "name": "Camara De Exterior Doble Lente",
       "description": "Cámara de seguridad para exteriores de doble lente de alta definición con rotación PTZ, visión nocturna infrarroja y a color con app móvil.",
@@ -919,7 +919,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:39.072Z"
     },
-    "default_jabonera-transparente-doble": {
+    "jabonera-transparente-doble": {
       "id": "jabonera-transparente-doble",
       "name": "Jabonera Transparente Doble",
       "description": "Soporte de doble bandeja transparente autoadhesivo para jabones. Diseño elegante que drena de manera eficiente en baños y duchas.",
@@ -934,7 +934,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:39.535Z"
     },
-    "default_pistola-hidrogel-sr079b": {
+    "pistola-hidrogel-sr079b": {
       "id": "pistola-hidrogel-sr079b",
       "name": "Pistola Hidrogel SR079B",
       "description": "Lanzador de juguete automático de balines de hidrogel ecológicos modelo SR079B. Incluye batería de larga duración, mira telescópica y accesorios de combate.",
@@ -949,7 +949,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:40.028Z"
     },
-    "default_tablero-futbol": {
+    "tablero-futbol": {
       "id": "tablero-futbol",
       "name": "Tablero Futbol",
       "description": "Divertido tablero de fútbol de mesa interactivo para niños y adultos. Ideal para jugar en familia y desarrollar la coordinación.",
@@ -964,7 +964,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:40.505Z"
     },
-    "default_organizador-giratorio-360-especies": {
+    "organizador-giratorio-360-especies": {
       "id": "organizador-giratorio-360-especies",
       "name": "Organizador Giratorio 360 Especies",
       "description": "Práctico organizador de especias y condimentos con base giratoria 360 grados. Ahorra espacio y mantén tu cocina ordenada.",
@@ -979,7 +979,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:40.981Z"
     },
-    "default_organizador-de-toallas": {
+    "organizador-de-toallas": {
       "id": "organizador-de-toallas",
       "name": "Organizador De Toallas",
       "description": "Soporte organizador de toallas para baño, diseño elegante y moderno. Fácil de instalar y muy resistente.",
@@ -994,7 +994,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:41.481Z"
     },
-    "default_maca": {
+    "maca": {
       "id": "maca",
       "name": "Maca",
       "description": "Suplemento natural de Maca en polvo. Excelente fuente de energía y vitalidad, ideal para mejorar el rendimiento físico y mental.",
@@ -1009,7 +1009,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:41.949Z"
     },
-    "default_linterna-led-potente-tactica": {
+    "linterna-led-potente-tactica": {
       "id": "linterna-led-potente-tactica",
       "name": "Linterna Led Potente Tactica",
       "description": "Linterna táctica LED de alta potencia con zoom ajustable y batería recargable. Perfecta para camping, seguridad y emergencias.",
@@ -1024,7 +1024,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:42.483Z"
     },
-    "default_set-de-marcadores-x-48-piezas": {
+    "set-de-marcadores-x-48-piezas": {
       "id": "set-de-marcadores-x-48-piezas",
       "name": "Set De Marcadores X 48 Piezas",
       "description": "Estuche con 48 marcadores de colores vibrantes y doble punta. Ideal para diseño, ilustración, lettering y coloreado.",
@@ -1039,7 +1039,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:42.937Z"
     },
-    "default_quita-callos": {
+    "quita-callos": {
       "id": "quita-callos",
       "name": "Quita Callos",
       "description": "Removedor de callos eléctrico recargable. Suaviza la piel de tus pies de forma rápida, segura y sin dolor en la comodidad de tu hogar.",
@@ -1054,7 +1054,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:43.435Z"
     },
-    "default_termometro-para-alimentos": {
+    "termometro-para-alimentos": {
       "id": "termometro-para-alimentos",
       "name": "Termometro Para Alimentos",
       "description": "Termómetro digital de cocina tipo sonda para carnes, líquidos y repostería. Lectura rápida y precisa para resultados profesionales.",
@@ -1069,7 +1069,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:43.809Z"
     },
-    "default_llavero-sorpresa-la-bubu-y-capibara": {
+    "llavero-sorpresa-la-bubu-y-capibara": {
       "id": "llavero-sorpresa-la-bubu-y-capibara",
       "name": "Llavero Sorpresa La Bubu Y Capibara",
       "description": "Llaveros coleccionables sorpresa con adorables diseños de La Bubu y Capibara. Perfectos para regalar o decorar tu mochila.",
@@ -1084,7 +1084,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:44.263Z"
     },
-    "default_zapatero-plegable-6-niveles-en-acrilico": {
+    "zapatero-plegable-6-niveles-en-acrilico": {
       "id": "zapatero-plegable-6-niveles-en-acrilico",
       "name": "Zapatero Plegable 6 Niveles En Acrilico",
       "description": "Organizador de zapatos plegable de 6 niveles fabricado en acrílico transparente. Diseño elegante, resistente y apilable.",
@@ -1099,7 +1099,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:44.763Z"
     },
-    "default_rayador-de-verdura-electrico": {
+    "rayador-de-verdura-electrico": {
       "id": "rayador-de-verdura-electrico",
       "name": "Rayador De Verdura Electrico",
       "description": "Rallador y cortador eléctrico de verduras con múltiples cuchillas intercambiables. Ahorra tiempo en la cocina con cortes perfectos.",
@@ -1114,7 +1114,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:45.243Z"
     },
-    "default_pistola-lanzadora-de-hidrogel": {
+    "pistola-lanzadora-de-hidrogel": {
       "id": "pistola-lanzadora-de-hidrogel",
       "name": "Pistola Lanzadora De Hidrogel",
       "description": "Pistola de juguete que dispara seguras bolas de hidrogel ecológicas. Batería recargable y diseño futurista para máxima diversión.",
@@ -1129,7 +1129,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:45.696Z"
     },
-    "default_perchero-doble-con-ruedas-de-160-cm": {
+    "perchero-doble-con-ruedas-de-160-cm": {
       "id": "perchero-doble-con-ruedas-de-160-cm",
       "name": "Perchero Doble Con Ruedas De 160 Cm",
       "description": "Práctico perchero metálico de doble barra ajustable con ruedas para fácil movilidad. Ideal para organizar ropa y zapatos.",
@@ -1144,7 +1144,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:46.150Z"
     },
-    "default_parches-acne": {
+    "parches-acne": {
       "id": "parches-acne",
       "name": "Parches Acne",
       "description": "Parches hidrocoloides invisibles para el tratamiento de granos y acné. Absorben impurezas, reducen la inflamación y protegen la piel.",
@@ -1159,7 +1159,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:46.622Z"
     },
-    "default_espumador-batidora-electrica-4-en-1": {
+    "espumador-batidora-electrica-4-en-1": {
       "id": "espumador-batidora-electrica-4-en-1",
       "name": "Espumador Batidora Electrica 4 En 1",
       "description": "Batidora de mano y espumador eléctrico multifuncional 4 en 1. Prepara deliciosos capuchinos, bate huevos y mezcla con facilidad.",
@@ -1174,7 +1174,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:47.092Z"
     },
-    "default_convertidor-de-pilas-aaa-en-aa-x2": {
+    "convertidor-de-pilas-aaa-en-aa-x2": {
       "id": "convertidor-de-pilas-aaa-en-aa-x2",
       "name": "Convertidor De Pilas Aaa En Aa X2",
       "description": "Adaptador práctico para convertir pilas AAA a tamaño AA. Solución económica y ecológica para tus dispositivos electrónicos.",
@@ -1189,7 +1189,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:47.463Z"
     },
-    "default_lonchera-porta-comida-2-en-1": {
+    "lonchera-porta-comida-2-en-1": {
       "id": "lonchera-porta-comida-2-en-1",
       "name": "Lonchera Porta Comida 2 En 1",
       "description": "Lonchera eléctrica y porta comidas térmico 2 en 1. Calienta tu almuerzo en la oficina o el auto sin necesidad de microondas.",
@@ -1204,7 +1204,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:47.904Z"
     },
-    "default_chlorum-x-6": {
+    "chlorum-x-6": {
       "id": "chlorum-x-6",
       "name": "Chlorum X 6",
       "description": "Suplemento natural líquido a base de clorofila. Potente desintoxicante, oxigena la sangre y ayuda a neutralizar los malos olores corporales.",
@@ -1219,7 +1219,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:48.397Z"
     },
-    "default_tope-de-puerta-con-sistema-de-alarma": {
+    "tope-de-puerta-con-sistema-de-alarma": {
       "id": "tope-de-puerta-con-sistema-de-alarma",
       "name": "Tope De Puerta Con Sistema De Alarma",
       "description": "Tope de puerta de seguridad con alarma sirena de 120dB integrada. Se activa al intentar abrir la puerta, ideal para viajes o vivir solo.",
@@ -1234,7 +1234,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:48.880Z"
     },
-    "default_yerba-magic-peach-mango": {
+    "yerba-magic-peach-mango": {
       "id": "yerba-magic-peach-mango",
       "name": "Yerba Magic Peach Mango",
       "description": "Bebida energizante natural a base de Yerba Mate sabor Durazno y Mango. Energía limpia y prolongada sin el bajón del café.",
@@ -1249,7 +1249,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:49.338Z"
     },
-    "default_funda-protectora-para-moto": {
+    "funda-protectora-para-moto": {
       "id": "funda-protectora-para-moto",
       "name": "Funda Protectora Para Moto",
       "description": "Pijama carpa impermeable para motocicleta con protección UV. Protege tu moto de la lluvia, el sol, el polvo y los rayones.",
@@ -1264,7 +1264,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:49.856Z"
     },
-    "default_set-de-utensilios-x-19-pequeno": {
+    "set-de-utensilios-x-19-pequeno": {
       "id": "set-de-utensilios-x-19-pequeno",
       "name": "Set De Utensilios X 19 Pequeno",
       "description": "Completo set de 19 utensilios de cocina en silicona antiadherente de grado alimenticio con mango de madera. Resistentes al calor.",
@@ -1279,7 +1279,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:50.315Z"
     },
-    "default_linterna-frontal": {
+    "linterna-frontal": {
       "id": "linterna-frontal",
       "name": "Linterna Frontal",
       "description": "Linterna de cabeza manos libres con luz LED COB súper brillante, sensor de movimiento y batería recargable vía USB.",
@@ -1294,7 +1294,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:50.819Z"
     },
-    "default_maquillaje-capibara": {
+    "maquillaje-capibara": {
       "id": "maquillaje-capibara",
       "name": "Maquillaje Capibara",
       "description": "Set de maquillaje infantil con temática del adorable Capibara. Seguro, no tóxico y fácil de lavar, perfecto para las más pequeñas.",
@@ -1309,7 +1309,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:51.318Z"
     },
-    "default_limpiadora-a-vapor-multifuncional": {
+    "limpiadora-a-vapor-multifuncional": {
       "id": "limpiadora-a-vapor-multifuncional",
       "name": "Limpiadora A Vapor Multifuncional",
       "description": "Máquina de limpieza a vapor de alta presión con múltiples boquillas. Limpia, desinfecta y quita la grasa sin usar químicos.",
@@ -1324,7 +1324,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:51.680Z"
     },
-    "default_lector-interactivo-educativo-ingles": {
+    "lector-interactivo-educativo-ingles": {
       "id": "lector-interactivo-educativo-ingles",
       "name": "Lector Interactivo Educativo Ingles",
       "description": "Juguete educativo bilingüe con tarjetas interactivas para que los niños aprendan vocabulario, pronunciación y sonidos en inglés de forma divertida.",
@@ -1339,7 +1339,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:52.217Z"
     },
-    "default_silla-de-camping-portatil": {
+    "silla-de-camping-portatil": {
       "id": "silla-de-camping-portatil",
       "name": "Silla De Camping Portatil",
       "description": "Silla plegable ultraligera y resistente para acampar, pescar o ir a la playa. Incluye bolsa de transporte, fácil de armar.",
@@ -1354,7 +1354,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:52.599Z"
     },
-    "default_lampara-reloj-astronauta-en-la-luna-led": {
+    "lampara-reloj-astronauta-en-la-luna-led": {
       "id": "lampara-reloj-astronauta-en-la-luna-led",
       "name": "Lampara Reloj Astronauta En La Luna Led",
       "description": "Innovadora lámpara de noche con diseño de astronauta, proyector de galaxias, reloj digital y cargador inalámbrico incorporado.",
@@ -1369,7 +1369,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:53.048Z"
     },
-    "default_humificador-gotas-bluetooth": {
+    "humificador-gotas-bluetooth": {
       "id": "humificador-gotas-bluetooth",
       "name": "Humificador Gotas Bluetooth",
       "description": "Humidificador y difusor de aromaterapia con efecto visual de gotas antigravedad, luz LED y parlante Bluetooth integrado.",
@@ -1384,7 +1384,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:53.576Z"
     },
-    "default_plantillas-en-silicona": {
+    "plantillas-en-silicona": {
       "id": "plantillas-en-silicona",
       "name": "Plantillas En Silicona",
       "description": "Plantillas ortopédicas de gel de silicona para amortiguar el impacto. Alivian el dolor de pies, talones y fascitis plantar.",
@@ -1399,7 +1399,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:53.954Z"
     },
-    "default_carro-control-remoto-sin-limites": {
+    "carro-control-remoto-sin-limites": {
       "id": "carro-control-remoto-sin-limites",
       "name": "Carro Control Remoto Sin Limites",
       "description": "Auto acrobático a control remoto 4x4 con luces LED, giro 360 grados y sensor de gestos con la mano para controlarlo.",
@@ -1414,7 +1414,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:54.435Z"
     },
-    "default_organizador-ropa-sucia": {
+    "organizador-ropa-sucia": {
       "id": "organizador-ropa-sucia",
       "name": "Organizador Ropa Sucia",
       "description": "Cesto plegable organizador para ropa sucia con estructura de aluminio. Diseño moderno, duradero y ahorrador de espacio.",
@@ -1429,7 +1429,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:54.911Z"
     },
-    "default_gafas-bt": {
+    "gafas-bt": {
       "id": "gafas-bt",
       "name": "Gafas Bt",
       "description": "Gafas de sol deportivas inteligentes con conectividad Bluetooth, auriculares integrados y micrófono para llamadas y música manos libres.",
@@ -1444,7 +1444,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:55.362Z"
     },
-    "default_bombillo-inteligente-tuya-app": {
+    "bombillo-inteligente-tuya-app": {
       "id": "bombillo-inteligente-tuya-app",
       "name": "Bombillo Inteligente Tuya App",
       "description": "Foco LED WiFi RGB+W compatible con Tuya Smart, Alexa y Google Home. Controla color, brillo y horarios desde tu celular.",
@@ -1459,7 +1459,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:55.856Z"
     },
-    "default_sofa-inflable-banana": {
+    "sofa-inflable-banana": {
       "id": "sofa-inflable-banana",
       "name": "Sofa Inflable Banana",
       "description": "Puff sofá perezoso inflable portátil y ultra ligero. Se infla con el viento en segundos, ideal para camping, playa o jardín.",
@@ -1474,7 +1474,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:56.308Z"
     },
-    "default_rueda-abdominal": {
+    "rueda-abdominal": {
       "id": "rueda-abdominal",
       "name": "Rueda Abdominal",
       "description": "Rodillo para ejercicios abdominales de doble rueda antideslizante con rodillera incluida. Tonifica tu core desde casa.",
@@ -1489,7 +1489,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:56.766Z"
     },
-    "default_destprnillador-taladro": {
+    "destprnillador-taladro": {
       "id": "destprnillador-taladro",
       "name": "Destprnillador Taladro",
       "description": "Taladro atornillador inalámbrico de 12V a 24V con kit de accesorios y baterías. Potente, ergonómico y multiusos para el hogar.",
@@ -1504,7 +1504,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:57.239Z"
     },
-    "default_multi-collagen-microingredients": {
+    "multi-collagen-microingredients": {
       "id": "multi-collagen-microingredients",
       "name": "Multi Collagen Microingredients",
       "description": "Péptidos de Colágeno Multi tipo I, II, III, V y X hidrolizado. Mejora la salud de la piel, cabello, uñas y articulaciones.",
@@ -1519,7 +1519,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:57.620Z"
     },
-    "default_maquina-htc": {
+    "maquina-htc": {
       "id": "maquina-htc",
       "name": "Maquina Htc",
       "description": "Máquina cortapelo profesional HTC recargable. Cuchillas de acero de precisión, diseño ergonómico y guías de corte incluidas.",
@@ -1534,7 +1534,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:58.091Z"
     },
-    "default_casco-proteccion": {
+    "casco-proteccion": {
       "id": "casco-proteccion",
       "name": "Casco Proteccion",
       "description": "Casco de seguridad industrial de alta resistencia certificado para construcción y trabajos de obra. Cómodo y ajustable.",
@@ -1549,7 +1549,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:58.441Z"
     },
-    "default_termo-termico-stainless": {
+    "termo-termico-stainless": {
       "id": "termo-termico-stainless",
       "name": "Termo Termico Stainless",
       "description": "Termo de acero inoxidable con aislamiento al vacío de doble pared. Mantiene bebidas calientes o frías por hasta 12 horas.",
@@ -1564,7 +1564,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:58.915Z"
     },
-    "default_combo-3-en-1-keratina": {
+    "combo-3-en-1-keratina": {
       "id": "combo-3-en-1-keratina",
       "name": "Combo 3 En 1 Keratina",
       "description": "Tratamiento completo capilar alisador con keratina. Incluye shampoo preparador, tratamiento alisante y mascarilla selladora.",
@@ -1579,7 +1579,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:59.407Z"
     },
-    "default_juego-set-de-maquillaje-para-ninas-cute": {
+    "juego-set-de-maquillaje-para-ninas-cute": {
       "id": "juego-set-de-maquillaje-para-ninas-cute",
       "name": "Juego Set De Maquillaje Para Ninas Cute",
       "description": "Maletín completo de maquillaje de fantasía para niñas. Cosméticos reales lavables, seguros y con hermosos colores y accesorios.",
@@ -1594,7 +1594,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:07:59.870Z"
     },
-    "default_maquillaje-kuromi-bolso": {
+    "maquillaje-kuromi-bolso": {
       "id": "maquillaje-kuromi-bolso",
       "name": "Maquillaje Kuromi Bolso",
       "description": "Set de brochas y maquillaje inspirado en Kuromi, viene en un lindo bolso cosmetiquero kawaii. Perfecto para fans de Sanrio.",
@@ -1609,7 +1609,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:08:00.333Z"
     },
-    "default_cuchillo-vikingo": {
+    "cuchillo-vikingo": {
       "id": "cuchillo-vikingo",
       "name": "Cuchillo Vikingo",
       "description": "Cuchillo hacha de chef estilo artesanal serbio forjado a mano en acero al carbono. Filo extremo para carnes y vegetales.",
@@ -1624,7 +1624,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:08:00.802Z"
     },
-    "default_humificador-base-de-madera": {
+    "humificador-base-de-madera": {
       "id": "humificador-base-de-madera",
       "name": "Humificador Base De Madera",
       "description": "Difusor de aceites esenciales ultrasónico con elegante base diseño madera y luces LED tenues. Crea un ambiente relajante.",
@@ -1639,7 +1639,7 @@
       "storeId": "default",
       "updatedAt": "2026-07-15T14:08:01.230Z"
     },
-    "default_muneco-sonny-angel-hippers": {
+    "muneco-sonny-angel-hippers": {
       "id": "muneco-sonny-angel-hippers",
       "name": "Muneco Sonny Angel Hippers",
       "description": "Figuras coleccionables Sonny Angel Hippers. Diseñados para asomarse desde la parte superior de tu celular o monitor.",
