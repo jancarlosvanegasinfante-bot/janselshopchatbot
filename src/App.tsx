@@ -2899,7 +2899,7 @@ function InventoryTab({ products, onUpdateStock, onReset, isResetting, userStore
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-dark-accent font-black uppercase text-xs tracking-widest">Carga Manual de Catálogo</h3>
-                  <p className="text-[10px] text-neutral-500 mt-1">Pega el JSON de productos. 🔴 IMPORTANTE: Para enviar la foto real, añade el campo <strong className="text-white">"imageUrl": "https://enlace_a_la_foto.jpg"</strong> en cada producto.</p>
+                  <p className="text-[10px] text-neutral-500 mt-1">Pega el JSON de productos. 🔴 IMPORTANTE: Para vincular un producto con Dropi añade el campo <strong className="text-white">"dropiProductId": "ID_DE_DROPI"</strong> y para la foto añade <strong className="text-white">"imageUrl": "https://enlace..."</strong>.</p>
                 </div>
                 <button onClick={() => setShowManualLoad(false)} className="text-neutral-500 hover:text-white">
                   <Plus size={24} className="rotate-45" />
@@ -2923,7 +2923,7 @@ function InventoryTab({ products, onUpdateStock, onReset, isResetting, userStore
                 </button>
                 <button 
                   onClick={() => {
-                    const template = { products: [{ id: "ejemplo-1", category: "autos", name: "Producto de Ejemplo", description: "Descripción...", cost: 10000, freight: 5000, price: 25000, stock: 10, currency: "COP" }] };
+                    const template = { products: [{ id: "ejemplo-1", category: "autos", name: "Producto de Ejemplo", description: "Descripción...", cost: 10000, freight: 5000, price: 25000, stock: 10, currency: "COP", dropiProductId: "123456" }] };
                     setManualJson(JSON.stringify(template, null, 2));
                   }}
                   className="bg-neutral-800 text-neutral-400 px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-neutral-700 transition-all"
@@ -3580,6 +3580,7 @@ function ConfigTab({ user, userStore, userStores, setUserStore, setUserStores, w
     dropiApiKey: userStore?.dropiApiKey || "",
     dropiAutoSync: userStore?.dropiAutoSync || false,
     dropiPreferredCarrier: userStore?.dropiPreferredCarrier || "Servientrega",
+    dropiBackupCarrier: userStore?.dropiBackupCarrier || "Interrapidisimo",
     metaPixelId: userStore?.metaPixelId || "",
     tiktokPixelId: userStore?.tiktokPixelId || ""
   });
@@ -3673,6 +3674,7 @@ function ConfigTab({ user, userStore, userStores, setUserStore, setUserStores, w
       dropiApiKey: userStore?.dropiApiKey || "",
       dropiAutoSync: userStore?.dropiAutoSync || false,
       dropiPreferredCarrier: userStore?.dropiPreferredCarrier || "Servientrega",
+      dropiBackupCarrier: userStore?.dropiBackupCarrier || "Interrapidisimo",
       metaPixelId: userStore?.metaPixelId || "",
       tiktokPixelId: userStore?.tiktokPixelId || ""
     });
@@ -3915,6 +3917,20 @@ function ConfigTab({ user, userStore, userStores, setUserStore, setUserStores, w
                         <select 
                            value={storeData.dropiPreferredCarrier} 
                            onChange={e => setStoreData({...storeData, dropiPreferredCarrier: e.target.value})} 
+                           className="w-full bg-black border border-neutral-800 rounded-xl p-3 text-xs text-white outline-none focus:border-dark-accent"
+                        >
+                           <option value="Servientrega">Servientrega</option>
+                           <option value="Interrapidisimo">Interrapidísimo</option>
+                           <option value="Envía">Envía Colvanes</option>
+                           <option value="Coordinadora">Coordinadora</option>
+                           <option value="Domina">Domina Entrega</option>
+                        </select>
+                     </div>
+                     <div className="space-y-1">
+                        <label className="text-[9px] text-neutral-500 uppercase font-black">Transportadora de Respaldo</label>
+                        <select 
+                           value={storeData.dropiBackupCarrier || "Interrapidisimo"} 
+                           onChange={e => setStoreData({...storeData, dropiBackupCarrier: e.target.value})} 
                            className="w-full bg-black border border-neutral-800 rounded-xl p-3 text-xs text-white outline-none focus:border-dark-accent"
                         >
                            <option value="Servientrega">Servientrega</option>

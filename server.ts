@@ -3787,7 +3787,7 @@ async function pushOrderToShopify(orderId: string, orderData: any, storeConfig: 
  * Pushes an order to Dropi API (or simulates success if key contains test/demo)
  */
 async function pushOrderToDropi(orderId: string, orderData: any, storeConfig: any, db: any) {
-  const { dropiApiKey, dropiPreferredCarrier } = storeConfig;
+  const { dropiApiKey, dropiPreferredCarrier, dropiBackupCarrier } = storeConfig;
   if (!dropiApiKey) {
     throw new Error("Token o API Key de Dropi ausente.");
   }
@@ -3795,7 +3795,22 @@ async function pushOrderToDropi(orderId: string, orderData: any, storeConfig: an
   const quantity = orderData.quantity || 1;
   const unitPrice = orderData.totalPrice ? Math.round(orderData.totalPrice / quantity) : 0;
 
-  const payload = {
+  // Resolve custom Dropi Product ID / SKU if configured on the product document
+  let resolvedProductId = orderData.productId && orderData.productId !== "manual" ? orderData.productId : undefined;
+  if (orderData.productId && orderData.productId !== "manual") {
+    try {
+      const prodRes = await dbGetDoc("products", orderData.productId);
+      if (prodRes.exists) {
+        const prodData = prodRes.data;
+        resolvedProductId = prodData.dropiProductId || prodData.sku || prodData.id || resolvedProductId;
+        console.log(`[Dropi Push] Resolved catalog product ID "${orderData.productId}" to Dropi API ID/SKU "${resolvedProductId}"`);
+      }
+    } catch (e: any) {
+      console.warn(`[Dropi Push] Non-blocking warning when resolving product SKU: ${e.message}`);
+    }
+  }
+
+  const payload: any = {
     customer: {
       name: orderData.customerName,
       phone: orderData.customerPhone,
@@ -3807,7 +3822,7 @@ async function pushOrderToDropi(orderId: string, orderData: any, storeConfig: an
     carrier: dropiPreferredCarrier || "Servientrega",
     products: [
       {
-        id: orderData.productId && orderData.productId !== "manual" ? orderData.productId : undefined,
+        id: resolvedProductId,
         name: orderData.productName,
         quantity: quantity,
         price: unitPrice
@@ -3821,27 +3836,70 @@ async function pushOrderToDropi(orderId: string, orderData: any, storeConfig: an
     // Elegant fallback simulation for testing/demo keys
     const mockTracking = `CO-${Math.floor(100000000 + Math.random() * 900000000)}CO`;
     const mockOrderId = `DROP-${Math.floor(10000 + Math.random() * 90000)}`;
+    const chosenCarrier = dropiPreferredCarrier || "Servientrega";
     await updateDoc(doc(db, "orders", orderId), {
       dropiStatus: "enviado",
       dropiOrderId: mockOrderId,
       dropiTrackingNumber: mockTracking,
-      dropiCarrier: dropiPreferredCarrier || "Servientrega (Simulado)",
+      dropiCarrier: chosenCarrier + " (Simulado)",
       dropiError: null
     });
     return { dropiOrderId: mockOrderId, tracking: mockTracking, simulated: true };
   }
 
-  const response = await axios.post(
-    "https://api.dropi.co/api/v2/orders", 
-    payload,
-    {
-      headers: {
-        "Authorization": `Bearer ${key}`,
-        "Content-Type": "application/json"
-      },
-      timeout: 10000
+  let response;
+  let chosenCarrier = payload.carrier;
+  
+  try {
+    console.log(`[Dropi Push] Attempting to push order with preferred carrier: ${chosenCarrier}`);
+    response = await axios.post(
+      "https://api.dropi.co/api/v2/orders", 
+      payload,
+      {
+        headers: {
+          "Authorization": `Bearer ${key}`,
+          "Content-Type": "application/json"
+        },
+        timeout: 10000
+      }
+    );
+  } catch (err: any) {
+    const errorMsg = err.response?.data?.message || err.response?.data?.error || err.message || "";
+    const backupCarrier = dropiBackupCarrier || "Interrapidisimo";
+    
+    // Check if the error is carrier-related, coverage-related, or a general routing error
+    const isCarrierIssue = errorMsg.toLowerCase().includes("carrier") || 
+                           errorMsg.toLowerCase().includes("transportadora") || 
+                           errorMsg.toLowerCase().includes("cobertura") || 
+                           errorMsg.toLowerCase().includes("no disponible") || 
+                           errorMsg.toLowerCase().includes("no admite") ||
+                           errorMsg.toLowerCase().includes("sin servicio");
+
+    if (isCarrierIssue && backupCarrier && backupCarrier !== chosenCarrier) {
+      console.log(`[Dropi Push] Preferred carrier "${chosenCarrier}" failed with error: "${errorMsg}". Retrying automatically with backup carrier: "${backupCarrier}"...`);
+      chosenCarrier = backupCarrier;
+      payload.carrier = backupCarrier;
+      
+      try {
+        response = await axios.post(
+          "https://api.dropi.co/api/v2/orders", 
+          payload,
+          {
+            headers: {
+              "Authorization": `Bearer ${key}`,
+              "Content-Type": "application/json"
+            },
+            timeout: 10000
+          }
+        );
+      } catch (backupErr: any) {
+        console.error(`[Dropi Push] Backup carrier retry also failed:`, backupErr.response?.data || backupErr.message);
+        throw backupErr;
+      }
+    } else {
+      throw err;
     }
-  );
+  }
 
   const dropiData = response.data;
   const tracking = dropiData.tracking_number || dropiData.guia || `DROP-${Math.floor(Math.random() * 10000000)}`;
@@ -3851,7 +3909,7 @@ async function pushOrderToDropi(orderId: string, orderData: any, storeConfig: an
     dropiStatus: "enviado",
     dropiOrderId: dropiOrderId.toString(),
     dropiTrackingNumber: tracking,
-    dropiCarrier: dropiPreferredCarrier || "Servientrega",
+    dropiCarrier: chosenCarrier,
     dropiError: null
   });
 
