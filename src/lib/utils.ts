@@ -11,7 +11,9 @@ export function getProxiedImageUrl(url?: string): string {
     url.startsWith("/") || 
     url.startsWith("data:") || 
     url.includes("unsplash.com") || 
-    url.includes("firebasestorage.googleapis.com")
+    url.includes("firebasestorage.googleapis.com") ||
+    url.includes("mlstatic.com") ||
+    url.includes("ibb.co")
   ) {
     return url;
   }
