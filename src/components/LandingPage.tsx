@@ -518,6 +518,27 @@ export default function LandingPage() {
     return `evt_${Date.now()}_${Math.random().toString(36).slice(2)}`;
   };
 
+  // Manda ViewContent/AddToCart/InitiateCheckout también por CAPI (respaldo server-side),
+  // para que los públicos de remarketing no se queden cortos por bloqueadores/iOS.
+  const sendFunnelEventCapi = (eventName: "ViewContent" | "AddToCart" | "InitiateCheckout", eventId: string, opts: { contentIds?: string[]; contentName?: string; value?: number } = {}) => {
+    fetch("/api/public/track-event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        eventName,
+        storeId: "default",
+        eventId,
+        fbp: getFbp(),
+        fbc: getFbc(),
+        eventSourceUrl: window.location.href,
+        customerPhone: formData?.customerPhone || "",
+        contentIds: opts.contentIds || [],
+        contentName: opts.contentName || "",
+        value: opts.value || 0
+      })
+    }).catch(() => {});
+  };
+
   // Tracking Helpers
   const trackMetaEvent = (eventName: string, params?: any, eventId?: string) => {
     if ((window as any).fbq) {
@@ -615,13 +636,15 @@ export default function LandingPage() {
     if (!silent) setIsCartOpen(true);
 
     // Track AddToCart Event
+    const addToCartEventId = generateEventId();
     trackMetaEvent("AddToCart", {
       content_name: product.name,
       content_ids: [product.id],
       content_type: "product",
       value: product.price,
       currency: "COP"
-    });
+    }, addToCartEventId);
+    sendFunnelEventCapi("AddToCart", addToCartEventId, { contentIds: [product.id], contentName: product.name, value: product.price });
     trackTiktokEvent("AddToCart", {
       contents: [{
         content_id: product.id,
@@ -706,11 +729,13 @@ export default function LandingPage() {
     setTimeout(() => { formRef.current?.scrollIntoView({ behavior: "smooth" }); }, 150);
 
     // Track InitiateCheckout Event
+    const checkoutEventId1 = generateEventId();
     trackMetaEvent("InitiateCheckout", {
       num_items: totalQty,
       value: finalTotal,
       currency: "COP"
-    });
+    }, checkoutEventId1);
+    sendFunnelEventCapi("InitiateCheckout", checkoutEventId1, { contentIds: cart.map(i => i.product.id), value: finalTotal });
     trackTiktokEvent("InitiateCheckout", {
       contents: cart.map(item => ({
         content_id: item.product.id,
@@ -734,20 +759,25 @@ export default function LandingPage() {
     setTimeout(() => { formRef.current?.scrollIntoView({ behavior: "smooth" }); }, 100);
 
     // Track ViewContent & InitiateCheckout
+    const viewContentEventId = generateEventId();
     trackMetaEvent("ViewContent", {
       content_name: product.name,
       content_ids: [product.id],
       content_type: "product",
       value: product.price,
       currency: "COP"
-    });
+    }, viewContentEventId);
+    sendFunnelEventCapi("ViewContent", viewContentEventId, { contentIds: [product.id], contentName: product.name, value: product.price });
+
+    const checkoutEventId2 = generateEventId();
     trackMetaEvent("InitiateCheckout", {
       content_name: product.name,
       content_ids: [product.id],
       content_type: "product",
       value: product.price,
       currency: "COP"
-    });
+    }, checkoutEventId2);
+    sendFunnelEventCapi("InitiateCheckout", checkoutEventId2, { contentIds: [product.id], contentName: product.name, value: product.price });
     trackTiktokEvent("ViewContent", {
       contents: [{
         content_id: product.id,

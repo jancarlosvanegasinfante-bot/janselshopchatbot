@@ -4662,6 +4662,53 @@ async function startServer() {
   });
 
   // Evento "Contact" server-side para los clicks directos a WhatsApp (no pasan por landing-order)
+  // Evento genérico server-side para ViewContent / AddToCart / InitiateCheckout —
+  // los eventos de "intención" que alimentan los públicos de remarketing.
+  // Lista blanca de eventos por seguridad (no se puede mandar cualquier nombre de evento).
+  const ALLOWED_FUNNEL_EVENTS = new Set(["ViewContent", "AddToCart", "InitiateCheckout"]);
+  app.post("/api/public/track-event", express.json(), async (req, res) => {
+    try {
+      const { eventName, storeId, eventId, fbp, fbc, eventSourceUrl, customerPhone, contentIds, contentName, value } = req.body;
+      if (!ALLOWED_FUNNEL_EVENTS.has(eventName)) {
+        return res.status(400).json({ success: false, error: "Evento no permitido." });
+      }
+      const targetStoreId = storeId || "default";
+      let storeConfig: any = {};
+      try {
+        const storeSnap = await getDoc(doc(db, "stores", targetStoreId));
+        if (storeSnap.exists()) storeConfig = storeSnap.data();
+      } catch (err) {
+        console.error("[Track Event] Error loading store config:", err);
+      }
+      const capiAccessToken = storeConfig?.metaCapiAccessToken || process.env.META_CAPI_ACCESS_TOKEN || "";
+      if (storeConfig?.metaPixelId && capiAccessToken && eventId) {
+        await sendMetaCapiEvent({
+          pixelId: storeConfig.metaPixelId,
+          accessToken: capiAccessToken,
+          eventName,
+          eventId,
+          eventSourceUrl,
+          customerPhone,
+          fbp,
+          fbc,
+          clientIp: getClientIp(req),
+          userAgent: req.headers["user-agent"] as string,
+          customData: {
+            currency: "COP",
+            value: value || 0,
+            content_ids: contentIds || [],
+            content_name: contentName || "",
+            content_type: "product",
+          },
+        });
+      }
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error("[Track Event] Error:", err.message);
+      res.json({ success: false });
+    }
+  });
+
   app.post("/api/public/track-contact", express.json(), async (req, res) => {
     try {
       const { storeId, eventId, fbp, fbc, eventSourceUrl, customerPhone, value } = req.body;
