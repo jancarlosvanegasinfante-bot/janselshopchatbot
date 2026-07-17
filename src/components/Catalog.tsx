@@ -13,7 +13,15 @@ import {
   Info,
   CheckCircle2,
   Phone,
-  Video
+  Video,
+  ShoppingCart,
+  X,
+  Plus,
+  Minus,
+  Gift,
+  Trash2,
+  Sparkles,
+  ArrowRight
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { ACTIVE_PROMOTIONS } from "../lib/promotions";
@@ -31,6 +39,9 @@ interface Product {
   category?: string;
   stock?: number;
   storeId?: string;
+  provider?: string;
+  dropiId?: string;
+  cost?: number;
 }
 
 export default function Catalog() {
@@ -67,7 +78,23 @@ export default function Catalog() {
         id: doc.id,
         ...doc.data()
       })) as Product[];
-      setProducts(prods.length > 0 ? prods : (catalogData.products as Product[]));
+      
+      // Enrich Firestore products with supplier metadata from our updated catalog.json
+      const enriched = prods.map(p => {
+        const catalogMatch = (catalogData.products as Product[]).find(cp => cp.id === p.id);
+        if (catalogMatch) {
+          return {
+            ...p,
+            provider: catalogMatch.provider || p.provider,
+            dropiId: catalogMatch.dropiId || p.dropiId,
+            cost: catalogMatch.cost || p.cost,
+            price: p.price || catalogMatch.price
+          };
+        }
+        return p;
+      });
+      
+      setProducts(enriched.length > 0 ? enriched : (catalogData.products as Product[]));
       setLoading(false);
     }, (error) => {
       console.error("Error fetching products from Firestore, falling back to local JSON:", error);
@@ -76,6 +103,110 @@ export default function Catalog() {
     });
     return () => unsubscribe();
   }, []);
+
+  // Cart state
+  const [cart, setCart] = useState<Product[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+
+  // Load cart from localStorage on mount
+  useEffect(() => {
+    const savedCart = localStorage.getItem("jansel_cart");
+    if (savedCart) {
+      try {
+        setCart(JSON.parse(savedCart));
+      } catch (e) {
+        console.error("Error parsing cart", e);
+      }
+    }
+  }, []);
+
+  // Save cart to localStorage
+  const saveCart = (newCart: Product[]) => {
+    setCart(newCart);
+    localStorage.setItem("jansel_cart", JSON.stringify(newCart));
+  };
+
+  const addToCart = (product: Product) => {
+    // Check if the product has provider metadata. If not, try to look it up in catalogData
+    let enrichedProd = { ...product };
+    if (!enrichedProd.provider) {
+      const match = (catalogData.products as Product[]).find(cp => cp.id === product.id);
+      if (match) {
+        enrichedProd = {
+          ...enrichedProd,
+          provider: match.provider,
+          dropiId: match.dropiId,
+          cost: match.cost
+        };
+      }
+    }
+
+    const updated = [...cart, enrichedProd];
+    saveCart(updated);
+    toast.success(`¡"${product.name}" añadido al carrito! 🛒`);
+  };
+
+  const removeFromCart = (index: number) => {
+    const updated = [...cart];
+    updated.splice(index, 1);
+    saveCart(updated);
+  };
+
+  const decrementCartItem = (productId: string) => {
+    const index = cart.findLastIndex(item => item.id === productId);
+    if (index !== -1) {
+      const updated = [...cart];
+      updated.splice(index, 1);
+      saveCart(updated);
+    }
+  };
+
+  const clearCart = () => {
+    saveCart([]);
+    toast.success("Carrito vaciado 🧹");
+  };
+
+  // Group cart items for calculation
+  const cartItemCounts = cart.reduce((acc, item) => {
+    acc[item.id] = (acc[item.id] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const uniqueCartItems = cart.filter(
+    (item, index, self) => self.findIndex(t => t.id === item.id) === index
+  );
+
+  // Count items per provider to detect matching suppliers
+  const providerCounts: Record<string, number> = {};
+  cart.forEach(item => {
+    const p = item.provider || "Otros";
+    providerCounts[p] = (providerCounts[p] || 0) + 1;
+  });
+
+  // Calculate Consolidated Shipping Discount
+  // If the user buys 2 or more products from the same supplier, we deduct $12,000 COP per extra item
+  let totalConsolidatedDiscount = 0;
+  const activeDiscountProviders: string[] = [];
+
+  Object.entries(providerCounts).forEach(([provider, count]) => {
+    if (provider !== "Otros" && count >= 2) {
+      totalConsolidatedDiscount += (count - 1) * 12000;
+      activeDiscountProviders.push(provider);
+    }
+  });
+
+  // Supplier Recommendations: find products from the same suppliers in the cart but not currently in the cart
+  const cartProviders = Array.from(
+    new Set(cart.map(item => item.provider).filter(p => p && p !== "Otros"))
+  );
+
+  const sameProviderRecommendations = products
+    .filter(p => 
+      p.provider && 
+      cartProviders.includes(p.provider) && 
+      !cart.some(item => item.id === p.id)
+    )
+    .slice(0, 4);
 
   const categories = ["Todos", ...Array.from(new Set(products.map(p => p.category || "Otros").filter(Boolean)))];
 
@@ -97,7 +228,31 @@ export default function Catalog() {
     const storeInfo = product.storeId ? storesMap[product.storeId] : null;
     const storeSlug = storeInfo?.slug || "jansel-shop";
     const storeName = storeInfo?.name || "Jan Sel Shop";
-    const msg = `¡Hola Jan! 👋 Vengo de la tienda *${storeName}* ref: #${storeSlug}. Me interesó mucho el ${product.name}, vi que está en promo. ¿Todavía te quedan disponibles?`;
+    const msg = `¡Hola Jan! 👋 Vengo de la tienda *${storeName}* ref: #${storeSlug}.\nMe interesó mucho el producto *${product.name}*\n(Proveedor: ${product.provider || "Dropi"}, ID: ${product.dropiId || "N/A"})\n\n¿Todavía te quedan disponibles para pago contraentrega? 📦🚀`;
+    return `https://wa.me/${currentWhatsApp}?text=${encodeURIComponent(msg)}`;
+  };
+
+  const getCartWhatsAppLink = () => {
+    // Generate a beautiful, highly detailed list of items for Jan and the buyer
+    const itemsList = uniqueCartItems.map((item, idx) => {
+      const qty = cartItemCounts[item.id];
+      const supplierStr = item.provider ? ` [Socio: ${item.provider}]` : '';
+      return `${idx + 1}. *${item.name}* x${qty} - ${formatPrice(item.price * qty)} (Ref ID: ${item.dropiId || 'Sin ID'}${supplierStr})`;
+    }).join('\n');
+
+    const subtotal = cart.reduce((sum, item) => sum + item.price, 0);
+    const total = subtotal - totalConsolidatedDiscount;
+
+    const msg = `¡Hola Jan! 👋 Vengo del catálogo Jan Sel Shop.\nQuiero realizar un pedido con despacho consolidado:\n\n` +
+      `🛒 *MI PEDIDO:*\n${itemsList}\n\n` +
+      `📈 *SUBTOTAL:* ${formatPrice(subtotal)}\n` +
+      (totalConsolidatedDiscount > 0 
+        ? `🔥 *DESCUENTO MULTI-ENVÍO:* -${formatPrice(totalConsolidatedDiscount)} (Por llevar artículos de un mismo proveedor: ${activeDiscountProviders.join(", ")}) ✨\n` 
+        : `💡 *Mismo Proveedor:* Si agregas otro artículo del mismo proveedor a tu carrito, ¡te descontamos ${formatPrice(12000)}!\n`) +
+      `💵 *TOTAL NETO A PAGAR:* *${formatPrice(total)}*\n\n` +
+      `📍 *MÉTODO:* Pago Contraentrega (Pago al Recibir)\n\n` +
+      `¿Me confirmas disponibilidad para despachar en un solo paquete hoy mismo? 🚀📦`;
+
     return `https://wa.me/${currentWhatsApp}?text=${encodeURIComponent(msg)}`;
   };
 
@@ -381,14 +536,15 @@ export default function Catalog() {
                       </div>
 
                       <div className="grid grid-cols-2 gap-2">
-                        <a 
-                          href={getWhatsAppLink(product)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center justify-center gap-2 bg-dark-green text-black font-black text-[10px] uppercase tracking-widest py-3 rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-dark-green/10"
+                        <button 
+                          onClick={() => {
+                            addToCart(product);
+                            setIsCartOpen(true);
+                          }}
+                          className="flex items-center justify-center gap-2 bg-dark-green text-black font-black text-[10px] uppercase tracking-widest py-3 rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-dark-green/10 cursor-pointer"
                         >
-                          Lo quiero <Phone size={14} />
-                        </a>
+                          Lo quiero <ShoppingCart size={14} />
+                        </button>
                         <button 
                           onClick={() => {
                             if (product.videoUrl) window.open(product.videoUrl, '_blank');
@@ -452,6 +608,293 @@ export default function Catalog() {
           </div>
         </div>
       </footer>
+
+      {/* FLOATING CART BUTTON */}
+      <AnimatePresence>
+        {cart.length > 0 && !isCartOpen && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8, y: 50 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 50 }}
+            onClick={() => setIsCartOpen(true)}
+            className="fixed bottom-6 right-6 z-40 flex items-center gap-3 bg-dark-green text-black px-6 py-4 rounded-full font-black uppercase text-[11px] tracking-widest shadow-2xl hover:scale-105 active:scale-95 transition-all shadow-dark-green/30 cursor-pointer border border-white/10"
+            id="floating-cart-btn"
+          >
+            <div className="relative">
+              <ShoppingCart size={20} />
+              <span className="absolute -top-2.5 -right-2.5 bg-red-600 text-white font-black text-[9px] w-5 h-5 rounded-full flex items-center justify-center animate-bounce border border-[#0a0a0a]">
+                {cart.length}
+              </span>
+            </div>
+            Ver Carrito 🛒
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      {/* SLIDING CART DRAWER */}
+      <AnimatePresence>
+        {isCartOpen && (
+          <>
+            {/* Backdrop overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsCartOpen(false)}
+              className="fixed inset-0 bg-black/65 backdrop-blur-md z-50 cursor-pointer"
+              id="cart-backdrop"
+            />
+
+            {/* Side sheet */}
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed top-0 right-0 h-full w-full sm:max-w-md bg-[#0f0f0f] border-l border-white/5 shadow-2xl z-50 flex flex-col justify-between select-none overflow-hidden"
+              id="cart-drawer"
+            >
+              {/* Header */}
+              <div className="p-6 border-b border-white/5 flex items-center justify-between bg-black/20">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-dark-green/10 text-dark-green border border-dark-green/20">
+                    <ShoppingCart size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-lg uppercase tracking-tight leading-none">Mi Carrito</h3>
+                    <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mt-1 block">
+                      {cart.length} {cart.length === 1 ? 'artículo' : 'artículos'}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {cart.length > 0 && (
+                    <button 
+                      onClick={clearCart}
+                      className="p-2 rounded-xl text-neutral-500 hover:text-red-500 hover:bg-red-500/10 transition-all text-xs font-bold uppercase tracking-widest border border-transparent hover:border-red-500/10"
+                    >
+                      Vaciar
+                    </button>
+                  )}
+                  <button 
+                    onClick={() => setIsCartOpen(false)}
+                    className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-white transition-all border border-white/5"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Items List (Scrollable) */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-4 no-scrollbar">
+                {cart.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-center space-y-4 py-20">
+                    <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center text-neutral-500 border border-white/10">
+                      <ShoppingBag size={28} />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-white uppercase tracking-tight">Tu carrito está vacío</h4>
+                      <p className="text-neutral-500 text-xs mt-1 max-w-[240px] mx-auto">
+                        Agrega productos del catálogo para armar tu combo y ahorrar en el envío.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setIsCartOpen(false)}
+                      className="bg-white text-black font-black text-[10px] uppercase tracking-widest px-6 py-3 rounded-xl hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
+                    >
+                      Explorar Catálogo <ArrowRight size={12} className="inline ml-1" />
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    {/* LIST OF CART ITEMS */}
+                    <div className="space-y-3">
+                      {uniqueCartItems.map((item) => {
+                        const count = cartItemCounts[item.id];
+                        return (
+                          <div 
+                            key={item.id}
+                            className="bg-neutral-900/50 rounded-2xl p-4 border border-white/5 flex items-center justify-between gap-4"
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-14 h-14 rounded-xl overflow-hidden bg-black/40 border border-white/10 flex-shrink-0">
+                                {item.imageUrl ? (
+                                  <img 
+                                    src={getProxiedImageUrl(item.imageUrl)} 
+                                    alt={item.name}
+                                    className="w-full h-full object-cover"
+                                    referrerPolicy="no-referrer"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-neutral-700">
+                                    📦
+                                  </div>
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <h4 className="font-black text-xs text-white truncate uppercase tracking-tight">
+                                  {item.name}
+                                </h4>
+                                {item.provider && (
+                                  <span className="text-[9px] text-dark-accent font-black uppercase tracking-wider block mt-0.5">
+                                    Socio: {item.provider}
+                                  </span>
+                                )}
+                                <span className="text-xs text-neutral-400 font-bold block mt-1">
+                                  {formatPrice(item.price)}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              {/* Quantity selectors */}
+                              <div className="flex items-center bg-black/40 border border-white/5 rounded-lg p-1">
+                                <button 
+                                  onClick={() => decrementCartItem(item.id)}
+                                  className="p-1 text-neutral-400 hover:text-white hover:bg-white/5 rounded transition-all cursor-pointer"
+                                >
+                                  <Minus size={12} />
+                                </button>
+                                <span className="px-2.5 text-xs font-black text-white">
+                                  {count}
+                                </span>
+                                <button 
+                                  onClick={() => addToCart(item)}
+                                  className="p-1 text-neutral-400 hover:text-white hover:bg-white/5 rounded transition-all cursor-pointer"
+                                >
+                                  <Plus size={12} />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* DYNAMIC SUPPLIER SHIPPING DISCOUNT NOTICE */}
+                    <div className="p-4 rounded-2xl bg-gradient-to-r from-red-950/20 to-neutral-900 border border-red-500/20 space-y-2">
+                      <div className="flex items-center gap-2 text-red-400">
+                        <Sparkles size={16} className="animate-spin duration-1000" />
+                        <h4 className="font-black text-[10px] uppercase tracking-wider">
+                          Estrategia de Despacho Inteligente 🚚
+                        </h4>
+                      </div>
+                      
+                      {activeDiscountProviders.length > 0 ? (
+                        <div className="space-y-1">
+                          <p className="text-xs text-neutral-300 leading-normal">
+                            🎉 ¡Súper ahorro de envío activo! Has agregado varios productos de un mismo proveedor: <strong className="text-white">{activeDiscountProviders.join(", ")}</strong>.
+                          </p>
+                          <p className="text-xs text-dark-green font-black uppercase tracking-wider">
+                            Descuento Multi-Envío Aplicado: -{formatPrice(totalConsolidatedDiscount)} COP! 🔥
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-1">
+                          <p className="text-xs text-neutral-400 leading-normal">
+                            Compra inteligente: si compras varios artículos del <span className="text-white font-bold">mismo proveedor</span>, Jan puede enviarlos en un <span className="text-white font-bold">solo paquete</span> y te descontamos <strong className="text-dark-green font-black">{formatPrice(12000)} COP</strong> del envío de cada producto extra.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* SAME PROVIDER RECOMMENDATIONS (UPSELL ACTION) */}
+                    {sameProviderRecommendations.length > 0 && (
+                      <div className="pt-2">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-[10px] font-black uppercase text-dark-accent tracking-widest flex items-center gap-1.5 font-sans">
+                            <Gift size={12} /> Sugerencias de Mismo Proveedor
+                          </span>
+                          <span className="text-[8px] text-neutral-500 font-extrabold uppercase">
+                            ¡Ahorras Envío! 📦
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-1 gap-2">
+                          {sameProviderRecommendations.map(rec => (
+                            <div 
+                              key={rec.id}
+                              className="bg-white/5 border border-white/5 hover:border-white/10 rounded-xl p-2.5 flex items-center justify-between gap-3 group/rec transition-all"
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div className="w-9 h-9 rounded-lg overflow-hidden bg-black/20 flex-shrink-0">
+                                  {rec.imageUrl ? (
+                                    <img 
+                                      src={getProxiedImageUrl(rec.imageUrl)} 
+                                      alt={rec.name}
+                                      className="w-full h-full object-cover"
+                                      referrerPolicy="no-referrer"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-xs">📦</div>
+                                  )}
+                                </div>
+                                <div className="min-w-0">
+                                  <h5 className="text-[10px] font-bold text-white truncate uppercase tracking-tight group-hover/rec:text-dark-accent transition-colors">
+                                    {rec.name}
+                                  </h5>
+                                  <span className="text-[9px] text-neutral-400 font-black block mt-0.5">
+                                    {formatPrice(rec.price)}
+                                  </span>
+                                </div>
+                              </div>
+                              <button 
+                                onClick={() => addToCart(rec)}
+                                className="flex-shrink-0 bg-dark-green text-black font-black text-[8px] uppercase tracking-wider py-1.5 px-3 rounded-lg hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                              >
+                                + Agregar
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* Checkout Block */}
+              {cart.length > 0 && (
+                <div className="p-6 bg-black/40 border-t border-white/5 space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs text-neutral-400 font-medium">
+                      <span>Subtotal de artículos</span>
+                      <span className="text-white font-bold">
+                        {formatPrice(cart.reduce((sum, item) => sum + item.price, 0))}
+                      </span>
+                    </div>
+                    {totalConsolidatedDiscount > 0 && (
+                      <div className="flex items-center justify-between text-xs text-dark-green font-bold">
+                        <span>Ahorro Despacho Consolidado 🔥</span>
+                        <span>-{formatPrice(totalConsolidatedDiscount)}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                      <span className="text-sm font-black uppercase text-white tracking-tight">Total a Pagar en Casa</span>
+                      <span className="text-xl font-black text-white tracking-tighter">
+                        {formatPrice(cart.reduce((sum, item) => sum + item.price, 0) - totalConsolidatedDiscount)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <a 
+                      href={getCartWhatsAppLink()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 bg-dark-green text-black font-black text-xs uppercase tracking-widest py-4 rounded-2xl hover:scale-[1.01] active:scale-95 transition-all shadow-lg shadow-dark-green/20"
+                    >
+                      Pedir por WhatsApp <Phone size={14} />
+                    </a>
+                    <p className="text-[9px] text-center text-neutral-500 font-bold uppercase tracking-wider">
+                      🚛 Envíos rápidos por Dropi | 💵 Pago contraentrega garantizado
+                    </p>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -9,6 +9,28 @@ const FieldType = {
 
 import { ACTIVE_PROMOTIONS } from "./promotions";
 
+// ÚNICA fuente de la lista de "productos en tendencia" que se muestra en el prompt.
+// Antes estaba pegada dos veces (una por cada rama de getSystemInstruction) y corría el
+// riesgo de desincronizarse si se actualizaba un precio en una copia y no en la otra.
+// NOTA: estos precios son texto fijo para el prompt, no vienen de catalog.json en vivo —
+// si cambias un precio ahí, actualízalo también aquí.
+const TRENDING_PRODUCTS_TEXT = `   1. Carplay Para Moto ($274.900) - ¡EXCLUSIVO / NUEVO! 🏍️
+   2. Módem Wifi Portátil Pro ($196.900)
+   3. Cámara Grabación Vehículo DVR 2.5 ($123.900)
+   4. Inter Comunicador Y10 ($139.900)
+   5. Holder Cargador Vehicular Carga Inalámbrica ($118.900)
+   6. Funda Protectora para Moto ($80.900)
+   7. Destornillador Atornillador Eléctrico ($78.900)
+   8. Volante Seguro Pro ($79.900)
+   9. Cargador Iniciador De Bateria Para Carro ($94.900)
+   10. Kit de Renovación Lubristone 3 Pasos ($89.900)
+   11. Lámpara LED Sensor Ever Brite ($85.900)
+   12. Candado Alarma Grande ($72.900)
+   13. Compresor Portátil Vehículos Digital Car ($159.900)
+   14. Hidro Lavadora Inalámbrica 48v Vehículos ($112.900)
+   15. Mini Aspiradora Portátil Gold Edition ($75.900)
+   16. Kit Saca Golpes Pops-a-Dent DIY ($80.900)`;
+
 export interface StoreBotConfig {
   name?: string;
   botName?: string;
@@ -64,18 +86,7 @@ REGLAS DE ORO:
 6. LINK DE LA TIENDA: Usa siempre https://chatbotjanadsia.up.railway.app/landing como el único enlace oficial de la tienda. OBLIGATORIO usar este enlace terminado en /landing. PROHIBIDO usar /catalog. Envíalo si el usuario pide ver el catálogo.
 7. PRODUCTOS EN TENDENCIA (PRIORIDAD DE OFERTA): Al presentarte, sugerir opciones o saludar al inicio de la conversación, debes OBLIGATORIAMENTE priorizar y ofrecer de primero los "🔥 Productos en Tendencia 🔥" de nuestra Landing Page.
    Nuestros productos en tendencia de la landing son:
-   1. Carplay Para Moto ($274.900) - ¡EXCLUSIVO / NUEVO! 🏍️
-   2. Módem Wifi Portátil Pro ($196.900)
-   3. Cámara Grabación Vehículo DVR 2.5 ($123.900)
-   4. Inter Comunicador Y10 ($139.900)
-   5. Holder Cargador Vehicular Carga Inalámbrica ($118.900)
-   6. Funda Protectora para Moto ($80.900)
-   7. Destornillador Atornillador Eléctrico ($78.900)
-   8. Volante Seguro Pro ($79.900)
-   9. Cargador Iniciador De Bateria Para Carro ($94.900)
-   10. Kit de Renovación Lubristone 3 Pasos ($89.900)
-   11. Lámpara LED Sensor Ever Brite ($85.900)
-   12. Candado Alarma Grande ($72.900)
+${TRENDING_PRODUCTS_TEXT}
    13. Compresor Portátil Vehículos Digital Car ($159.900)
    14. Hidro Lavadora Inalámbrica 48v Vehículos ($112.900)
    15. Mini Aspiradora Portátil Gold Edition ($75.900)
@@ -139,22 +150,7 @@ REGLAS DE ORO:
 ${ACTIVE_PROMOTIONS.map(p => `   - ${p.name}: ${p.description} -> ¡Ofrécelo por solo *${p.promoPrice}*!`).join('\n')}
 12. PRODUCTOS EN TENDENCIA (PRIORIDAD DE OFERTA): Al presentarte, sugerir opciones o saludar al inicio de la conversación, debes OBLIGATORIAMENTE priorizar y ofrecer de primero los "🔥 Productos en Tendencia 🔥" de nuestra Landing Page.
     Nuestros productos en tendencia de la landing son:
-    1. Carplay Para Moto ($274.900) - ¡EXCLUSIVO / NUEVO! 🏍️
-    2. Módem Wifi Portátil Pro ($196.900)
-    3. Cámara Grabación Vehículo DVR 2.5 ($123.900)
-    4. Inter Comunicador Y10 ($139.900)
-    5. Holder Cargador Vehicular Carga Inalámbrica ($118.900)
-    6. Funda Protectora para Moto ($80.900)
-    7. Destornillador Atornillador Eléctrico ($78.900)
-    8. Volante Seguro Pro ($79.900)
-    9. Cargador Iniciador De Bateria Para Carro ($94.900)
-    10. Kit de Renovación Lubristone 3 Pasos ($89.900)
-    11. Lámpara LED Sensor Ever Brite ($85.900)
-    12. Candado Alarma Grande ($72.900)
-    13. Compresor Portátil Vehículos Digital Car ($159.900)
-    14. Hidro Lavadora Inalámbrica 48v Vehículos ($112.900)
-    15. Mini Aspiradora Portátil Gold Edition ($75.900)
-    16. Kit Saca Golpes Pops-a-Dent DIY ($80.900)
+${TRENDING_PRODUCTS_TEXT}
 13. ENVIAR IMÁGENES DE LOS PRODUCTOS: Cuando te pidan una foto/imagen o pregunten por detalles visuales de un producto específico, debes obligatoriamente retornar su URL de imagen del catálogo en el campo "imageUrl" de la respuesta JSON para enviársela de una vez por WhatsApp.
 ${knowledgeBase}
 ESTILO: Sumamente cordial, amable, carismático, respetuoso, con emojis abundantes, mensajes visualmente bonitos, persuasivos y muy profesionales. Eres el Asesor Experto de confianza de ${storeName}. ✨📦⚡`;

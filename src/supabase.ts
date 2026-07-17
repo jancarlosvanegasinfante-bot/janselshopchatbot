@@ -65,6 +65,49 @@ let currentAuthUser: SupabaseUser | null = (() => {
   }
 })();
 
+// Token de sesión de admin firmado por el servidor (protege /api/db/* para
+// colecciones privadas: orders, customers, activities, conversations, etc.).
+// Antes esas rutas no pedían nada — cualquiera podía leer/escribir/borrar
+// cualquier colección sin login. Ahora este token se manda en cada petición
+// privilegiada y el servidor lo valida.
+let adminSessionToken: string | null = (() => {
+  try {
+    return localStorage.getItem("jansel_admin_session_token");
+  } catch {
+    return null;
+  }
+})();
+
+async function exchangeAdminSessionToken(phone: string, opts: { password?: string; supabaseAccessToken?: string }) {
+  try {
+    const response = await fetch("/api/admin/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone, ...opts })
+    });
+    if (!response.ok) {
+      console.warn("[Admin Session] No se pudo obtener token de sesión de admin:", response.status);
+      return;
+    }
+    const data = await response.json();
+    if (data?.token) {
+      adminSessionToken = data.token;
+      localStorage.setItem("jansel_admin_session_token", data.token);
+    }
+  } catch (err) {
+    console.warn("[Admin Session] Error obteniendo token de sesión:", err);
+  }
+}
+
+function clearAdminSessionToken() {
+  adminSessionToken = null;
+  try {
+    localStorage.removeItem("jansel_admin_session_token");
+  } catch {
+    /* noop */
+  }
+}
+
 const authListeners = new Set<(user: SupabaseUser | null) => void>();
 
 // Auth object simulating Firebase Auth
@@ -102,8 +145,16 @@ export function onAuthStateChanged(authObj: any, callback: (user: SupabaseUser |
           tenantId: null,
           providerData: [{ providerId: session.user.app_metadata?.provider || "phone", email: session.user.email || null }]
         };
+        // Canjeamos la sesión real de Supabase por un token de admin firmado por
+        // nuestro propio servidor, para poder proteger /api/db/* sin depender de
+        // volver a llamar a Supabase en cada petición.
+        const phoneForAdmin = session.user.phone ? `+${String(session.user.phone).replace(/[^\d]/g, "")}` : "";
+        if (phoneForAdmin && session.access_token) {
+          exchangeAdminSessionToken(phoneForAdmin, { supabaseAccessToken: session.access_token });
+        }
       } else {
         currentAuthUser = null;
+        clearAdminSessionToken();
       }
       notifyAuthListeners();
     });
@@ -148,6 +199,7 @@ export async function signInWithPopup(authObj: any, provider: any): Promise<any>
       providerData: [{ providerId: "google.com", email: "janselshop@gmail.com" }]
     };
     notifyAuthListeners();
+    await exchangeAdminSessionToken(ADMIN_PHONE, {});
     return { user: currentAuthUser };
   }
 }
@@ -220,6 +272,7 @@ export async function verifyPhoneOtp(phone: string, token: string): Promise<any>
       providerData: [{ providerId: "phone", email: "jancarlosvanegasinfante@gmail.com" }]
     };
     notifyAuthListeners();
+    await exchangeAdminSessionToken(ADMIN_PHONE, {});
     return { user: currentAuthUser };
   }
 }
@@ -252,6 +305,7 @@ export async function loginWithPhoneOrName(identifier: string, password: string)
   };
   
   notifyAuthListeners();
+  await exchangeAdminSessionToken(ADMIN_PHONE, { password });
   return { user: currentAuthUser };
 }
 
@@ -297,6 +351,7 @@ export async function signOut(authObj: any): Promise<void> {
     await supabase.auth.signOut();
   }
   currentAuthUser = null;
+  clearAdminSessionToken();
   notifyAuthListeners();
 }
 
@@ -396,10 +451,16 @@ export function serverTimestamp() {
   return new Date().toISOString();
 }
 
+// Headers con el token de sesión de admin (si existe), para las operaciones
+// que no son de solo-lectura del catálogo público.
+function adminAuthHeaders(): Record<string, string> {
+  return adminSessionToken ? { Authorization: `Bearer ${adminSessionToken}` } : {};
+}
+
 // Fetch single document
 export async function getDoc(docRef: any): Promise<any> {
   const url = `/api/db/getDoc?collection=${docRef.collection}&id=${docRef.id}`;
-  const response = await fetch(url);
+  const response = await fetch(url, { headers: { ...adminAuthHeaders() } });
   if (!response.ok) {
     throw new Error(`Failed to fetch doc: ${response.statusText}`);
   }
@@ -420,7 +481,7 @@ export async function getDocs(queryObj: any): Promise<any> {
 
   const response = await fetch("/api/db/getDocs", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...adminAuthHeaders() },
     body: JSON.stringify({ collection: collectionName, constraints })
   });
 
@@ -448,7 +509,7 @@ export async function getDocs(queryObj: any): Promise<any> {
 export async function setDoc(docRef: any, data: any, options?: { merge?: boolean }): Promise<void> {
   const response = await fetch("/api/db/setDoc", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...adminAuthHeaders() },
     body: JSON.stringify({
       collection: docRef.collection,
       id: docRef.id,
@@ -466,7 +527,7 @@ export async function setDoc(docRef: any, data: any, options?: { merge?: boolean
 export async function updateDoc(docRef: any, data: any): Promise<void> {
   const response = await fetch("/api/db/updateDoc", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...adminAuthHeaders() },
     body: JSON.stringify({
       collection: docRef.collection || docRef.ref?.collection,
       id: docRef.id || docRef.ref?.id,
@@ -494,7 +555,7 @@ export async function addDoc(collectionRef: any, data: any): Promise<any> {
 export async function deleteDoc(docRef: any): Promise<void> {
   const response = await fetch("/api/db/deleteDoc", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...adminAuthHeaders() },
     body: JSON.stringify({
       collection: docRef.collection,
       id: docRef.id

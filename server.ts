@@ -10,6 +10,7 @@ import "dotenv/config";
 import { createClient } from "@supabase/supabase-js";
 import sgMail from '@sendgrid/mail';
 import { getSystemInstruction } from "./src/lib/janAgent.js";
+import { ACTIVE_PROMOTIONS } from "./src/lib/promotions.js";
 import crypto from "crypto";
 
 // 1. Initialize Supabase / Local JSON File Storage
@@ -26,6 +27,10 @@ if (SUPABASE_URL.endsWith('/rest/v1/')) {
 }
 
 const supabaseKey = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
+// Si hay credenciales reales de Supabase configuradas, estamos en producción real
+// (no en modo local emulado con local_db.json) — usado para decidir cuándo exigir
+// autenticación de admin en las rutas /api/db/*.
+const IS_CLOUD_DB_MODE = !!(SUPABASE_URL && supabaseKey);
 export const supabaseServer = (SUPABASE_URL && supabaseKey)
   ? createClient(SUPABASE_URL, supabaseKey)
   : null;
@@ -861,6 +866,72 @@ function validateTwilioWebhookSignature(req: express.Request): boolean {
 }
 
 const STRICT_TWILIO_SIGNATURE_VALIDATION = process.env.STRICT_TWILIO_SIGNATURE_VALIDATION === "true";
+if (!STRICT_TWILIO_SIGNATURE_VALIDATION) {
+  console.warn(
+    "[Seguridad] ⚠️ STRICT_TWILIO_SIGNATURE_VALIDATION está apagado. El webhook de WhatsApp acepta " +
+    "solicitudes sin firma válida de Twilio (solo se audita, no se bloquea). Actívalo con la variable " +
+    "de entorno STRICT_TWILIO_SIGNATURE_VALIDATION=true cuando confirmes que las firmas se validan bien " +
+    "en tus logs."
+  );
+}
+
+// -------------------------------------------------------------
+// 🔐 PROTECCIÓN DE /api/db/* — antes cualquiera podía leer, escribir o borrar
+// CUALQUIER colección (pedidos, clientes, todo) sin login, pegándole directo a
+// estas rutas. Solo dejamos público, de solo-lectura, lo que el storefront
+// realmente necesita mostrar sin login: catálogo (products) y tiendas (stores).
+// Todo lo demás (leer otras colecciones, o escribir/borrar CUALQUIER cosa)
+// exige un token de sesión de admin válido.
+// -------------------------------------------------------------
+const PUBLIC_READ_COLLECTIONS = new Set(["products", "stores"]);
+const ADMIN_SESSION_SECRET =
+  process.env.ADMIN_SESSION_SECRET || SUPABASE_SERVICE_ROLE_KEY || process.env.TWILIO_AUTH_TOKEN || "";
+const ADMIN_PHONE_SERVER = (process.env.ADMIN_PHONE || "+573133647176").replace(/\s+/g, "");
+const ADMIN_PASSWORD_SERVER = process.env.ADMIN_PASSWORD || "";
+
+if (IS_CLOUD_DB_MODE && !ADMIN_SESSION_SECRET) {
+  console.warn(
+    "[Seguridad] ⚠️ No hay ADMIN_SESSION_SECRET/SUPABASE_SERVICE_ROLE_KEY configurado. " +
+    "Las rutas /api/db/* para colecciones privadas (orders, customers, etc.) quedarán " +
+    "bloqueadas hasta que configures uno de los dos."
+  );
+}
+
+function issueAdminSessionToken(phone: string): string {
+  const expiresAt = Date.now() + 1000 * 60 * 60 * 12; // 12 horas
+  const payload = `${phone}.${expiresAt}`;
+  const sig = crypto.createHmac("sha256", ADMIN_SESSION_SECRET || "fallback-inseguro").update(payload).digest("hex");
+  return Buffer.from(`${payload}.${sig}`).toString("base64url");
+}
+
+function verifyAdminSessionToken(token: string): boolean {
+  if (!token || !ADMIN_SESSION_SECRET) return false;
+  try {
+    const decoded = Buffer.from(token, "base64url").toString("utf8");
+    const parts = decoded.split(".");
+    if (parts.length !== 3) return false;
+    const [phone, expiresAtStr, sig] = parts;
+    const expiresAt = Number(expiresAtStr);
+    if (!expiresAt || Date.now() > expiresAt) return false;
+    const payload = `${phone}.${expiresAtStr}`;
+    const expectedSig = crypto.createHmac("sha256", ADMIN_SESSION_SECRET).update(payload).digest("hex");
+    if (sig.length !== expectedSig.length) return false;
+    if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSig))) return false;
+    return phone === ADMIN_PHONE_SERVER;
+  } catch {
+    return false;
+  }
+}
+
+// En modo local emulado (sin Supabase real configurado) no hay datos de producción
+// en riesgo — se mantiene el comportamiento abierto que ya usa el proyecto para
+// desarrollo local (mismo criterio que el OTP fijo "123456" del modo emulado).
+function isAdminRequestAuthorized(req: express.Request): boolean {
+  if (!IS_CLOUD_DB_MODE) return true;
+  const authHeader = String(req.headers["authorization"] || "");
+  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+  return verifyAdminSessionToken(token);
+}
 
 /**
  * Media (audio/imagen) por cliente: límite aparte del rate-limit general de
@@ -1281,12 +1352,47 @@ async function processInferenceOnServer(activityId: string, data: any) {
     matchedProducts.forEach(p => combinedSet.set(p.id, p));
     imageMatchedProducts.forEach(p => combinedSet.set(p.id, p));
 
+    // "Vendedor experto": el bot conoce qué productos vienen del mismo lote/proveedor
+    // real (dato interno, NUNCA se muestra al cliente) y los usa para sugerir
+    // complementos que aumenten el ticket. Priorizamos mismo proveedor + misma
+    // categoría (más relevante para el cliente); si no hay suficientes, completamos
+    // con mismo proveedor aunque cambie la categoría. Esto es solo señal interna
+    // para la IA — el prompt le prohíbe explícitamente nombrar proveedores.
+    const anchorProducts = Array.from(combinedSet.values()).filter(p => p.provider);
+    const upsellProducts: any[] = [];
+    if (anchorProducts.length > 0) {
+      const anchorIds = new Set(anchorProducts.map(p => p.id));
+      const seenUpsell = new Set<string>();
+      for (const anchor of anchorProducts) {
+        if (upsellProducts.length >= 6) break;
+        const sameProviderSameCategory = products.filter(p =>
+          p.provider && p.provider === anchor.provider &&
+          p.category === anchor.category &&
+          !anchorIds.has(p.id) && !seenUpsell.has(p.id)
+        ).slice(0, 2);
+        const sameProviderOnly = sameProviderSameCategory.length < 2
+          ? products.filter(p =>
+              p.provider && p.provider === anchor.provider &&
+              !anchorIds.has(p.id) && !seenUpsell.has(p.id) &&
+              !sameProviderSameCategory.some(sp => sp.id === p.id)
+            ).slice(0, 2 - sameProviderSameCategory.length)
+          : [];
+        for (const p of [...sameProviderSameCategory, ...sameProviderOnly]) {
+          if (upsellProducts.length >= 6) break;
+          seenUpsell.add(p.id);
+          upsellProducts.push(p);
+        }
+      }
+    }
+    upsellProducts.forEach(p => combinedSet.set(p.id, p));
+
     filteredProductsForPrompt = Array.from(combinedSet.values());
     
     const compactProductsString = filteredProductsForPrompt.map(p => {
       const desc = p.description ? (p.description.length > 80 ? p.description.substring(0, 80) + "..." : p.description) : "";
       const isImageMatch = imageMatchedProducts.some(imp => imp.id === p.id);
-      return `- ${p.name} ($${p.price}) [id: ${p.id}]${p.category ? ` [Cat: ${p.category}]` : ""}${desc ? ` - ${desc}` : ""}${isImageMatch ? " ⭐ COINCIDE CON LA FOTO QUE ENVIÓ EL CLIENTE" : ""}`;
+      const isUpsell = !isImageMatch && upsellProducts.some(up => up.id === p.id) && !matchedProducts.some(mp => mp.id === p.id) && !topProducts.some(tp => tp.id === p.id);
+      return `- ${p.name} ($${p.price}) [id: ${p.id}]${p.category ? ` [Cat: ${p.category}]` : ""}${desc ? ` - ${desc}` : ""}${isImageMatch ? " ⭐ COINCIDE CON LA FOTO QUE ENVIÓ EL CLIENTE" : ""}${isUpsell ? " 🔁 COMPLEMENTO SUGERIDO (mismo lote de despacho — bueno para ofrecer junto al producto principal)" : ""}`;
     }).join("\n");
 
     const checkoutContext = customerProfile?.checkoutStep 
@@ -1315,6 +1421,13 @@ MENSAJE ACTUAL: ${safeMessage}${imageParts.length > 0 ? ` (El cliente también e
 
 INVENTARIO ACTUAL (Vista curada de los más vendidos y productos relevantes para esta consulta. Tenemos más de 360 productos en total, si piden algo diferente pregúntale a tu jefe o usa "notificar_admin"):
 ${compactProductsString}
+
+🧠 ROL DE VENDEDOR EXPERTO (aumento de ticket):
+Eres un vendedor que conoce perfectamente TODO el catálogo y sabe qué productos combinan bien entre sí.
+- Los productos marcados "🔁 COMPLEMENTO SUGERIDO" están relacionados con lo que el cliente ya está viendo — son buenos candidatos para ofrecer como combo o adicional, cuando encaje de forma natural en la conversación (no en cada mensaje, no si el cliente ya está fastidiado o solo quiere pagar).
+- Preséntalos siempre como parte de NUESTRO propio catálogo ("también tenemos...", "te consigue muy bien con..."), nunca como si vinieran de otro lado.
+- PROHIBIDO ABSOLUTO: nunca menciones la palabra "proveedor", "distribuidor", "lote", "Dropi", ni ningún nombre de proveedor real al cliente, bajo ninguna circunstancia. Esa información es 100% interna.
+- Si el cliente ya decidió comprar y está en checkout, no lo interrumpas con ofertas adicionales salvo que sea un anexo muy rápido y de bajo esfuerzo (ej. "¿le agrego también el cargador por $X?").
 
 ⚠️ REGLA DE SALIDA ULTRA-ESTRICTA (OBLIGATORIA):
 DEBES RESPONDER EXCLUSIVAMENTE CON UN OBJETO JSON VÁLIDO.
@@ -2666,12 +2779,15 @@ async function triggerTrendCampaign(product: any, storeId: string): Promise<void
       return;
     }
 
-    // Filtro de cooldown: nadie recibe una oferta de tendencia si ya recibió una hace poco
+    // Filtro de cooldown + opt-out: nadie recibe una oferta de tendencia si ya recibió
+    // una hace poco, NI si pidió explícitamente no recibir más mensajes de marketing.
     const eligible: { phone: string; name: string; orders: any[] }[] = [];
     for (const c of categoryCandidates) {
       const custId = `${storeId}_${c.phone}`;
       const custSnap = await getDoc(doc(db, "customers", custId));
-      const lastOffer = custSnap.exists() ? (custSnap.data()?.lastTrendOfferAt || 0) : 0;
+      const custData = custSnap.exists() ? custSnap.data() : null;
+      if (custData?.marketingOptOut) continue;
+      const lastOffer = custData?.lastTrendOfferAt || 0;
       if (Date.now() - lastOffer < TREND_COOLDOWN_MS) continue;
       eligible.push(c);
     }
@@ -3219,13 +3335,63 @@ async function finalizeOrder(
   console.log("[Server AI] ¡PEDIDO CONFIRMADO! Notificando y Persistiendo...");
   try {
     let finalPrice = jsonResponse.datos_pedido?.valor || 0;
+    let finalProductId = "manual";
+    const productNameInput = jsonResponse.producto || "No especificado";
+    const checkProd = productNameInput.toLowerCase();
+
+    // Partimos "producto" en sus items individuales (el prompt le pide a la IA que use
+    // nombres reales separados por coma, ej: "Volante Seguro Pro, Cámara DVR") para poder
+    // resolver cada uno contra el catálogo real, en vez de tratar todo el string como un
+    // solo bloque de texto (así no se "pierde" el segundo producto de un pedido).
+    const productParts = checkProd.split(",").map((s: string) => s.trim()).filter(Boolean);
+    const matchedItems: any[] = [];
+    for (const part of productParts) {
+      const found = products.find((p: any) => {
+        const name = (p?.name || "").toLowerCase();
+        return name && (name === part || name.includes(part) || part.includes(name));
+      });
+      if (found && !matchedItems.some((m) => m.id === found.id)) matchedItems.push(found);
+    }
+
+    // 1. ¿Coincide con un combo activo? Comparamos por los IDs reales de los productos
+    // del combo (no por texto de tagline/nombre, que casi nunca calza literal).
+    const matchedIds = new Set(matchedItems.map((p: any) => p.id));
+    const comboMatch = matchedItems.length > 0
+      ? ACTIVE_PROMOTIONS.find((combo: any) =>
+          Array.isArray(combo.productIds) &&
+          combo.productIds.length === matchedIds.size &&
+          combo.productIds.every((id: string) => matchedIds.has(id))
+        )
+      : undefined;
+
+    if (comboMatch) {
+      console.log(`[Server AI] Match found in Active Promotions: ${comboMatch.name} (${comboMatch.id})`);
+      finalPrice = comboMatch.promoPrice;
+      finalProductId = comboMatch.id;
+    } else if (matchedItems.length > 0) {
+      // 2. No es combo: sumamos el precio real de TODOS los productos identificados
+      // (antes solo se tomaba uno solo y el resto del pedido se perdía del cálculo).
+      const catalogSum = matchedItems.reduce((sum: number, p: any) => sum + (Number(p.price) || 0), 0);
+      const tolerance = Math.max(2000, catalogSum * 0.05);
+      if (catalogSum > 0 && (finalPrice <= 0 || Math.abs(finalPrice - catalogSum) > tolerance)) {
+        console.warn(
+          `[Server AI] ⚠️ Precio propuesto por la IA ($${finalPrice}) no coincide con la suma real de catálogo ($${catalogSum}). Se usa el precio de catálogo.`
+        );
+        finalPrice = catalogSum;
+      }
+      finalProductId = matchedItems[0]?.id || matchedItems[0]?.productId || "manual";
+    }
+
+    // Force fallback to catalog price if the AI provided $0 or invalid values
     if (finalPrice <= 0 && jsonResponse.producto) {
-      const checkProd = jsonResponse.producto.toLowerCase();
       const match = products.find((p: any) =>
         (p.name && p.name.toLowerCase().includes(checkProd)) ||
         (p.name && checkProd.includes(p.name.toLowerCase()))
       );
-      if (match && (match as any).price) finalPrice = (match as any).price;
+      if (match && (match as any).price) {
+        finalPrice = (match as any).price;
+        finalProductId = match.id || "manual";
+      }
     }
 
     let quantity = parseInt(jsonResponse.datos_pedido?.cantidad, 10);
@@ -3236,14 +3402,14 @@ async function finalizeOrder(
       storeId: assignedStoreId,
       customerName: jsonResponse.datos_pedido?.nombre || customerProfile?.name || fromPhone,
       customerPhone: jsonResponse.datos_pedido?.telefono || fromPhone,
-      productName: jsonResponse.producto || "No especificado",
-      productId: "manual",
+      productName: productNameInput,
+      productId: finalProductId,
       quantity,
       totalPrice: finalPrice * quantity,
       address: jsonResponse.datos_pedido?.direccion || "No especificada",
       city: jsonResponse.datos_pedido?.ciudad || "No especificada",
       addressIndicator: jsonResponse.datos_pedido?.referencia || "N/A",
-      notes: jsonResponse.datos_pedido?.notas || "",
+      notes: jsonResponse.datos_pedido?.notes || "",
       status: 'pendiente',
       shopifyStatus: 'no_enviado',
       dropiStatus: 'no_enviado',
@@ -4358,10 +4524,55 @@ async function startServer() {
   // 🗄️ SUPABASE / LOCAL DB REST API FOR CLIENT-FRONTEND PROXY
   // -------------------------------------------------------------
   
+  app.post("/api/admin/login", async (req: express.Request, res: express.Response) => {
+    try {
+      const { phone, password, supabaseAccessToken } = req.body || {};
+      const normalizedPhone = String(phone || "").replace(/[^\d+]/g, "");
+      let verified = false;
+
+      // Opción 1: sesión real verificada contra Supabase Auth (OTP por SMS o Google)
+      if (!verified && supabaseAccessToken && supabaseServer) {
+        try {
+          const { data, error } = await supabaseServer.auth.getUser(supabaseAccessToken);
+          if (!error && data?.user) {
+            const userPhone = data.user.phone ? `+${String(data.user.phone).replace(/[^\d]/g, "")}` : "";
+            if (userPhone === ADMIN_PHONE_SERVER) verified = true;
+          }
+        } catch (e) {
+          console.warn("[Admin Login] Error verificando token de Supabase:", e);
+        }
+      }
+
+      // Opción 2: password server-side (NUNCA se manda al navegador, a diferencia de
+      // VITE_ADMIN_PASSWORD que sí queda visible en el bundle público).
+      if (!verified && ADMIN_PASSWORD_SERVER && password === ADMIN_PASSWORD_SERVER && normalizedPhone === ADMIN_PHONE_SERVER) {
+        verified = true;
+      }
+
+      // En modo local emulado (sin Supabase real) no hay datos reales en riesgo.
+      if (!verified && !IS_CLOUD_DB_MODE && normalizedPhone === ADMIN_PHONE_SERVER) {
+        verified = true;
+      }
+
+      if (!verified) {
+        return res.status(401).json({ error: "No autorizado" });
+      }
+
+      const token = issueAdminSessionToken(ADMIN_PHONE_SERVER);
+      res.json({ token, expiresIn: 12 * 60 * 60 });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   app.get("/api/db/getDoc", async (req, res) => {
     const { collection: colName, id } = req.query;
+    const col = String(colName);
+    if (!PUBLIC_READ_COLLECTIONS.has(col) && !isAdminRequestAuthorized(req)) {
+      return res.status(403).json({ error: "Acceso no autorizado a esta colección" });
+    }
     try {
-      const result = await dbGetDoc(String(colName), String(id));
+      const result = await dbGetDoc(col, String(id));
       res.json(result);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -4370,6 +4581,9 @@ async function startServer() {
 
   app.post("/api/db/getDocs", async (req, res) => {
     const { collection: colName, constraints } = req.body;
+    if (!PUBLIC_READ_COLLECTIONS.has(colName) && !isAdminRequestAuthorized(req)) {
+      return res.status(403).json({ error: "Acceso no autorizado a esta colección" });
+    }
     try {
       const docs = await dbGetDocs(colName, constraints || []);
       res.json({ docs });
@@ -4379,6 +4593,9 @@ async function startServer() {
   });
 
   app.post("/api/db/setDoc", async (req, res) => {
+    if (!isAdminRequestAuthorized(req)) {
+      return res.status(403).json({ error: "Acceso no autorizado" });
+    }
     const { collection: colName, id, data, merge } = req.body;
     try {
       await dbSetDoc(colName, id, data, merge !== false);
@@ -4389,6 +4606,9 @@ async function startServer() {
   });
 
   app.post("/api/db/updateDoc", async (req, res) => {
+    if (!isAdminRequestAuthorized(req)) {
+      return res.status(403).json({ error: "Acceso no autorizado" });
+    }
     const { collection: colName, id, data } = req.body;
     try {
       await dbSetDoc(colName, id, data, true);
@@ -4399,6 +4619,9 @@ async function startServer() {
   });
 
   app.post("/api/db/deleteDoc", async (req, res) => {
+    if (!isAdminRequestAuthorized(req)) {
+      return res.status(403).json({ error: "Acceso no autorizado" });
+    }
     const { collection: colName, id } = req.body;
     try {
       await dbDeleteDoc(colName, id);
@@ -6523,6 +6746,32 @@ Solicitado haciendo click en el botón "Hablar con Asesor" 🙋‍♂️.`;
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
       .trim();
+
+      // ==============================================
+      // 0.A0 INTERCEPTOR GLOBAL: OPT-OUT DE MARKETING ("no me escribas más")
+      // ==============================================
+      // Antes no había forma de que un cliente pidiera permanentemente no
+      // recibir más mensajes de las campañas automáticas de "producto en
+      // tendencia" — el único freno era el cooldown temporal. Esto marca
+      // marketingOptOut=true en su perfil, que triggerTrendCampaign respeta.
+      const optOutPhrases = [
+        "no me escribas mas", "no me vuelvas a escribir", "dejen de escribirme",
+        "quitame de la lista", "no quiero mas mensajes", "no me mandes mas publicidad",
+        "no me mandes mas promociones", "unsubscribe", "stop", "no me contactes mas"
+      ];
+      const wantsOptOut = optOutPhrases.some(p => cleanMsg.includes(p));
+
+      if (wantsOptOut && from.startsWith("whatsapp:")) {
+        await setDoc(doc(db, "customers", customerProfileId), { marketingOptOut: true }, { merge: true });
+        await sendWhatsApp(
+          from,
+          "Listo, no te volveremos a escribir con ofertas ni promociones. Si necesitas algo de un pedido o quieres volver a comprar, aquí seguimos. 🙂",
+          undefined,
+          activityRef.id,
+          to
+        );
+        return res.status(200).send("");
+      }
 
       // ==============================================
       // 0.A INTERCEPTOR GLOBAL: PEDIR ASESOR HUMANO (funciona en cualquier punto)

@@ -1,0 +1,2336 @@
+{
+  "updates": [
+    {
+      "id": "compresor-portatil-digital",
+      "fields": {
+        "provider": "G.W.T.",
+        "dropiId": "1973768"
+      }
+    },
+    {
+      "id": "maquina-donas-x7",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "De Compras",
+        "dropiId": "1952379"
+      }
+    },
+    {
+      "id": "religioso-w-213",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "cuadrosymas",
+        "dropiId": "845654"
+      }
+    },
+    {
+      "id": "potenmax-gomas",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "nan",
+        "dropiId": "1805565"
+      }
+    },
+    {
+      "id": "pistola-pintura",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "IMPONOVEDADES",
+        "dropiId": "2200625"
+      }
+    },
+    {
+      "id": "combo-compresor-linterna",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "SAMUEL",
+        "dropiId": "1973768"
+      }
+    },
+    {
+      "id": "tina-plegable",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2160432"
+      }
+    },
+    {
+      "id": "glucosamina-chondroitin",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1976095"
+      }
+    },
+    {
+      "id": "pista-de-carros",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "Alanashop",
+        "dropiId": "1919451"
+      }
+    },
+    {
+      "id": "masajeador-gun-8820",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2108399"
+      }
+    },
+    {
+      "id": "mini-gun-lanzador-hidrogel",
+      "fields": {
+        "cost": 73700.0,
+        "freight": 20000.0,
+        "provider": "GGP",
+        "dropiId": "468473"
+      }
+    },
+    {
+      "id": "fbmax-1000ml",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1972154"
+      }
+    },
+    {
+      "id": "probador-de-corriente",
+      "fields": {
+        "price": 78900.0,
+        "cost": 23000.0,
+        "dropiId": "2190958"
+      }
+    },
+    {
+      "id": "sopladora-larga-inalambrica-2bat",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2076563"
+      }
+    },
+    {
+      "id": "shilajit-1000ml",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1973348"
+      }
+    },
+    {
+      "id": "mini-martillo-8oz",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2180423"
+      }
+    },
+    {
+      "id": "calostrum-calostro-500g",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1970318"
+      }
+    },
+    {
+      "id": "bichota-500ml",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1973872"
+      }
+    },
+    {
+      "id": "triturador-de-pollo",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2162214"
+      }
+    },
+    {
+      "id": "herramienta-recoger-fruta",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2115859"
+      }
+    },
+    {
+      "id": "juego-candados",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2187371"
+      }
+    },
+    {
+      "id": "parlante-para-ducha",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2136069"
+      }
+    },
+    {
+      "id": "candida-cleanse",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1974754"
+      }
+    },
+    {
+      "id": "resveratrol-nath-1000ml",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2057128"
+      }
+    },
+    {
+      "id": "audifonos-sound15-power",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2162235"
+      }
+    },
+    {
+      "id": "bombillo-solar-emergencia",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2162721"
+      }
+    },
+    {
+      "id": "juguete-perro-grande",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "COMERCIALIZADORA S14 SAS",
+        "dropiId": "2119935"
+      }
+    },
+    {
+      "id": "camara-exterior-doble-lente",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2196543"
+      }
+    },
+    {
+      "id": "jabonera-transparente-doble",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2185920"
+      }
+    },
+    {
+      "id": "pistola-hidrogel-sr079b",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2019623"
+      }
+    },
+    {
+      "id": "tablero-futbol",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2180361"
+      }
+    },
+    {
+      "id": "organizador-giratorio-360-especies",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "impor house",
+        "dropiId": "2108543"
+      }
+    },
+    {
+      "id": "organizador-de-toallas",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2083983"
+      }
+    },
+    {
+      "id": "maca",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1970417"
+      }
+    },
+    {
+      "id": "linterna-led-potente-tactica",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2167661"
+      }
+    },
+    {
+      "id": "set-de-marcadores-x-48-piezas",
+      "fields": {
+        "price": 90900.0,
+        "cost": 33500.0,
+        "dropiId": "2083579"
+      }
+    },
+    {
+      "id": "termometro-para-alimentos",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2157555"
+      }
+    },
+    {
+      "id": "llavero-sorpresa-la-bubu-y-capibara",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2039565"
+      }
+    },
+    {
+      "id": "zapatero-plegable-6-niveles-en-acrilico",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2056413"
+      }
+    },
+    {
+      "id": "rayador-de-verdura-electrico",
+      "fields": {
+        "price": 115900.0,
+        "cost": 57500.0,
+        "dropiId": "2107448"
+      }
+    },
+    {
+      "id": "pistola-lanzadora-de-hidrogel",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "Heidy",
+        "dropiId": "2076796"
+      }
+    },
+    {
+      "id": "perchero-doble-con-ruedas-de-160-cm",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2094252"
+      }
+    },
+    {
+      "id": "convertidor-de-pilas-aaa-en-aa-x2",
+      "fields": {
+        "price": 71900.0,
+        "cost": 15500.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1941038"
+      }
+    },
+    {
+      "id": "chlorum-x-6",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2071147"
+      }
+    },
+    {
+      "id": "tope-de-puerta-con-sistema-de-alarma",
+      "fields": {
+        "price": 80900.0,
+        "cost": 24500.0,
+        "provider": "Ventas Margarita",
+        "dropiId": "2125078"
+      }
+    },
+    {
+      "id": "yerba-magic-peach-mango",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1970570"
+      }
+    },
+    {
+      "id": "set-de-utensilios-x-19-pequeno",
+      "fields": {
+        "price": 110900.0,
+        "cost": 52500.0,
+        "dropiId": "2091842"
+      }
+    },
+    {
+      "id": "linterna-frontal",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "De Compras",
+        "dropiId": "2137694"
+      }
+    },
+    {
+      "id": "limpiadora-a-vapor-multifuncional",
+      "fields": {
+        "price": 159900.0
+      }
+    },
+    {
+      "id": "lector-interactivo-educativo-ingles",
+      "fields": {
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1342450"
+      }
+    },
+    {
+      "id": "silla-de-camping-portatil",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2055015"
+      }
+    },
+    {
+      "id": "lampara-reloj-astronauta-en-la-luna-led",
+      "fields": {
+        "price": 154900.0,
+        "cost": 94500.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2201220"
+      }
+    },
+    {
+      "id": "humificador-gotas-bluetooth",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2151939"
+      }
+    },
+    {
+      "id": "plantillas-en-silicona",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DISTRIBUCIONES AYT",
+        "dropiId": "2135816"
+      }
+    },
+    {
+      "id": "carro-control-remoto-sin-limites",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2019358"
+      }
+    },
+    {
+      "id": "organizador-ropa-sucia",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2154808"
+      }
+    },
+    {
+      "id": "gafas-bt",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2164741"
+      }
+    },
+    {
+      "id": "bombillo-inteligente-tuya-app",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1876084"
+      }
+    },
+    {
+      "id": "sofa-inflable-banana",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2139227"
+      }
+    },
+    {
+      "id": "rueda-abdominal",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2109794"
+      }
+    },
+    {
+      "id": "destprnillador-taladro",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2162188"
+      }
+    },
+    {
+      "id": "multi-collagen-microingredients",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2089543"
+      }
+    },
+    {
+      "id": "casco-proteccion",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2179712"
+      }
+    },
+    {
+      "id": "termo-termico-stainless",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2161041"
+      }
+    },
+    {
+      "id": "juego-set-de-maquillaje-para-ninas-cute",
+      "fields": {
+        "price": 106900.0,
+        "cost": 49500.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2009898"
+      }
+    },
+    {
+      "id": "humificador-base-de-madera",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2124631"
+      }
+    },
+    {
+      "id": "muneco-sonny-angel-hippers",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "GGP",
+        "dropiId": "1718622"
+      }
+    },
+    {
+      "id": "rueda-abdominal-rebote-automatico",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2195556"
+      }
+    },
+    {
+      "id": "patineta-hidrahulica",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1976686"
+      }
+    },
+    {
+      "id": "citrato-de-magnesio-natural",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1974711"
+      }
+    },
+    {
+      "id": "reloj-smartwatch-t800-ultra",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "377405"
+      }
+    },
+    {
+      "id": "pelota-para-mascota",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2086715"
+      }
+    },
+    {
+      "id": "tgreen",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1971098"
+      }
+    },
+    {
+      "id": "telescopio-f36050",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "IMPORTADORA",
+        "dropiId": "570608"
+      }
+    },
+    {
+      "id": "carpa-castillo-con-luces-led",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2087690"
+      }
+    },
+    {
+      "id": "espejo-decorativo-pared-hexagonal-18cm",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2158155"
+      }
+    },
+    {
+      "id": "diadema-major-iv",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2035609"
+      }
+    },
+    {
+      "id": "radio-para-ninos",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2075211"
+      }
+    },
+    {
+      "id": "pistola-mini-3",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2016474"
+      }
+    },
+    {
+      "id": "mini-ventilador-clip-usb-portatil",
+      "fields": {
+        "price": 85900.0,
+        "cost": 29500.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2176194"
+      }
+    },
+    {
+      "id": "espejo-retrovisor-camara-dual-carro",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "Distri Shop RML",
+        "dropiId": "52097"
+      }
+    },
+    {
+      "id": "soporte-de-carga-magnetica",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2110023"
+      }
+    },
+    {
+      "id": "car-blook",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2151381"
+      }
+    },
+    {
+      "id": "audifonos-bt-tour-pro-60",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1986575"
+      }
+    },
+    {
+      "id": "caja-registradora-pantalla",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2001851"
+      }
+    },
+    {
+      "id": "gancho-pequeno",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2185880"
+      }
+    },
+    {
+      "id": "organizador-de-cubiertos-en-acero",
+      "fields": {
+        "price": 110900.0,
+        "cost": 52500.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1898510"
+      }
+    },
+    {
+      "id": "olla-de-chocolate",
+      "fields": {
+        "price": 99900.0,
+        "cost": 42500.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2139043"
+      }
+    },
+    {
+      "id": "mary-ruth-oregano",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2057305"
+      }
+    },
+    {
+      "id": "audifonos-para-discapacitados",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1964370"
+      }
+    },
+    {
+      "id": "limpiadora-de-vapor-12-en-1",
+      "fields": {
+        "price": 164900.0,
+        "cost": 104500.0,
+        "dropiId": "2129268"
+      }
+    },
+    {
+      "id": "set-de-maquillaje-diy-besds",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2025011"
+      }
+    },
+    {
+      "id": "humificador-nube",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2185843"
+      }
+    },
+    {
+      "id": "llavero-linterna",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "202131"
+      }
+    },
+    {
+      "id": "sanduchera-figuras-doble-puesto",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2188256"
+      }
+    },
+    {
+      "id": "airi",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2135241"
+      }
+    },
+    {
+      "id": "pulpo-cuerda-elastica",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2190931"
+      }
+    },
+    {
+      "id": "extractor-de-jugo",
+      "fields": {
+        "price": 98900.0,
+        "cost": 41500.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2107203"
+      }
+    },
+    {
+      "id": "multi-collagen-peptides",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1970549"
+      }
+    },
+    {
+      "id": "microscopio-nfantil",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2164776"
+      }
+    },
+    {
+      "id": "dispensador-de-crema-dental",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1995300"
+      }
+    },
+    {
+      "id": "gimnasio-de-chanclas",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1953692"
+      }
+    },
+    {
+      "id": "olla-de-vidrio-oreja-izquierda",
+      "fields": {
+        "price": 93900.0,
+        "cost": 36500.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2162227"
+      }
+    },
+    {
+      "id": "picacador-y-costador-de-fruta",
+      "fields": {
+        "price": 76900.0,
+        "cost": 20500.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2107463"
+      }
+    },
+    {
+      "id": "caja-fuerte-sencilla",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2099588"
+      }
+    },
+    {
+      "id": "combo-nano-titanium",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "GGP",
+        "dropiId": "1530144"
+      }
+    },
+    {
+      "id": "set-de-arte-208-pcs-de-personajes",
+      "fields": {
+        "price": 101900.0,
+        "cost": 44500.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1986385"
+      }
+    },
+    {
+      "id": "parlante-pantalla-tactil",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2130760"
+      }
+    },
+    {
+      "id": "luz-rgb-con-sensor",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2109907"
+      }
+    },
+    {
+      "id": "set-de-maquillaje-maleta-grande",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2039428"
+      }
+    },
+    {
+      "id": "combo-reloj-audifonos-bala-game-boy",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2162789"
+      }
+    },
+    {
+      "id": "bombillo-4-aspas-led",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "KATZ SUPPLY 🐈‍⬛",
+        "dropiId": "1719575"
+      }
+    },
+    {
+      "id": "organizador-cajones",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2190206"
+      }
+    },
+    {
+      "id": "maleta-morral-deportiva-escolar",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2077403"
+      }
+    },
+    {
+      "id": "organizador-de-tocador-jm701",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2052541"
+      }
+    },
+    {
+      "id": "juego-de-memoria-electrico",
+      "fields": {
+        "price": 85900.0,
+        "cost": 29500.0,
+        "provider": "Importaciones Elite 2",
+        "dropiId": "2109187"
+      }
+    },
+    {
+      "id": "patillera-km2293",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2039238"
+      }
+    },
+    {
+      "id": "mary-ruth-fresa",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2057318"
+      }
+    },
+    {
+      "id": "kit-boxeo-musical-grande",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1876514"
+      }
+    },
+    {
+      "id": "cuello-ventilaador",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2106895"
+      }
+    },
+    {
+      "id": "cepillo-de-dientes-para-ninos-electrico",
+      "fields": {
+        "price": 79900.0,
+        "cost": 23500.0,
+        "provider": "GGP",
+        "dropiId": "2035759"
+      }
+    },
+    {
+      "id": "bombillo-para-camping-regargable",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "Denuevoo",
+        "dropiId": "805872"
+      }
+    },
+    {
+      "id": "lintera-multi-proposito",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2039501"
+      }
+    },
+    {
+      "id": "humidificador-chimenea-negro",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2165447"
+      }
+    },
+    {
+      "id": "la-bubu-coca-cola",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "Helman",
+        "dropiId": "1993063"
+      }
+    },
+    {
+      "id": "tazon-para-mascota-fresh-cold",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2099474"
+      }
+    },
+    {
+      "id": "combo-reloj-audifonos-y-consola",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "impor house",
+        "dropiId": "1914240"
+      }
+    },
+    {
+      "id": "tendedero-doble-tubular",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1960699"
+      }
+    },
+    {
+      "id": "audifono-traductor",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2112106"
+      }
+    },
+    {
+      "id": "sopladora-speed-high",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2126875"
+      }
+    },
+    {
+      "id": "parlante-portatil-alaxe-super-bass",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "582992"
+      }
+    },
+    {
+      "id": "mini-linterna-led-recargable-transparent",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1635591"
+      }
+    },
+    {
+      "id": "kit-manicure-pedicure-x16-piezas",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DEROCHA STORE SAS",
+        "dropiId": "1672035"
+      }
+    },
+    {
+      "id": "combo-reloj-jl19-ultra-2",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2044724"
+      }
+    },
+    {
+      "id": "maleta-kawai-5-en-1",
+      "fields": {
+        "price": 101900.0,
+        "cost": 44500.0,
+        "dropiId": "2176144"
+      }
+    },
+    {
+      "id": "organizador-cajon-pequeno",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2093029"
+      }
+    },
+    {
+      "id": "set-de-bombillos-inalambricos-x3",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2158972"
+      }
+    },
+    {
+      "id": "liver-detox",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2073118"
+      }
+    },
+    {
+      "id": "proyector-robot",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2185849"
+      }
+    },
+    {
+      "id": "organizador-para-lavadora",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "IMPOWINNER",
+        "dropiId": "2106273"
+      }
+    },
+    {
+      "id": "organizador-de-condimentos-esquinero-3",
+      "fields": {
+        "price": 95900.0,
+        "cost": 38500.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2092116"
+      }
+    },
+    {
+      "id": "parlante-boobox-x4",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2170264"
+      }
+    },
+    {
+      "id": "combo-teclado-y-mouse-inalambrico-mac",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2152108"
+      }
+    },
+    {
+      "id": "mini-pulidora-inalambrica",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2190909"
+      }
+    },
+    {
+      "id": "cinta-reflectiva-antideslizante",
+      "fields": {
+        "provider": "KATZ SUPPLY 🐈‍⬛"
+      }
+    },
+    {
+      "id": "humificador-bola-130-ml",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2107501"
+      }
+    },
+    {
+      "id": "sarten-electrico-multifuncional",
+      "fields": {
+        "price": 138900.0,
+        "cost": 79500.0,
+        "provider": "AMERCAR",
+        "dropiId": "1772398"
+      }
+    },
+    {
+      "id": "full-cql-bayas-de-goji-x-500g",
+      "fields": {
+        "price": 87900.0,
+        "cost": 31000.0,
+        "dropiId": "1970252"
+      }
+    },
+    {
+      "id": "humificador-de-flama",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2098959"
+      }
+    },
+    {
+      "id": "lubricante-de-guayas",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2078024"
+      }
+    },
+    {
+      "id": "candado-de-huella",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2112091"
+      }
+    },
+    {
+      "id": "comedor-interactivo-mascota",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "SKYTEC",
+        "dropiId": "1937013"
+      }
+    },
+    {
+      "id": "tapete-de-agua-bebe-65-x-65",
+      "fields": {
+        "price": 80900.0,
+        "cost": 24500.0,
+        "provider": "TECNONNEK NICOL",
+        "dropiId": "2108389"
+      }
+    },
+    {
+      "id": "sarten-electrico-3-puestos",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2137127"
+      }
+    },
+    {
+      "id": "reloj-tk9",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2044877"
+      }
+    },
+    {
+      "id": "sarten-animalitos-7-compartimientos",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2115951"
+      }
+    },
+    {
+      "id": "luces-led-para-piso",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2146506"
+      }
+    },
+    {
+      "id": "humdificador-led-7",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2158997"
+      }
+    },
+    {
+      "id": "ashwagandha-relaxing-mental-physical",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1976020"
+      }
+    },
+    {
+      "id": "linterna-solar",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2049279"
+      }
+    },
+    {
+      "id": "conectores-electricos",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2190972"
+      }
+    },
+    {
+      "id": "maleta-escolar-812",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2087574"
+      }
+    },
+    {
+      "id": "multimetro-jctop",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2184001"
+      }
+    },
+    {
+      "id": "pistola-mini-1",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2016440"
+      }
+    },
+    {
+      "id": "intimate-rose",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2071159"
+      }
+    },
+    {
+      "id": "organizador-de-tocador-cy079",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2051932"
+      }
+    },
+    {
+      "id": "baston-trusky-pegable",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2157326"
+      }
+    },
+    {
+      "id": "muneca-fail-fix",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "TV MARKET ONLINE",
+        "dropiId": "1636764"
+      }
+    },
+    {
+      "id": "lions-mane",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1988182"
+      }
+    },
+    {
+      "id": "rizadora-para-el-cabello-keratina",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "tecnologia mundial el paisa",
+        "dropiId": "2200722"
+      }
+    },
+    {
+      "id": "organizador-sanitario-2-niveles",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "GGP",
+        "dropiId": "2131433"
+      }
+    },
+    {
+      "id": "tensiometro-manual",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2108986"
+      }
+    },
+    {
+      "id": "citramag-sachet-x-15-und",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2057023"
+      }
+    },
+    {
+      "id": "extreme-detox",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2101497"
+      }
+    },
+    {
+      "id": "set-de-cucharas-medidoras",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2085892"
+      }
+    },
+    {
+      "id": "deos",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2066336"
+      }
+    },
+    {
+      "id": "cosmetiquera-24216",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2050937"
+      }
+    },
+    {
+      "id": "bolso-stich",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1994799"
+      }
+    },
+    {
+      "id": "biotina",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2073128"
+      }
+    },
+    {
+      "id": "tendedero-retractil-cuerda",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "ADRIANA",
+        "dropiId": "1998490"
+      }
+    },
+    {
+      "id": "diadema-rizadora-de-cabello",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "Ventas Margarita",
+        "dropiId": "2123741"
+      }
+    },
+    {
+      "id": "lentes-de-contacto-halloween",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1933935"
+      }
+    },
+    {
+      "id": "juego-de-atrapar-palos-para-ninos-y-adul",
+      "fields": {
+        "price": 106900.0,
+        "cost": 49500.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1990936"
+      }
+    },
+    {
+      "id": "pistola-para-pintar",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2189936"
+      }
+    },
+    {
+      "id": "shilajit-jalea-x-125-ml",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1974090"
+      }
+    },
+    {
+      "id": "te-matcha",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1971585"
+      }
+    },
+    {
+      "id": "lonchera-termica-2-niveles-contenedor",
+      "fields": {
+        "price": 93900.0,
+        "cost": 36500.0,
+        "dropiId": "2158887"
+      }
+    },
+    {
+      "id": "secador-bp5500",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2050964"
+      }
+    },
+    {
+      "id": "pop-it-astronauta",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2036382"
+      }
+    },
+    {
+      "id": "audifonoss-db6-disney",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "Tu San Victorino",
+        "dropiId": "1969057"
+      }
+    },
+    {
+      "id": "soporte-cargador-celular-automovil",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "sansatienda",
+        "dropiId": "1687328"
+      }
+    },
+    {
+      "id": "lampara-electrica",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2189942"
+      }
+    },
+    {
+      "id": "juguete-set-de-ballesta",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2036452"
+      }
+    },
+    {
+      "id": "parlante-remax",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2154155"
+      }
+    },
+    {
+      "id": "juguete-para-gatos",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2086684"
+      }
+    },
+    {
+      "id": "capa-impermeable-xxxl",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2188284"
+      }
+    },
+    {
+      "id": "trapero-de-palo-autoexprimible",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1968191"
+      }
+    },
+    {
+      "id": "base-televisor-2f",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2142357"
+      }
+    },
+    {
+      "id": "purificador-de-ambiente",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2084020"
+      }
+    },
+    {
+      "id": "ventosa-12060",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2180083"
+      }
+    },
+    {
+      "id": "combo-relojaudifonosbalacagam-boyk13",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2162789"
+      }
+    },
+    {
+      "id": "organizador-de-loza-doble-tapa-65-cm",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2154121"
+      }
+    },
+    {
+      "id": "teclado-numerico-andowl",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2144608"
+      }
+    },
+    {
+      "id": "peine-capilar",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1916919"
+      }
+    },
+    {
+      "id": "combo-3-en-1-aguacate",
+      "fields": {
+        "provider": "Nikomar",
+        "dropiId": "2020289"
+      }
+    },
+    {
+      "id": "audifonos-m60",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2112449"
+      }
+    },
+    {
+      "id": "parlante-go4",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2126075"
+      }
+    },
+    {
+      "id": "dispensador-magnetico-5-en-1-para-never",
+      "fields": {
+        "price": 101900.0,
+        "cost": 44500.0,
+        "dropiId": "2099605"
+      }
+    },
+    {
+      "id": "cable-magneto-sky-dolphin-2-4a-universal",
+      "fields": {
+        "price": 77900.0,
+        "cost": 21500.0,
+        "dropiId": "2167673"
+      }
+    },
+    {
+      "id": "juego-set-de-cuchillos-lujo-6-piezas",
+      "fields": {
+        "price": 82900.0,
+        "cost": 26500.0,
+        "dropiId": "2149212"
+      }
+    },
+    {
+      "id": "parlante-y-microfono-inalambrico-xmx66",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1635505"
+      }
+    },
+    {
+      "id": "energy-focus",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2101551"
+      }
+    },
+    {
+      "id": "papel-cocina-adhesivo",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2188242"
+      }
+    },
+    {
+      "id": "cortador-manual-portatil-azulejos",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2162737"
+      }
+    },
+    {
+      "id": "intercomunicador-krm5",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2035535"
+      }
+    },
+    {
+      "id": "citrato-de-magnesio-500g",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1970329"
+      }
+    },
+    {
+      "id": "cabina-parlante-6-5-pulgadas-nxy7",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2131630"
+      }
+    },
+    {
+      "id": "oximetro-para-dedo-con-pantalla-led",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2115072"
+      }
+    },
+    {
+      "id": "emoji-block",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2151418"
+      }
+    },
+    {
+      "id": "cubo",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2004003"
+      }
+    },
+    {
+      "id": "organizador-de-cocina-condimentero",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2194319"
+      }
+    },
+    {
+      "id": "maleta-amazon-con-organizador-zapatos",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2162781"
+      }
+    },
+    {
+      "id": "luces-navidad-estrellas-3-metros",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2014464"
+      }
+    },
+    {
+      "id": "inflador-portatil-llz668",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DEROCHA STORE SAS",
+        "dropiId": "1711978"
+      }
+    },
+    {
+      "id": "plastilina-moldeable",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2036743"
+      }
+    },
+    {
+      "id": "termo-st-flores",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2134314"
+      }
+    },
+    {
+      "id": "kit-llave-con-t-con-capas",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2179029"
+      }
+    },
+    {
+      "id": "kit-de-accesorios-de-bano",
+      "fields": {
+        "price": 138900.0,
+        "cost": 79500.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1847573"
+      }
+    },
+    {
+      "id": "compresor-de-aire-ciclone",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "BGZ ONLINE",
+        "dropiId": "1583699"
+      }
+    },
+    {
+      "id": "calentador-de-ambiente",
+      "fields": {
+        "price": 95900.0,
+        "cost": 38500.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2099031"
+      }
+    },
+    {
+      "id": "repuestos-de-impresora-termica-mini",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2089339"
+      }
+    },
+    {
+      "id": "carro-control",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2015194"
+      }
+    },
+    {
+      "id": "mopas-trapero",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2190162"
+      }
+    },
+    {
+      "id": "shaver-vgr-331",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2039300"
+      }
+    },
+    {
+      "id": "shake-take",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2162137"
+      }
+    },
+    {
+      "id": "yerba-magic-x-60-capsulas",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1977285"
+      }
+    },
+    {
+      "id": "tapon-protector-bajo-puerta-antiinsectos",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2133361"
+      }
+    },
+    {
+      "id": "mugs-480-ml",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2146478"
+      }
+    },
+    {
+      "id": "zapatero-plastico-5-niveles",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2083765"
+      }
+    },
+    {
+      "id": "maleta-para-mascotas",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2089989"
+      }
+    },
+    {
+      "id": "diadema-inside-out",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2044392"
+      }
+    },
+    {
+      "id": "velas-24-pcs",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1885026"
+      }
+    },
+    {
+      "id": "perchero-pegable",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "Tus Machetes Online",
+        "dropiId": "2037884"
+      }
+    },
+    {
+      "id": "luz-magnetica-dormitorio",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2043313"
+      }
+    },
+    {
+      "id": "bubuzela-tricolor",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2176187"
+      }
+    },
+    {
+      "id": "ejercitador-multi",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1865251"
+      }
+    },
+    {
+      "id": "shaver-vgr-399",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2039261"
+      }
+    },
+    {
+      "id": "carro-inflador",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2043779"
+      }
+    },
+    {
+      "id": "set-juego-de-bingo-familiar",
+      "fields": {
+        "price": 114900.0,
+        "cost": 56500.0,
+        "provider": "GDL",
+        "dropiId": "1962930"
+      }
+    },
+    {
+      "id": "bolsa-de-colicos-capibara-muneco",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1990905"
+      }
+    },
+    {
+      "id": "compresor-inalambrico-carsun",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1912189"
+      }
+    },
+    {
+      "id": "dispensador-de-agua-y-comida-mascota",
+      "fields": {
+        "price": 92900.0,
+        "cost": 35500.0,
+        "provider": "Ventas colombia",
+        "dropiId": "1648023"
+      }
+    },
+    {
+      "id": "pistola-de-clavos",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "FYA",
+        "dropiId": "1843952"
+      }
+    },
+    {
+      "id": "medias-pantalon-termicos",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2125125"
+      }
+    },
+    {
+      "id": "carrito-de-mercado-plegable",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2139324"
+      }
+    },
+    {
+      "id": "organizador-de-bano-3-niveles",
+      "fields": {
+        "price": 94900.0,
+        "cost": 37500.0,
+        "provider": "GGP",
+        "dropiId": "2130654"
+      }
+    },
+    {
+      "id": "organizador-utensilios-y-cuchillos",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2054919"
+      }
+    },
+    {
+      "id": "altavoz-parlante-bocina-bluetooth-luces",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2130840"
+      }
+    },
+    {
+      "id": "mesa-madera-portatil-para-cama",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1981535"
+      }
+    },
+    {
+      "id": "carro-f1-stunt-control-remoto",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "Time-Home",
+        "dropiId": "2012897"
+      }
+    },
+    {
+      "id": "jeringa-dosificadora",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "Directo a casa",
+        "dropiId": "1792148"
+      }
+    },
+    {
+      "id": "tensor-de-mano-grip",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2157399"
+      }
+    },
+    {
+      "id": "perchero-yh99185a",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2094448"
+      }
+    },
+    {
+      "id": "cepillo-dental-electrico",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "PRO CLICK",
+        "dropiId": "2182069"
+      }
+    },
+    {
+      "id": "ducha-portatil-recargable",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2107087"
+      }
+    },
+    {
+      "id": "colageno-hidrolizado-marino",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1971670"
+      }
+    },
+    {
+      "id": "aspesor-electrico-recargable",
+      "fields": {
+        "provider": "DTS IMPORTADORES"
+      }
+    },
+    {
+      "id": "masajeador-cojin-carro",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1995401"
+      }
+    },
+    {
+      "id": "antena-tdt-oice-5-mt",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2174152"
+      }
+    },
+    {
+      "id": "combo-de-audifonos-y-atari",
+      "fields": {
+        "price": 101900.0,
+        "cost": 44500.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1964394"
+      }
+    },
+    {
+      "id": "cepillo-desenredador",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2098987"
+      }
+    },
+    {
+      "id": "colagenvit",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2057103"
+      }
+    },
+    {
+      "id": "accesorio-pulidora",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2179968"
+      }
+    },
+    {
+      "id": "organizador-herramientas",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2183924"
+      }
+    },
+    {
+      "id": "speaker-bocina-soporte-tg129c",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2130760"
+      }
+    },
+    {
+      "id": "bichota-x16-sachets",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1973746"
+      }
+    },
+    {
+      "id": "mini-maquina-donera-x-3",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1922155"
+      }
+    },
+    {
+      "id": "lemme-colostrum",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2101218"
+      }
+    },
+    {
+      "id": "camisetas-mundial",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2158032"
+      }
+    },
+    {
+      "id": "walkie-talki-kits-pilas",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2113492"
+      }
+    },
+    {
+      "id": "rebanador-carne",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2129184"
+      }
+    },
+    {
+      "id": "set-de-marcadores-x-60-piezas",
+      "fields": {
+        "price": 83900.0,
+        "cost": 27500.0,
+        "dropiId": "2083594"
+      }
+    },
+    {
+      "id": "comedero-de-mascotas-elevado",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2190078"
+      }
+    },
+    {
+      "id": "magnesium-complex-8-elementos",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "1975846"
+      }
+    },
+    {
+      "id": "rascador-de-sofa",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "PRO CLICK",
+        "dropiId": "1983148"
+      }
+    },
+    {
+      "id": "maleta-infantil-diseno-animales",
+      "fields": {
+        "freight": 20000.0,
+        "provider": "DTS IMPORTADORES",
+        "dropiId": "2076845"
+      }
+    }
+  ],
+  "new_products": [
+    {
+      "id": "carplay-moto-gps-impermeable",
+      "name": "Carplay Moto Gps Impermeable",
+      "category": "autos",
+      "cost": 194000.0,
+      "stock": 50,
+      "freight": 20000.0,
+      "imageUrl": "",
+      "currency": "COP",
+      "provider": "Dropmarket Colombia",
+      "description": "Sistema Carplay/Android Auto para moto, resistente al agua, con GPS y conectividad Bluetooth.",
+      "price": 274900.0,
+      "videoUrl": "",
+      "dropiId": "2136357"
+    }
+  ],
+  "deleted_ids": [
+    "aceite-post-afeitador-acido",
+    "dvd-niaduvan",
+    "peluche-muneco-para-pintar",
+    "proyector-lentes-intercambiables",
+    "tripode-k07",
+    "pop-it-iron-man",
+    "cinturon-para-bebes",
+    "luz-led-para-celular-o-laptop-recargable",
+    "compresor-portatilref-201",
+    "reloj-135-suit"
+  ]
+}
