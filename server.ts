@@ -3502,90 +3502,15 @@ function normalizeHeader(h: string): string {
 let lastCatalogSyncSummary = { lastRun: null as string | null, updated: 0, matched: 0, rows: 0, error: null as string | null };
 
 async function syncCatalogFromSheet(): Promise<void> {
-  const csvUrl = process.env.GOOGLE_SHEETS_CATALOG_CSV_URL;
-  if (!csvUrl) return; // Feature apagada si no hay variable configurada
-
-  try {
-    const response = await axios.get(csvUrl, { responseType: "text", timeout: 15000 });
-    const raw: string = typeof response.data === "string" ? response.data : String(response.data);
-    const lines = raw.split(/\r?\n/).filter(l => l.trim().length > 0);
-    if (lines.length < 2) {
-      lastCatalogSyncSummary = { lastRun: new Date().toISOString(), updated: 0, matched: 0, rows: 0, error: "CSV vacío o sin filas de datos" };
-      return;
-    }
-
-    const headers = parseCsvLine(lines[0]).map(normalizeHeader);
-    const idIdx = headers.findIndex(h => h === "id" || h === "sku" || h === "productid");
-    const nameIdx = headers.findIndex(h => h === "name" || h === "nombre" || h === "producto");
-    const imgIdx = headers.findIndex(h => h === "imageurl" || h === "imagen" || h === "imagenurl" || h === "image" || h === "foto" || h === "linkimagen" || h === "vinculoimagen" || h === "vinculo" || h === "linkfoto");
-    const priceIdx = headers.findIndex(h => h === "price" || h === "precio");
-    const stockIdx = headers.findIndex(h => h === "stock" || h === "existencias" || h === "inventario");
-
-    if (imgIdx === -1 || (idIdx === -1 && nameIdx === -1)) {
-      lastCatalogSyncSummary = { lastRun: new Date().toISOString(), updated: 0, matched: 0, rows: lines.length - 1, error: "No se encontraron columnas 'id'/'name' y 'imageUrl' en la hoja" };
-      console.error("[Catalog Sync] Encabezados no reconocidos:", headers);
-      return;
-    }
-
-    const prodSnap = await getDocs(collection(db, "products"));
-    const allProducts = prodSnap.docs.map(d => ({ docId: d.id, ...(d.data() as any) }));
-
-    let matched = 0;
-    let updated = 0;
-
-    for (let i = 1; i < lines.length; i++) {
-      const cols = parseCsvLine(lines[i]);
-      const rowId = idIdx !== -1 ? (cols[idIdx] || "").trim() : "";
-      const rowName = nameIdx !== -1 ? (cols[nameIdx] || "").trim() : "";
-      const rowImg = (cols[imgIdx] || "").trim();
-      if (!rowImg || (!rowId && !rowName)) continue;
-
-      // chatgpt.com/s/... son links para ABRIR una conversación de ChatGPT,
-      // no imágenes reales — si se detectan, se ignora esa fila para no
-      // guardar un "imageUrl" que rompería el envío de fotos por WhatsApp.
-      if (/chatgpt\.com\/s\//i.test(rowImg)) {
-        console.warn(`[Catalog Sync] Fila ignorada: el link no es una imagen real (chatgpt.com/s/...) para "${rowName || rowId}"`);
-        continue;
-      }
-
-      let match = rowId ? allProducts.find(p => (p.id || "").toLowerCase() === rowId.toLowerCase()) : null;
-      if (!match && rowName) {
-        const rn = rowName.toLowerCase();
-        match = allProducts.find(p => (p.name || "").toLowerCase() === rn)
-          || allProducts.find(p => (p.name || "").toLowerCase().includes(rn) || rn.includes((p.name || "").toLowerCase()));
-      }
-      if (!match) continue;
-      matched++;
-
-      const updatePayload: any = {};
-      if (rowImg && rowImg !== match.imageUrl) updatePayload.imageUrl = rowImg;
-      if (priceIdx !== -1 && cols[priceIdx]) {
-        const p = Number(String(cols[priceIdx]).replace(/[^0-9.]/g, ""));
-        if (!isNaN(p) && p > 0 && p !== match.price) updatePayload.price = p;
-      }
-      if (stockIdx !== -1 && cols[stockIdx] !== undefined && cols[stockIdx] !== "") {
-        const s = Number(String(cols[stockIdx]).replace(/[^0-9]/g, ""));
-        if (!isNaN(s) && s !== match.stock) updatePayload.stock = s;
-      }
-
-      if (Object.keys(updatePayload).length > 0) {
-        try {
-          await updateDoc(doc(db, "products", match.docId), updatePayload);
-          updated++;
-        } catch (e: any) {
-          console.error(`[Catalog Sync] Error actualizando producto ${match.docId}:`, e.message);
-        }
-      }
-    }
-
-    lastCatalogSyncSummary = { lastRun: new Date().toISOString(), updated, matched, rows: lines.length - 1, error: null };
-    if (updated > 0) {
-      console.log(`[Catalog Sync] ${updated} producto(s) actualizado(s) desde Google Sheets (${matched} coincidencias de ${lines.length - 1} filas).`);
-    }
-  } catch (e: any) {
-    lastCatalogSyncSummary = { lastRun: new Date().toISOString(), updated: 0, matched: 0, rows: 0, error: e.message };
-    console.error("[Catalog Sync] Error leyendo/procesando el CSV:", e.message);
-  }
+  // Sincronización deshabilitada por solicitud del usuario para manejar imágenes manualmente.
+  lastCatalogSyncSummary = {
+    lastRun: new Date().toISOString(),
+    updated: 0,
+    matched: 0,
+    rows: 0,
+    error: "Sincronización automática desactivada por solicitud del usuario (manejo manual de imágenes)."
+  };
+  return;
 }
 
 // Carga el catálogo de productos de una tienda (con fallback a JSON local si Supabase falla).
