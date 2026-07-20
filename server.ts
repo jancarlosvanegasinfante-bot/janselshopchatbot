@@ -2975,6 +2975,8 @@ async function sendTrendingProducts(to: string, from: string, assignedStoreId: s
 
     let responseText = `🔥 *PRODUCTOS EN TENDENCIA — JAN SEL SHOP* 🔥\n\nEstos son nuestros productos más vendidos y recomendados de hoy:\n`;
     
+    responseText += `\n🌐 *VER PRODUCTOS EN LA PÁGINA:* Puedes ver todos nuestros productos en nuestra página oficial aquí:\n👉 ${landingUrl}\n`;
+    
     responseText += `\n⚠️ *RECUERDA:* Vendemos cualquier tipo de producto que imagines. Si buscas algo específico que no ves en esta lista, ¡solo pregúntame por él aquí mismo! 📲\n`;
 
     const TWILIO_BODY_LIMIT = 1550;
@@ -3034,6 +3036,11 @@ async function sendCategoryFeaturedProducts(to: string, from: string, category: 
       responseText += `Actualmente estamos actualizando esta sección, pero contamos con excelentes opciones. ¡Pregúntame por lo que buscas! 🛒\n\n`;
     }
 
+    const baseUrl = (currentAppUrl || process.env.APP_URL || "https://chatbotjanadsia.up.railway.app").replace(/\/$/, "");
+    const landingUrl = `${baseUrl}/landing`;
+
+    responseText += `🌐 *VER PRODUCTOS EN LA PÁGINA:* Puedes ver todos nuestros productos en nuestra página oficial aquí:\n👉 ${landingUrl}\n\n`;
+
     responseText += `⚠️ *RECUERDA:* Vendemos cualquier tipo de producto que imagines. Si buscas algo específico (marca, modelo, tipo de artículo) que no ves aquí, ¡solo pregúntame por él por este chat para confirmar disponibilidad y precio de inmediato! 📲\n`;
 
     // Red de seguridad: por más que acortemos, nunca dejar pasar un mensaje que
@@ -3046,8 +3053,6 @@ async function sendCategoryFeaturedProducts(to: string, from: string, category: 
     // Enviar la lista de productos en texto
     await sendWhatsApp(to, responseText, undefined, undefined, from);
 
-    const baseUrl = (currentAppUrl || process.env.APP_URL || "https://chatbotjanadsia.up.railway.app").replace(/\/$/, "");
-    const landingUrl = `${baseUrl}/landing`;
     await sendLandingPageButton(to, from, landingUrl);
 
     if (matched.length === 0) return;
@@ -3179,45 +3184,38 @@ async function sendProductListPicker(to: string, from: string, products: any[], 
 }
 
 // ==============================================
-// 🌐 BOTÓN DE ENLACE A LA PÁGINA WEB (CTA Button)
+// 🌐 BOTÓN DE ENLACE A LA PÁGINA WEB (Quick Reply Button)
 // ==============================================
-async function ensureLandingPageCtaTemplate(landingUrl: string): Promise<string | null> {
+async function ensureLandingPageQuickReplyTemplate(): Promise<string | null> {
   if (!twilioClient) return null;
   try {
-    const hash = crypto.createHash("md5").update(landingUrl).digest("hex").slice(0, 12);
-    const cfgKey = `landingCtaSid_${hash}`;
     const cfgSnap = await getDoc(doc(db, "config", "system"));
     const d = cfgSnap.exists() ? cfgSnap.data() : {};
-    if (d?.[cfgKey]) {
-      return d[cfgKey];
-    }
+    const existingSid = d?.landingQuickReplySid;
+    if (existingSid) return existingSid;
 
     const content = await (twilioClient as any).content.v1.contents.create({
-      friendlyName: `jan_landing_cta_${hash}_${Date.now()}`,
+      friendlyName: `jan_landing_qr_${Date.now()}`,
       language: "es",
       variables: {},
       types: {
-        "twilio/call-to-action": {
-          body: "🌐 *Jan Sel Shop — Catálogo Completo* 🌐\n\n¿Prefieres explorar todo nuestro catálogo con fotos, descripciones detalladas, envío gratis y pago contra entrega? ¡Toca el botón de abajo!",
+        "twilio/quick-reply": {
+          body: "🌐 *¿Prefieres explorar todo nuestro catálogo con fotos y descripciones detalladas?* 🌐\n\nToca el botón de abajo para obtener el enlace directo a nuestra página oficial:",
           actions: [
-            {
-              type: "URL",
-              title: "Ver productos en página",
-              url: landingUrl
-            }
+            { title: "🌐 Ver en Página Web", id: "GO_TO_WEBSITE" }
           ]
         },
         "twilio/text": {
-          body: `Puedes ver todos nuestros productos en nuestra página oficial aquí:\n👉 ${landingUrl}`
+          body: "¿Quieres ver todos nuestros productos en la página oficial? Escribe 'ver pagina' o toca el botón."
         }
       }
     });
 
-    await setDoc(doc(db, "config", "system"), { [cfgKey]: content.sid }, { merge: true });
-    console.log(`[WhatsApp CTA] Template de CTA creado para landing: ${content.sid}`);
+    await setDoc(doc(db, "config", "system"), { landingQuickReplySid: content.sid }, { merge: true });
+    console.log(`[WhatsApp QR] Template de QR creado para landing: ${content.sid}`);
     return content.sid;
   } catch (e: any) {
-    console.error(`[WhatsApp CTA] Error creando template de CTA:`, e.message);
+    console.error(`[WhatsApp QR] Error creando template de QR:`, e.message);
     return null;
   }
 }
@@ -3225,7 +3223,7 @@ async function ensureLandingPageCtaTemplate(landingUrl: string): Promise<string 
 async function sendLandingPageButton(to: string, from: string, landingUrl: string): Promise<boolean> {
   if (!twilioClient) return false;
   try {
-    const contentSid = await ensureLandingPageCtaTemplate(landingUrl);
+    const contentSid = await ensureLandingPageQuickReplyTemplate();
     if (!contentSid) return false;
 
     await (twilioClient as any).messages.create({
@@ -3233,10 +3231,10 @@ async function sendLandingPageButton(to: string, from: string, landingUrl: strin
       to: normalizePhone(to),
       contentSid
     });
-    console.log(`[WhatsApp CTA] Botón CTA enviado correctamente a ${to}`);
+    console.log(`[WhatsApp QR] Botón QR de landing enviado correctamente a ${to}`);
     return true;
   } catch (e: any) {
-    console.error(`[WhatsApp CTA] Error enviando botón CTA de landing:`, e.message);
+    console.error(`[WhatsApp QR] Error enviando botón QR de landing:`, e.message);
     return false;
   }
 }
@@ -6162,6 +6160,18 @@ _El pedido ya se guardó y está listo en tu tablero._`;
             await updateDoc(doc(db, "activities", activityRefId), {
               status: "respondido",
               response: "[Menú enviado: Categorías del catálogo]",
+              respondedAt: serverTimestamp()
+            });
+          }
+        } else if (buttonPayload === "GO_TO_WEBSITE") {
+          const baseUrl = (currentAppUrl || process.env.APP_URL || "https://chatbotjanadsia.up.railway.app").replace(/\/$/, "");
+          const landingUrl = `${baseUrl}/landing`;
+          const websiteMsg = `¡Excelente elección! 🌐 Toca el enlace de abajo para entrar a nuestra página oficial interactiva donde verás nuestro catálogo completo con fotos, descripciones, precios con descuento, envío gratis y pago contra entrega:\n\n👉 ${landingUrl}`;
+          await sendWhatsApp(from, websiteMsg, undefined, activityRefId, to);
+          if (activityRefId) {
+            await updateDoc(doc(db, "activities", activityRefId), {
+              status: "respondido",
+              response: websiteMsg,
               respondedAt: serverTimestamp()
             });
           }
