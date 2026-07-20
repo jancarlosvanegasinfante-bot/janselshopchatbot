@@ -2970,7 +2970,12 @@ async function sendTrendingProducts(to: string, from: string, assignedStoreId: s
     const page = matched.slice(offset, offset + CATEGORY_PAGE_SIZE);
     const hasMore = matched.length > offset + CATEGORY_PAGE_SIZE;
 
+    const baseUrl = (currentAppUrl || process.env.APP_URL || "https://chatbotjanadsia.up.railway.app").replace(/\/$/, "");
+    const landingUrl = `${baseUrl}/landing`;
+
     let responseText = `🔥 *PRODUCTOS EN TENDENCIA — JAN SEL SHOP* 🔥\n\nEstos son nuestros productos más vendidos y recomendados de hoy en la landing:\n`;
+    
+    responseText += `\n🌐 *VER PRODUCTOS EN LA PÁGINA:* Puedes ver todos nuestros productos en nuestra página oficial aquí:\n👉 ${landingUrl}\n`;
     
     responseText += `\n⚠️ *RECUERDA:* Vendemos cualquier tipo de producto que imagines. Si buscas algo específico que no ves en esta lista, ¡solo pregúntame por él aquí mismo! 📲\n`;
 
@@ -3434,7 +3439,8 @@ async function finalizeOrder(
       }
     }
 
-    if (storeConfig?.dropiAutoSync && storeConfig?.dropiApiKey) {
+    // SUBIDA AUTOMÁTICA A DROPI DESACTIVADA TEMPORALMENTE (Soporte técnico, se mantiene la configuración)
+    if (false && storeConfig?.dropiAutoSync && storeConfig?.dropiApiKey) {
       console.log("[Server AI] Dropi Auto Sync activo. Sincronizando pedido...");
       try {
         await pushOrderToDropi(newOrderId, orderInfo, storeConfig, dbRef);
@@ -5109,7 +5115,8 @@ async function startServer() {
       }
 
       // 5. Handle Dropi Auto Sync
-      if (storeConfig?.dropiAutoSync && storeConfig?.dropiApiKey) {
+      // SUBIDA AUTOMÁTICA A DROPI DESACTIVADA TEMPORALMENTE (Soporte técnico, se mantiene la configuración)
+      if (false && storeConfig?.dropiAutoSync && storeConfig?.dropiApiKey) {
         console.log("[Landing Order] Dropi Auto Sync activo. Sincronizando pedido...");
         try {
           await pushOrderToDropi(newOrderId, orderInfo, storeConfig, db);
