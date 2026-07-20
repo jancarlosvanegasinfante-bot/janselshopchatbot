@@ -2973,9 +2973,7 @@ async function sendTrendingProducts(to: string, from: string, assignedStoreId: s
     const baseUrl = (currentAppUrl || process.env.APP_URL || "https://chatbotjanadsia.up.railway.app").replace(/\/$/, "");
     const landingUrl = `${baseUrl}/landing`;
 
-    let responseText = `🔥 *PRODUCTOS EN TENDENCIA — JAN SEL SHOP* 🔥\n\nEstos son nuestros productos más vendidos y recomendados de hoy en la landing:\n`;
-    
-    responseText += `\n🌐 *VER PRODUCTOS EN LA PÁGINA:* Puedes ver todos nuestros productos en nuestra página oficial aquí:\n👉 ${landingUrl}\n`;
+    let responseText = `🔥 *PRODUCTOS EN TENDENCIA — JAN SEL SHOP* 🔥\n\nEstos son nuestros productos más vendidos y recomendados de hoy:\n`;
     
     responseText += `\n⚠️ *RECUERDA:* Vendemos cualquier tipo de producto que imagines. Si buscas algo específico que no ves en esta lista, ¡solo pregúntame por él aquí mismo! 📲\n`;
 
@@ -2985,6 +2983,9 @@ async function sendTrendingProducts(to: string, from: string, assignedStoreId: s
     }
 
     await sendWhatsApp(to, responseText, undefined, undefined, from);
+
+    // Envía el botón CTA para ver productos en la página web
+    await sendLandingPageButton(to, from, landingUrl);
 
     if (matched.length === 0) return;
 
@@ -3044,6 +3045,10 @@ async function sendCategoryFeaturedProducts(to: string, from: string, category: 
 
     // Enviar la lista de productos en texto
     await sendWhatsApp(to, responseText, undefined, undefined, from);
+
+    const baseUrl = (currentAppUrl || process.env.APP_URL || "https://chatbotjanadsia.up.railway.app").replace(/\/$/, "");
+    const landingUrl = `${baseUrl}/landing`;
+    await sendLandingPageButton(to, from, landingUrl);
 
     if (matched.length === 0) return;
 
@@ -3172,6 +3177,70 @@ async function sendProductListPicker(to: string, from: string, products: any[], 
     return false;
   }
 }
+
+// ==============================================
+// 🌐 BOTÓN DE ENLACE A LA PÁGINA WEB (CTA Button)
+// ==============================================
+async function ensureLandingPageCtaTemplate(landingUrl: string): Promise<string | null> {
+  if (!twilioClient) return null;
+  try {
+    const hash = crypto.createHash("md5").update(landingUrl).digest("hex").slice(0, 12);
+    const cfgKey = `landingCtaSid_${hash}`;
+    const cfgSnap = await getDoc(doc(db, "config", "system"));
+    const d = cfgSnap.exists() ? cfgSnap.data() : {};
+    if (d?.[cfgKey]) {
+      return d[cfgKey];
+    }
+
+    const content = await (twilioClient as any).content.v1.contents.create({
+      friendlyName: `jan_landing_cta_${hash}_${Date.now()}`,
+      language: "es",
+      variables: {},
+      types: {
+        "twilio/call-to-action": {
+          body: "🌐 *Jan Sel Shop — Catálogo Completo* 🌐\n\n¿Prefieres explorar todo nuestro catálogo con fotos, descripciones detalladas, envío gratis y pago contra entrega? ¡Toca el botón de abajo!",
+          actions: [
+            {
+              type: "URL",
+              title: "Ver productos en página",
+              url: landingUrl
+            }
+          ]
+        },
+        "twilio/text": {
+          body: `Puedes ver todos nuestros productos en nuestra página oficial aquí:\n👉 ${landingUrl}`
+        }
+      }
+    });
+
+    await setDoc(doc(db, "config", "system"), { [cfgKey]: content.sid }, { merge: true });
+    console.log(`[WhatsApp CTA] Template de CTA creado para landing: ${content.sid}`);
+    return content.sid;
+  } catch (e: any) {
+    console.error(`[WhatsApp CTA] Error creando template de CTA:`, e.message);
+    return null;
+  }
+}
+
+async function sendLandingPageButton(to: string, from: string, landingUrl: string): Promise<boolean> {
+  if (!twilioClient) return false;
+  try {
+    const contentSid = await ensureLandingPageCtaTemplate(landingUrl);
+    if (!contentSid) return false;
+
+    await (twilioClient as any).messages.create({
+      from: normalizePhone(from || TWILIO_FROM_NUMBER || "+14155238886"),
+      to: normalizePhone(to),
+      contentSid
+    });
+    console.log(`[WhatsApp CTA] Botón CTA enviado correctamente a ${to}`);
+    return true;
+  } catch (e: any) {
+    console.error(`[WhatsApp CTA] Error enviando botón CTA de landing:`, e.message);
+    return false;
+  }
+}
+
 
 // Botones "➕ Agregar otro producto" / "✅ Confirmar pedido" que aparecen justo
 // después de que el cliente toca un producto de la lista.
