@@ -7,3 +7,4 @@ coverage/
 .env*
 !.env.example
 local_db.json
+local_db.json
