@@ -2975,8 +2975,6 @@ async function sendTrendingProducts(to: string, from: string, assignedStoreId: s
 
     let responseText = `🔥 *PRODUCTOS EN TENDENCIA — JAN SEL SHOP* 🔥\n\nEstos son nuestros productos más vendidos y recomendados de hoy:\n`;
     
-    responseText += `\n🌐 *VER PRODUCTOS EN LA PÁGINA:* Puedes ver todos nuestros productos en nuestra página oficial aquí:\n👉 ${landingUrl}\n`;
-    
     responseText += `\n⚠️ *RECUERDA:* Vendemos cualquier tipo de producto que imagines. Si buscas algo específico que no ves en esta lista, ¡solo pregúntame por él aquí mismo! 📲\n`;
 
     const TWILIO_BODY_LIMIT = 1550;
@@ -3038,8 +3036,6 @@ async function sendCategoryFeaturedProducts(to: string, from: string, category: 
 
     const baseUrl = (currentAppUrl || process.env.APP_URL || "https://chatbotjanadsia.up.railway.app").replace(/\/$/, "");
     const landingUrl = `${baseUrl}/landing`;
-
-    responseText += `🌐 *VER PRODUCTOS EN LA PÁGINA:* Puedes ver todos nuestros productos en nuestra página oficial aquí:\n👉 ${landingUrl}\n\n`;
 
     responseText += `⚠️ *RECUERDA:* Vendemos cualquier tipo de producto que imagines. Si buscas algo específico (marca, modelo, tipo de artículo) que no ves aquí, ¡solo pregúntame por él por este chat para confirmar disponibilidad y precio de inmediato! 📲\n`;
 
@@ -3184,25 +3180,27 @@ async function sendProductListPicker(to: string, from: string, products: any[], 
 }
 
 // ==============================================
-// 🌐 BOTÓN DE ENLACE A LA PÁGINA WEB (Quick Reply Button)
+// 🌐 BOTÓN DE ENLACE A LA PÁGINA WEB (Call-to-Action URL Button)
 // ==============================================
-async function ensureLandingPageQuickReplyTemplate(): Promise<string | null> {
+// Este botón abre el navegador DIRECTAMENTE al tocarlo (no manda mensaje de
+// vuelta al bot), evitando el flujo repetido de "link + botón + link otra vez".
+async function ensureLandingPageCTATemplate(): Promise<string | null> {
   if (!twilioClient) return null;
   try {
     const cfgSnap = await getDoc(doc(db, "config", "system"));
     const d = cfgSnap.exists() ? cfgSnap.data() : {};
-    const existingSid = d?.landingQuickReplySid;
+    const existingSid = d?.landingCTASid;
     if (existingSid) return existingSid;
 
     const content = await (twilioClient as any).content.v1.contents.create({
-      friendlyName: `jan_landing_qr_${Date.now()}`,
+      friendlyName: `jan_landing_cta_${Date.now()}`,
       language: "es",
-      variables: {},
+      variables: { "1": "https://example.com" },
       types: {
-        "twilio/quick-reply": {
-          body: "🌐 *¿Prefieres explorar todo nuestro catálogo con fotos y descripciones detalladas?* 🌐\n\nToca el botón de abajo para obtener el enlace directo a nuestra página oficial:",
+        "twilio/call-to-action": {
+          body: "🌐 *¿Prefieres explorar todo nuestro catálogo con fotos y descripciones detalladas?* 🌐\n\nToca el botón de abajo para entrar directo a nuestra página oficial:",
           actions: [
-            { title: "🌐 Ver en Página Web", id: "GO_TO_WEBSITE" }
+            { type: "URL", title: "🌐 Ver Catálogo Completo", url: "{{1}}" }
           ]
         },
         "twilio/text": {
@@ -3211,11 +3209,11 @@ async function ensureLandingPageQuickReplyTemplate(): Promise<string | null> {
       }
     });
 
-    await setDoc(doc(db, "config", "system"), { landingQuickReplySid: content.sid }, { merge: true });
-    console.log(`[WhatsApp QR] Template de QR creado para landing: ${content.sid}`);
+    await setDoc(doc(db, "config", "system"), { landingCTASid: content.sid }, { merge: true });
+    console.log(`[WhatsApp CTA] Template de botón URL creado para landing: ${content.sid}`);
     return content.sid;
   } catch (e: any) {
-    console.error(`[WhatsApp QR] Error creando template de QR:`, e.message);
+    console.error(`[WhatsApp CTA] Error creando template de botón URL:`, e.message);
     return null;
   }
 }
@@ -3223,18 +3221,19 @@ async function ensureLandingPageQuickReplyTemplate(): Promise<string | null> {
 async function sendLandingPageButton(to: string, from: string, landingUrl: string): Promise<boolean> {
   if (!twilioClient) return false;
   try {
-    const contentSid = await ensureLandingPageQuickReplyTemplate();
+    const contentSid = await ensureLandingPageCTATemplate();
     if (!contentSid) return false;
 
     await (twilioClient as any).messages.create({
       from: normalizePhone(from || TWILIO_FROM_NUMBER || "+14155238886"),
       to: normalizePhone(to),
-      contentSid
+      contentSid,
+      contentVariables: JSON.stringify({ "1": landingUrl })
     });
-    console.log(`[WhatsApp QR] Botón QR de landing enviado correctamente a ${to}`);
+    console.log(`[WhatsApp CTA] Botón URL de landing enviado correctamente a ${to}`);
     return true;
   } catch (e: any) {
-    console.error(`[WhatsApp QR] Error enviando botón QR de landing:`, e.message);
+    console.error(`[WhatsApp CTA] Error enviando botón URL de landing:`, e.message);
     return false;
   }
 }
